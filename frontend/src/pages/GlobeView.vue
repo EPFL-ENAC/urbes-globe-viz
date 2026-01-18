@@ -1,8 +1,10 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import Globe3D from '@/components/features/Globe3D.vue';
+</script>
 
 <template>
-  <div class="fit bg-black text-white flex flex-center">
-    <h1 class="text-h4">Globe View</h1>
+  <div class="fit bg-black">
+    <Globe3D />
   </div>
 </template>
 

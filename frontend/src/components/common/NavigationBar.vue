@@ -6,7 +6,7 @@ import epflLogo from '@/assets/EPFL_Logo.svg';
   <div class="fixed-top" style="height: 60px; z-index: 1000">
     <div class="row items-center justify-between q-px-lg" style="height: 100%">
       <div class="row items-center q-gutter-sm">
-        <img :src="epflLogo" alt="EPFL" style="height: 24px" />
+        <img :src="epflLogo" alt="EPFL" style="height: 16px" />
         <span class="text-h6 text-white text-weight-bold">URBES</span>
       </div>
       
