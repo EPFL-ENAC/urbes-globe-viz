@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { Deck, COORDINATE_SYSTEM, _GlobeView as GlobeView } from "@deck.gl/core";
-import { GeoJsonLayer } from "@deck.gl/layers";
+import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { SimpleMeshLayer } from "@deck.gl/mesh-layers";
 import { SphereGeometry } from "@luma.gl/engine";
+import { projectsGeoJSON } from "@/data/projects";
 
 const container = ref<HTMLDivElement | null>(null);
 let deck: any = null;
@@ -17,8 +18,8 @@ onMounted(() => {
   if (!container.value) return;
 
   const initialViewState = {
-    longitude: 0,
-    latitude: 20,
+    longitude: 8.2,
+    latitude: 46.8,
     zoom: 3
   };
 
@@ -40,6 +41,28 @@ onMounted(() => {
       opacity: 1,
       getFillColor: [80, 80, 80],
     
+    }),
+    new ScatterplotLayer({
+      id: 'projects',
+      data: projectsGeoJSON.features,
+      getPosition: (d: any) => d.geometry.coordinates,
+      getFillColor: [255, 100, 100],
+      getRadius: 50000,
+      radiusMinPixels: 6,
+      radiusMaxPixels: 20,
+      pickable: true,
+      onHover: (info: any) => {
+        if (info.object) {
+          container.value!.style.cursor = 'pointer';
+        } else {
+          container.value!.style.cursor = 'grab';
+        }
+      },
+      onClick: (info: any) => {
+        if (info.object) {
+          console.log('Project clicked:', info.object.properties);
+        }
+      }
     })
   ];
 
