@@ -3,3 +3,10 @@ dist
 .vscode
 *.log
 .DS_Store
+public
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
