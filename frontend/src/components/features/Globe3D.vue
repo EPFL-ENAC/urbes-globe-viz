@@ -8,6 +8,8 @@ import { SphereGeometry } from "@luma.gl/engine";
 const container = ref<HTMLDivElement | null>(null);
 let deck: any = null;
 let animationFrame: number | null = null;
+let isUserInteracting = false;
+let interactionTimeout: number | null = null;
 
 const EARTH_RADIUS_METERS = 6.3e6;
 
@@ -46,22 +48,44 @@ onMounted(() => {
     initialViewState: {
       main: initialViewState
     },
-    controller: true,
+    controller: {
+      inertia: 1000,
+    },
     views: [new GlobeView({ id: 'main' })],
-    layers
-  });
-
-  // Spin animation
-  const animate = () => {
-    const viewState = deck.viewState.main;
-    deck.setProps({
-      initialViewState: {
-        main: {
-          ...viewState,
-          longitude: viewState.longitude + 0.1
+    layers,
+    onViewStateChange: ({ interactionState }: any) => {
+      if (interactionState && (interactionState.isDragging || interactionState.isZooming || interactionState.isPanning)) {
+        isUserInteracting = true;
+        if (interactionTimeout) {
+          clearTimeout(interactionTimeout);
         }
       }
-    });
+    },
+    onInteractionStateChange: ({ interactionState }: any) => {
+      if (interactionState && !interactionState.isDragging && !interactionState.isZooming && !interactionState.isPanning) {
+        if (interactionTimeout) {
+          clearTimeout(interactionTimeout);
+        }
+        interactionTimeout = window.setTimeout(() => {
+          isUserInteracting = false;
+        }, 3000);
+      }
+    }
+  });
+
+  // Spin animation - only when not interacting
+  const animate = () => {
+    if (!isUserInteracting && deck) {
+      const viewState = deck.viewState.main;
+      deck.setProps({
+        initialViewState: {
+          main: {
+            ...viewState,
+            longitude: viewState.longitude + 0.05
+          }
+        }
+      });
+    }
     animationFrame = requestAnimationFrame(animate);
   };
 
@@ -71,6 +95,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
+  }
+  if (interactionTimeout) {
+    clearTimeout(interactionTimeout);
   }
   if (deck) {
     deck.finalize();
