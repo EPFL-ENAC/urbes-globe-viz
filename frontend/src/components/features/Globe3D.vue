@@ -8,14 +8,20 @@ import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 
 const container = ref<HTMLDivElement | null>(null);
+const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
 let isUserInteracting = false;
 let interactionTimeout: number | null = null;
 let isHoveringProject = false;
+let lastAnimationTime = 0;
+const ANIMATION_THROTTLE = 10; // ms between animation frames
 
 const projectStore = useProjectStore();
 const router = useRouter();
+
+// Cache for COG protocol to avoid re-registration
+let cogProtocolRegistered = false;
 
 // Watch for target coordinates changes and fly to location
 watch(
@@ -37,39 +43,49 @@ watch(
 onMounted(() => {
   if (!container.value) return;
 
-  // Register COG protocol
+  // Register COG protocol only once
   const cogUrl = "/geodata/human_settlement_2025_cog.tif";
 
-  MaplibreCOGProtocol.setColorFunction(cogUrl, (pixel, color, metadata) => {
-    const val = pixel[0];
-    if (val === metadata.noData || val === undefined || val < 12) {
-      color.set([0, 0, 0, 0]);
-    } else {
-      const c = Math.min(255, (val * 255) / 50) + 50;
+  if (!cogProtocolRegistered) {
+    // Optimized color function with early exit
+    MaplibreCOGProtocol.setColorFunction(cogUrl, (pixel, color, metadata) => {
+      const val = pixel[0];
+      if (val === metadata.noData || val === undefined || val < 12) {
+        color.set([0, 0, 0, 0]);
+        return;
+      }
+      const c = Math.min(255, (val * 255) / 30);
       color.set([c, c, c, 255]);
-    }
-  });
+    });
 
-  maplibregl.addProtocol("cog", MaplibreCOGProtocol.cogProtocol);
+    maplibregl.addProtocol("cog", MaplibreCOGProtocol.cogProtocol);
+    cogProtocolRegistered = true;
+  }
 
-  // Initialize map with globe projection
+  // Initialize map with globe projection and performance settings
   map = new maplibregl.Map({
     container: container.value,
     center: [8.2, 46.8],
     zoom: 3,
     minZoom: 2,
-    maxZoom: 6,
+    maxZoom: 8,
+    refreshExpiredTiles: false,
+    maxTileCacheSize: 100,
     style: {
       version: 8,
+      projection: {
+        type: "globe",
+      },
       sources: {
         "earth-land": {
           type: "geojson",
-          data: "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_land.geojson",
+          data: "/geodata/ne_110m_land.geojson",
         },
         "cog-urban": {
           type: "raster",
           url: `cog://${cogUrl}`,
           tileSize: 256,
+          maxzoom: 10,
         },
       },
       layers: [
@@ -85,13 +101,17 @@ onMounted(() => {
           type: "fill",
           source: "earth-land",
           paint: {
-            "fill-color": "#151515",
+            "fill-color": "#101010",
           },
         },
         {
           id: "cog-layer",
           type: "raster",
           source: "cog-urban",
+          paint: {
+            "raster-resampling": "linear",
+            "raster-fade-duration": 0,
+          },
         },
       ],
     },
@@ -99,10 +119,7 @@ onMounted(() => {
 
   // Add project markers and set projection after map loads
   map.on("load", () => {
-    // Set globe projection
-    map!.setProjection({
-      type: "globe",
-    });
+    isLoading.value = false;
 
     // Add projects as GeoJSON source
     map!.addSource("projects", {
@@ -181,43 +198,88 @@ onMounted(() => {
   map.on("pitchend", endInteraction);
   map.on("rotateend", endInteraction);
 
-  // Spin animation - only when not interacting and not hovering project
-  const animate = () => {
+  // Throttled spin animation - only when not interacting and not hovering project
+  const animate = (timestamp: number) => {
     if (!isUserInteracting && !isHoveringProject && map) {
-      const center = map.getCenter();
-      map.setCenter([center.lng + 0.05, center.lat]);
+      // Throttle animation to reduce CPU usage
+      if (timestamp - lastAnimationTime >= ANIMATION_THROTTLE) {
+        const center = map.getCenter();
+        map.setCenter([center.lng + 0.05, center.lat]);
+        lastAnimationTime = timestamp;
+      }
     }
     animationFrame = requestAnimationFrame(animate);
   };
 
-  animate();
+  animationFrame = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
+    animationFrame = null;
   }
   if (interactionTimeout) {
     clearTimeout(interactionTimeout);
+    interactionTimeout = null;
   }
   if (map) {
     map.remove();
     map = null;
   }
+  // Keep COG protocol registered for reuse
 });
 </script>
 
 <template>
-  <div ref="container" class="globe-container"></div>
+  <div class="globe-wrapper">
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+    </div>
+    <div ref="container" class="globe-container"></div>
+  </div>
 </template>
 
 <style scoped>
-.globe-container {
+.globe-wrapper {
   width: 100%;
   height: 100%;
   position: absolute;
   top: 0;
   left: 0;
   background: #000;
+}
+
+.globe-container {
+  width: 100%;
+  height: 100%;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
