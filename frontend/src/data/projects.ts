@@ -9,6 +9,8 @@ export interface ProjectProperties {
   category: string;
   year: number;
   preview?: string;
+  zoom?: number;
+  pitch?: number;
 }
 
 export type ProjectFeature = Feature<Point, ProjectProperties>;
@@ -21,7 +23,7 @@ export const projectsGeoJSON: ProjectCollection = {
       type: "Feature",
       geometry: {
         type: "Point",
-        coordinates: [6.6327, 46.5197], // Geneva
+        coordinates: [6.6327, 46.5397], // Geneva
       },
       properties: {
         id: "buildings",
@@ -32,6 +34,8 @@ export const projectsGeoJSON: ProjectCollection = {
         year: 2023,
         info: "Source: Swiss Federal Office of Topography",
         category: "Infrastructure",
+        zoom: 13,
+        pitch: 75,
       },
     },
     {
@@ -49,13 +53,15 @@ export const projectsGeoJSON: ProjectCollection = {
         year: 2026,
         info: "Source: Aldo Brandi, URBES",
         category: "Climate",
+        zoom: 9,
+        pitch: 0,
       },
     },
     {
       type: "Feature",
       geometry: {
         type: "Point",
-        coordinates: [7.5886, 47.5596], // Basel
+        coordinates: [6.58, 46.51], // Lausanne
       },
       properties: {
         id: "roads_swiss_statistics",
@@ -66,13 +72,15 @@ export const projectsGeoJSON: ProjectCollection = {
         year: 2017,
         info: "Source: Swiss Federal Office for Spatial Development",
         category: "Transport",
+        zoom: 10,
+        pitch: 0,
       },
     },
     {
       type: "Feature",
       geometry: {
         type: "Point",
-        coordinates: [7.3592, 47.2108], // Solothurn
+        coordinates: [6.58, 46.41], // Lausanne
       },
       properties: {
         id: "hourly_adult_population",
@@ -83,6 +91,8 @@ export const projectsGeoJSON: ProjectCollection = {
         year: 2020,
         info: "Source: DAVE Simulations, URBES",
         category: "Demographics",
+        zoom: 9,
+        pitch: 70,
       },
     },
     {
@@ -101,6 +111,8 @@ export const projectsGeoJSON: ProjectCollection = {
         year: 1995,
         info: "Source: URBES Research",
         category: "Infrastructure",
+        zoom: 6,
+        pitch: 60,
       },
     },
   ],

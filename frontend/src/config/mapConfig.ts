@@ -79,7 +79,7 @@ export const mapConfig = {
       info: "Source: Aldo Brandi, URBES",
       source: {
         type: "image",
-        url: "",
+        url: `${baseUrl}/wrf_t2/t2_012.png`,
         coordinates: [
           [5.13211, 47.94587],
           [11.12701, 47.94587],
@@ -313,7 +313,7 @@ export const mapConfig = {
       info: "Source: DAVE Simulations, URBES",
       source: {
         type: "vector",
-        url: `pmtiles://${baseUrl}/hourly_adult_pop.pmtiles`,
+        url: `pmtiles://${baseUrl}/hourly_adult_population.pmtiles`,
       } as VectorSourceSpecification,
       layer: {
         id: "hourly_adult_population-layer",

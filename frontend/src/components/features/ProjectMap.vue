@@ -71,7 +71,8 @@ const initializeMap = () => {
       ],
     },
     center: center,
-    zoom: 8,
+    zoom: project?.properties.zoom || 8,
+    pitch: project?.properties.pitch || 0,
     // Performance optimizations
     refreshExpiredTiles: false,
     fadeDuration: 0, // Disable fade animation for faster rendering
