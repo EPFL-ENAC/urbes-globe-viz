@@ -1,26 +1,19 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import {
-  Deck,
-  COORDINATE_SYSTEM,
-  _GlobeView as GlobeView,
-  FlyToInterpolator,
-} from "@deck.gl/core";
-import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
-import { SimpleMeshLayer } from "@deck.gl/mesh-layers";
-import { SphereGeometry } from "@luma.gl/engine";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import * as MaplibreCOGProtocol from "@geomatico/maplibre-cog-protocol";
 import { projectsGeoJSON } from "@/data/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 
 const container = ref<HTMLDivElement | null>(null);
-let deck: any = null;
+let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
 let isUserInteracting = false;
 let interactionTimeout: number | null = null;
 let isHoveringProject = false;
 
-const EARTH_RADIUS_METERS = 6.3e6;
 const projectStore = useProjectStore();
 const router = useRouter();
 
@@ -28,18 +21,12 @@ const router = useRouter();
 watch(
   () => projectStore.targetCoordinates,
   (coords) => {
-    if (coords && deck) {
+    if (coords && map) {
       isHoveringProject = true;
-      deck.setProps({
-        initialViewState: {
-          main: {
-            longitude: coords.longitude,
-            latitude: coords.latitude,
-            zoom: 5,
-            transitionDuration: 1000,
-            transitionInterpolator: new FlyToInterpolator(),
-          },
-        },
+      map.flyTo({
+        center: [coords.longitude, coords.latitude],
+        zoom: 5,
+        duration: 1000,
       });
     } else {
       isHoveringProject = false;
@@ -50,113 +37,155 @@ watch(
 onMounted(() => {
   if (!container.value) return;
 
-  const initialViewState = {
-    longitude: 8.2,
-    latitude: 46.8,
+  // Register COG protocol
+  const cogUrl = "/geodata/human_settlement_2025_cog.tif";
+
+  MaplibreCOGProtocol.setColorFunction(cogUrl, (pixel, color, metadata) => {
+    const val = pixel[0];
+    if (val === metadata.noData || val === undefined || val < 12) {
+      color.set([0, 0, 0, 0]);
+    } else {
+      const c = Math.min(255, (val * 255) / 50) + 50;
+      color.set([c, c, c, 255]);
+    }
+  });
+
+  maplibregl.addProtocol("cog", MaplibreCOGProtocol.cogProtocol);
+
+  // Initialize map with globe projection
+  map = new maplibregl.Map({
+    container: container.value,
+    center: [8.2, 46.8],
     zoom: 3,
     minZoom: 2,
     maxZoom: 6,
-  };
-
-  const layers = [
-    new SimpleMeshLayer({
-      id: "earth-sphere",
-      data: [0],
-      mesh: new SphereGeometry({
-        radius: EARTH_RADIUS_METERS,
-        nlat: 18,
-        nlong: 36,
-      }),
-      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-      getPosition: [0, 0, 0],
-      getColor: [0, 0, 0],
-    }),
-    new GeoJsonLayer({
-      id: "earth-land",
-      data: "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_land.geojson",
-      stroked: true,
-      filled: true,
-      opacity: 1,
-      getFillColor: [80, 80, 80],
-    }),
-    new ScatterplotLayer({
-      id: "projects",
-      data: projectsGeoJSON.features,
-      getPosition: (d: any) => d.geometry.coordinates,
-      getFillColor: [200, 200, 200],
-      getRadius: 50000,
-      radiusMinPixels: 6,
-      radiusMaxPixels: 20,
-      pickable: true,
-      onHover: (info: any) => {
-        if (info.object) {
-          container.value!.style.cursor = "pointer";
-          projectStore.setHoveredProject(info.object.properties.id);
-        } else {
-          container.value!.style.cursor = "grab";
-          projectStore.setHoveredProject(null);
-        }
+    style: {
+      version: 8,
+      sources: {
+        "earth-land": {
+          type: "geojson",
+          data: "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_land.geojson",
+        },
+        "cog-urban": {
+          type: "raster",
+          url: `cog://${cogUrl}`,
+          tileSize: 256,
+        },
       },
-      onClick: (info: any) => {
-        if (info.object) {
-          router.push(`/project/${info.object.properties.id}`);
-        }
-      },
-    }),
-  ];
-
-  deck = new Deck({
-    parent: container.value,
-    initialViewState: {
-      main: initialViewState,
-    },
-    controller: {
-      inertia: 1000,
-    },
-    views: [new GlobeView({ id: "main" })],
-    layers,
-    onViewStateChange: ({ interactionState }: any) => {
-      if (
-        interactionState &&
-        (interactionState.isDragging ||
-          interactionState.isZooming ||
-          interactionState.isPanning)
-      ) {
-        isUserInteracting = true;
-        if (interactionTimeout) {
-          clearTimeout(interactionTimeout);
-        }
-      }
-    },
-    onInteractionStateChange: ({ interactionState }: any) => {
-      if (
-        interactionState &&
-        !interactionState.isDragging &&
-        !interactionState.isZooming &&
-        !interactionState.isPanning
-      ) {
-        if (interactionTimeout) {
-          clearTimeout(interactionTimeout);
-        }
-        interactionTimeout = window.setTimeout(() => {
-          isUserInteracting = false;
-        }, 3000);
-      }
+      layers: [
+        {
+          id: "background",
+          type: "background",
+          paint: {
+            "background-color": "#000000",
+          },
+        },
+        {
+          id: "land",
+          type: "fill",
+          source: "earth-land",
+          paint: {
+            "fill-color": "#151515",
+          },
+        },
+        {
+          id: "cog-layer",
+          type: "raster",
+          source: "cog-urban",
+        },
+      ],
     },
   });
 
+  // Add project markers and set projection after map loads
+  map.on("load", () => {
+    // Set globe projection
+    map!.setProjection({
+      type: "globe",
+    });
+
+    // Add projects as GeoJSON source
+    map!.addSource("projects", {
+      type: "geojson",
+      data: projectsGeoJSON,
+    });
+
+    // Add circle layer for projects
+    map!.addLayer({
+      id: "project-circles",
+      type: "circle",
+      source: "projects",
+      paint: {
+        "circle-radius": 8,
+        "circle-color": "#c8c8c8",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
+    // Change cursor on hover
+    map!.on("mouseenter", "project-circles", () => {
+      map!.getCanvas().style.cursor = "pointer";
+    });
+
+    map!.on("mouseleave", "project-circles", () => {
+      map!.getCanvas().style.cursor = "grab";
+    });
+
+    // Handle project clicks
+    map!.on("click", "project-circles", (e) => {
+      if (e.features && e.features[0]) {
+        const projectId = e.features[0].properties?.id;
+        if (projectId) {
+          router.push(`/project/${projectId}`);
+        }
+      }
+    });
+
+    // Handle hover for project store
+    map!.on("mousemove", "project-circles", (e) => {
+      if (e.features && e.features[0]) {
+        const projectId = e.features[0].properties?.id;
+        projectStore.setHoveredProject(projectId);
+      }
+    });
+
+    map!.on("mouseleave", "project-circles", () => {
+      projectStore.setHoveredProject(null);
+    });
+  });
+
+  // Track user interaction
+  const startInteraction = () => {
+    isUserInteracting = true;
+    if (interactionTimeout) {
+      clearTimeout(interactionTimeout);
+    }
+  };
+
+  const endInteraction = () => {
+    if (interactionTimeout) {
+      clearTimeout(interactionTimeout);
+    }
+    interactionTimeout = window.setTimeout(() => {
+      isUserInteracting = false;
+    }, 3000);
+  };
+
+  map.on("dragstart", startInteraction);
+  map.on("zoomstart", startInteraction);
+  map.on("pitchstart", startInteraction);
+  map.on("rotatestart", startInteraction);
+  map.on("dragend", endInteraction);
+  map.on("zoomend", endInteraction);
+  map.on("pitchend", endInteraction);
+  map.on("rotateend", endInteraction);
+
   // Spin animation - only when not interacting and not hovering project
   const animate = () => {
-    if (!isUserInteracting && !isHoveringProject && deck) {
-      const viewState = deck.viewState.main;
-      deck.setProps({
-        initialViewState: {
-          main: {
-            ...viewState,
-            longitude: viewState.longitude + 0.05,
-          },
-        },
-      });
+    if (!isUserInteracting && !isHoveringProject && map) {
+      const center = map.getCenter();
+      map.setCenter([center.lng + 0.05, center.lat]);
     }
     animationFrame = requestAnimationFrame(animate);
   };
@@ -171,9 +200,9 @@ onUnmounted(() => {
   if (interactionTimeout) {
     clearTimeout(interactionTimeout);
   }
-  if (deck) {
-    deck.finalize();
-    deck = null;
+  if (map) {
+    map.remove();
+    map = null;
   }
 });
 </script>
