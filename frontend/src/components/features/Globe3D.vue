@@ -11,6 +11,7 @@ import { SimpleMeshLayer } from "@deck.gl/mesh-layers";
 import { SphereGeometry } from "@luma.gl/engine";
 import { projectsGeoJSON } from "@/data/projects";
 import { useProjectStore } from "@/stores/project";
+import { useRouter } from "vue-router";
 
 const container = ref<HTMLDivElement | null>(null);
 let deck: any = null;
@@ -21,6 +22,7 @@ let isHoveringProject = false;
 
 const EARTH_RADIUS_METERS = 6.3e6;
 const projectStore = useProjectStore();
+const router = useRouter();
 
 // Watch for target coordinates changes and fly to location
 watch(
@@ -97,7 +99,7 @@ onMounted(() => {
       },
       onClick: (info: any) => {
         if (info.object) {
-          console.log("Project clicked:", info.object.properties);
+          router.push(`/project/${info.object.properties.id}`);
         }
       },
     }),

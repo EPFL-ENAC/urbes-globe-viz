@@ -3,12 +3,14 @@ import type { ProjectProperties } from "@/data/projects";
 import { useProjectStore } from "@/stores/project";
 import { projectsGeoJSON } from "@/data/projects";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 
 const props = defineProps<{
   project: ProjectProperties;
 }>();
 
 const projectStore = useProjectStore();
+const router = useRouter();
 
 const isHovered = computed(
   () => projectStore.hoveredProjectId === props.project.id,
@@ -29,6 +31,10 @@ const handleHover = () => {
 const handleLeave = () => {
   projectStore.clearTargetCoordinates();
 };
+
+const handleClick = () => {
+  router.push(`/project/${props.project.id}`);
+};
 </script>
 
 <template>
@@ -37,6 +43,7 @@ const handleLeave = () => {
     :class="{ 'project-card-highlighted': isHovered }"
     @mouseenter="handleHover"
     @mouseleave="handleLeave"
+    @click="handleClick"
   >
     <div class="card-image overflow-hidden">
       <img

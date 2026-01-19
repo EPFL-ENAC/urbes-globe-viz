@@ -1,14 +1,30 @@
 <script setup lang="ts">
 import { useRoute } from "vue-router";
+import ProjectMap from "@/components/features/ProjectMap.vue";
+import { projectsGeoJSON } from "@/data/projects";
+import { computed } from "vue";
 
 const route = useRoute();
-const projectId = route.params.id;
+const projectId = route.params.id as string;
+
+const project = computed(() => {
+  const feature = projectsGeoJSON.features.find(
+    (f) => f.properties.id === projectId,
+  );
+  return feature?.properties;
+});
 </script>
 
 <template>
-  <div class="fit flex flex-center" style="background-color: #f5f5f5">
-    <h1 class="text-h4 text-grey-9">Project Detail View: {{ projectId }}</h1>
+  <div class="fit relative">
+    <ProjectMap v-if="project" :project-id="projectId" />
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.project-info-card {
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+</style>
