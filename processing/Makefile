@@ -1,16 +1,31 @@
-.PHONY: all clean martin_building_heights
+.PHONY: all clean install martin_building_heights guf_urban_footprint
 
 # Output directory
 OUTPUT_DIR = ../frontend/public/geodata
 
+# Find uv executable
+UV := $(shell which uv 2>/dev/null)
+
 all: martin_building_heights
 
+install:
+	@echo "Installing Python dependencies with uv..."
+	@if [ -z "$(UV)" ]; then \
+		echo "Error: uv is not installed or not in PATH."; \
+		echo "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"; \
+		echo "Then add ~/.local/bin to your PATH"; \
+		exit 1; \
+	fi
+	@$(UV) sync
+	@echo "✓ Dependencies installed"
+
 martin_building_heights:
-	@echo "Processing Martin building heights dataset..."
-	cd martin_building_heights && bash process.sh
-	@echo "Martin building heights PMTiles created successfully"
+	@$(MAKE) -C martin_building_heights all
+
+guf_urban_footprint:
+	@$(MAKE) -C guf_urban_footprint all
 
 clean:
-	rm -f $(OUTPUT_DIR)/building_heights_china.pmtiles
-	rm -f martin_building_heights/*.mbtiles
-	@echo "Cleaned processed files"
+	@$(MAKE) -C martin_building_heights clean
+	@$(MAKE) -C guf_urban_footprint clean
+	@echo "All processed files cleaned"
