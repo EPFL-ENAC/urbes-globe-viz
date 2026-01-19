@@ -9,7 +9,7 @@ Website to visualize URBES projects.
 
 ## Contributors
 
-- EPFL - (Research & Data): Gabriele Manoli, Guo-Shiuan Lin,  Martin Hendrick
+- EPFL - (Research & Data): Gabriele Manoli, Guo-Shiuan Lin, Martin Hendrick
 - EPFL - ENAC-IT4R (Implementation): Pierre Ripoll
 - EPFL - ENAC-IT4R (Project Management): Charlotte Weil
 
@@ -21,12 +21,10 @@ Website to visualize URBES projects.
 - [Quasar](https://quasar.dev/) - Vue.js Framework
 - [nginx](https://nginx.org/) - Web Server
 
-
 ### Infrastructure
 
 - [Docker](https://www.docker.com/) - Containerization
 - [Traefik](https://traefik.io/) - Edge Router
-
 
 ## Development
 
@@ -48,7 +46,6 @@ make uninstall
 make lint
 make format
 ```
-
 
 ### Development Environment
 
@@ -95,7 +92,6 @@ Under active development. [Report bugs here](https://github.com/EPFL-ENAC/urbes-
 This project is licensed under the [GNU General Public License v3.0](LICENSE) - see the LICENSE file for details.
 
 This is free software: you can redistribute it and/or modify it under the terms of the GPL-3.0 as published by the Free Software Foundation.
-
 
 ## Remaining Manual Tasks
 

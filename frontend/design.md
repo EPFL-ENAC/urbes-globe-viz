@@ -33,6 +33,7 @@
    ```
 
    **Visual Details:**
+
    - **Globe:** Smooth 3D sphere, subtle Earth texture, glowing project markers (dots/pins)
    - **Background:** Pure black or very dark gradient
    - **Project Carousel:**
@@ -66,6 +67,7 @@
    ```
 
    **Visual Details:**
+
    - **Basemap:** Very light gray (#f5f5f5), minimal labels, clean OSM style
    - **Left Drawer/Sidebar:**
      - White or very light background

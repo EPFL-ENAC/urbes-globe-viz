@@ -8,13 +8,13 @@ import path from "path";
 export default defineConfig({
   plugins: [
     vue({
-      template: { transformAssetUrls }
+      template: { transformAssetUrls },
     }),
     quasar({
       sassVariables: fileURLToPath(
-        new URL("./src/quasar-variables.sass", import.meta.url)
-      )
-    })
+        new URL("./src/quasar-variables.sass", import.meta.url),
+      ),
+    }),
   ],
   resolve: {
     alias: {

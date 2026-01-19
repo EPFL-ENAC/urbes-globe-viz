@@ -11,5 +11,4 @@ const projectId = route.params.id;
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

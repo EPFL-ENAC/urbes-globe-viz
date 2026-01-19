@@ -1,13 +1,43 @@
 <script setup lang="ts">
-import type { ProjectProperties } from '@/data/projects'
+import type { ProjectProperties } from "@/data/projects";
+import { useProjectStore } from "@/stores/project";
+import { projectsGeoJSON } from "@/data/projects";
+import { computed } from "vue";
 
-defineProps<{
-  project: ProjectProperties
-}>()
+const props = defineProps<{
+  project: ProjectProperties;
+}>();
+
+const projectStore = useProjectStore();
+
+const isHovered = computed(
+  () => projectStore.hoveredProjectId === props.project.id,
+);
+
+const handleHover = () => {
+  const feature = projectsGeoJSON.features.find(
+    (f) => f.properties.id === props.project.id,
+  );
+  if (feature && feature.geometry.coordinates) {
+    const [longitude, latitude] = feature.geometry.coordinates;
+    if (longitude !== undefined && latitude !== undefined) {
+      projectStore.setTargetCoordinates(longitude, latitude);
+    }
+  }
+};
+
+const handleLeave = () => {
+  projectStore.clearTargetCoordinates();
+};
 </script>
 
 <template>
-  <div class="column cursor-pointer project-card">
+  <div
+    class="column cursor-pointer project-card"
+    :class="{ 'project-card-highlighted': isHovered }"
+    @mouseenter="handleHover"
+    @mouseleave="handleLeave"
+  >
     <div class="card-image overflow-hidden">
       <img
         v-if="project.preview"
@@ -33,7 +63,8 @@ defineProps<{
   transition: transform 0.2s ease;
 }
 
-.project-card:hover {
+.project-card:hover,
+.project-card-highlighted {
   transform: scale(1.05);
 }
 
