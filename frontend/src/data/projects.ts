@@ -85,5 +85,23 @@ export const projectsGeoJSON: ProjectCollection = {
         category: "Demographics",
       },
     },
+    {
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [120.5, 30.5], // Zhejiang/Jiangsu region, China
+      },
+      properties: {
+        id: "building_heights_china",
+        title: "Building China",
+        preview: "building_heights_china.png",
+        description:
+          "Observed and simulated building heights across Chinese cities",
+        unit: "meters",
+        year: 1995,
+        info: "Source: URBES Research",
+        category: "Infrastructure",
+      },
+    },
   ],
 };

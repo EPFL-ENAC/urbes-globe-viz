@@ -12,6 +12,7 @@ backend/**/*.py
 backend/.dockerignore
 **/__pycache__/
 *.pyc
+*.py
 
 # Docker files
 Dockerfile

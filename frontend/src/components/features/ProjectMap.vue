@@ -4,6 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapConfig } from "@/config/mapConfig";
 import { Protocol } from "pmtiles";
+import { projectsGeoJSON } from "@/data/projects";
 
 const props = defineProps<{
   projectId: string;
@@ -31,6 +32,15 @@ onMounted(() => {
     return;
   }
 
+  // Get project coordinates from GeoJSON
+  const project = projectsGeoJSON.features.find(
+    (f) => f.properties.id === props.projectId,
+  );
+  const center: [number, number] = (project?.geometry.coordinates as [
+    number,
+    number,
+  ]) || [8.2, 46.8];
+
   // Initialize map
   map = new maplibregl.Map({
     container: mapContainer.value,
@@ -50,9 +60,12 @@ onMounted(() => {
         layerConfig.layer,
       ],
     },
-    center: [8.2, 46.8], // Switzerland center
+    center: center,
     zoom: 8,
   });
+
+  // Add navigation controls
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
 });
 
 onUnmounted(() => {

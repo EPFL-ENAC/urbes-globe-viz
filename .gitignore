@@ -1,1 +1,10 @@
 node_modules
+processing/**/*.csv
+processing/**/*.json
+processing/**/*.geojson
+processing/**/*.shp
+processing/**/*.dbf
+processing/**/*.prj
+processing/**/*.mbtiles
+processing/**/*.tif
+processing/**/*.tfw
