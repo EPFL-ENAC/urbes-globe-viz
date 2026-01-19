@@ -44,7 +44,7 @@ onMounted(() => {
           id: "background",
           type: "background",
           paint: {
-            "background-color": "#000000",
+            "background-color": "rgb(20, 20, 20)",
           },
         },
         layerConfig.layer,
