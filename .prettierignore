@@ -18,6 +18,8 @@ backend/.dockerignore
 Dockerfile
 docker-compose.yml
 *.dockerfile
+.dockerignore
+nginx.conf
 CHANGELOG.md
 # Environment and config files
 .env

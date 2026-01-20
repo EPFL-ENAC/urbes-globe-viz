@@ -11,12 +11,19 @@ const props = defineProps<{
 
 const projectStore = useProjectStore();
 const router = useRouter();
+let leaveTimeout: number | null = null;
 
 const isHovered = computed(
   () => projectStore.hoveredProjectId === props.project.id,
 );
 
 const handleHover = () => {
+  // Clear any pending leave timeout
+  if (leaveTimeout) {
+    clearTimeout(leaveTimeout);
+    leaveTimeout = null;
+  }
+
   const feature = projectsGeoJSON.features.find(
     (f) => f.properties.id === props.project.id,
   );
@@ -26,10 +33,18 @@ const handleHover = () => {
       projectStore.setTargetCoordinates(longitude, latitude);
     }
   }
+  projectStore.setHoveredProject(props.project.id);
 };
 
 const handleLeave = () => {
+  // Clear any pending timeout
+  if (leaveTimeout) {
+    clearTimeout(leaveTimeout);
+    leaveTimeout = null;
+  }
+
   projectStore.clearTargetCoordinates();
+  projectStore.setHoveredProject(null);
 };
 
 const handleClick = () => {

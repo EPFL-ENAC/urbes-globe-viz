@@ -5,7 +5,7 @@ name: deploy
   push:
     branches:
       - dev
-    tags: ["v*.*.*"]
+    tags: ['v*.*.*']
 
 jobs:
   deploy:
@@ -16,7 +16,6 @@ jobs:
     secrets:
       token: ${{ secrets.CD_TOKEN }}
     with:
-      # Optional inputs can be passed here
-      ORG: { YOUR-LAB-NAME } #.e.g epfl-cryos
-      REPO: { YOUR-REPO-NAME } # ex. lgb-trsc
-      build_context: '[ "./"]'
+      org: EPFL-ENAC
+      repo: urbes-viz
+      build_context: '["./frontend"]'

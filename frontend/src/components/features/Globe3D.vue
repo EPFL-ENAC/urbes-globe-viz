@@ -3,9 +3,11 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as MaplibreCOGProtocol from "@geomatico/maplibre-cog-protocol";
+import { Protocol } from "pmtiles";
 import { projectsGeoJSON } from "@/data/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
+import { mapConfig } from "@/config/mapConfig";
 
 const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
@@ -22,6 +24,7 @@ const router = useRouter();
 
 // Cache for COG protocol to avoid re-registration
 let cogProtocolRegistered = false;
+let pmtilesProtocolRegistered = false;
 
 // Watch for target coordinates changes and fly to location
 watch(
@@ -29,9 +32,18 @@ watch(
   (coords) => {
     if (coords && map) {
       isHoveringProject = true;
+
+      // Get project to access zoom and pitch
+      const project = projectsGeoJSON.features.find(
+        (f) =>
+          f.geometry.coordinates[0] === coords.longitude &&
+          f.geometry.coordinates[1] === coords.latitude,
+      );
+
       map.flyTo({
         center: [coords.longitude, coords.latitude],
-        zoom: 5,
+        zoom: project?.properties.zoom || 8,
+        pitch: project?.properties.pitch || 0,
         duration: 1000,
       });
     } else {
@@ -40,8 +52,94 @@ watch(
   },
 );
 
+// Watch for hovered project and add/remove preview layer
+watch(
+  () => projectStore.hoveredProjectId,
+  (projectId, oldProjectId) => {
+    console.log("Hovered project changed:", oldProjectId, "->", projectId);
+
+    if (!map) {
+      console.log("Map not initialized");
+      return;
+    }
+
+    // Check if map style is loaded
+    if (!map.isStyleLoaded()) {
+      console.log("Style not loaded, queuing for later");
+      // Wait for style to load
+      map.once("styledata", () => {
+        // Retry the watch callback
+        if (projectId && projectStore.hoveredProjectId === projectId) {
+          addPreviewLayer(projectId);
+        }
+      });
+      return;
+    }
+
+    // Remove old layer if exists
+    if (oldProjectId && oldProjectId !== projectId) {
+      removePreviewLayer(oldProjectId);
+    }
+
+    // Add new layer if project is hovered
+    if (projectId) {
+      addPreviewLayer(projectId);
+    }
+  },
+);
+
+const removePreviewLayer = (projectId: string) => {
+  if (!map) return;
+  const layerId = `${projectId}-preview`;
+  if (map.getLayer(layerId)) {
+    map.removeLayer(layerId);
+  }
+  if (map.getSource(projectId)) {
+    map.removeSource(projectId);
+  }
+};
+
+const addPreviewLayer = (projectId: string) => {
+  if (!map) return;
+
+  const layerConfig = mapConfig.layers.find((l) => l.id === projectId);
+  if (layerConfig) {
+    console.log("Adding preview for:", projectId);
+
+    // Add source if it doesn't exist
+    if (!map.getSource(projectId)) {
+      console.log("Adding source:", projectId, layerConfig.source);
+      map.addSource(projectId, layerConfig.source);
+    }
+
+    // Add layer with preview styling
+    const previewLayer = {
+      ...layerConfig.layer,
+      id: `${projectId}-preview`,
+      source: projectId,
+    };
+
+    // Add layer before project circles to maintain proper z-ordering
+    try {
+      console.log("Adding layer:", previewLayer);
+      map.addLayer(previewLayer, "project-circles");
+    } catch (e) {
+      console.error("Error adding preview layer:", e);
+    }
+  } else {
+    console.warn("No layer config found for:", projectId);
+  }
+};
+
 onMounted(() => {
   if (!container.value) return;
+
+  // Register PMTiles protocol
+  if (!pmtilesProtocolRegistered) {
+    const protocol = new Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+    pmtilesProtocolRegistered = true;
+  }
 
   // Register COG protocol only once
   const cogUrl = "/geodata/human_settlement_2025_cog.tif";
@@ -55,7 +153,7 @@ onMounted(() => {
         return;
       }
       const c = Math.min(255, (val * 255) / 30);
-      color.set([c, c, c, 255]);
+      color.set([c, c, c, 180]);
     });
 
     maplibregl.addProtocol("cog", MaplibreCOGProtocol.cogProtocol);
@@ -68,7 +166,7 @@ onMounted(() => {
     center: [8.2, 46.8],
     zoom: 3,
     minZoom: 2,
-    maxZoom: 8,
+    maxZoom: 10,
     refreshExpiredTiles: false,
     maxTileCacheSize: 100,
     style: {
@@ -184,9 +282,6 @@ onMounted(() => {
     if (interactionTimeout) {
       clearTimeout(interactionTimeout);
     }
-    interactionTimeout = window.setTimeout(() => {
-      isUserInteracting = false;
-    }, 3000);
   };
 
   map.on("dragstart", startInteraction);
