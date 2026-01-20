@@ -16,6 +16,6 @@ jobs:
     secrets:
       token: ${{ secrets.CD_TOKEN }}
     with:
-      org: EPFL-ENAC
+      org: epfl-urbes
       repo: urbes-globe-viz
       build_context: '["./frontend"]'
