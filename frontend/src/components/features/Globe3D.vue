@@ -2,28 +2,39 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import * as MaplibreCOGProtocol from "@geomatico/maplibre-cog-protocol";
 import { Protocol } from "pmtiles";
+import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
 import { projectsGeoJSON } from "@/data/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
-import { mapConfig } from "@/config/mapConfig";
+import { useProjectLayers } from "@/composables/useProjectLayers";
+import { useGlobeAnimation } from "@/composables/useGlobeAnimation";
 
 const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
-let animationFrame: number | null = null;
-let isUserInteracting = false;
-let interactionTimeout: number | null = null;
-let isHoveringProject = false;
-let lastAnimationTime = 0;
-const ANIMATION_THROTTLE = 10; // ms between animation frames
+
+const baseUrlOptions = {
+  dev: "/geodata",
+  prod: "https://enacit4r-cdn-s3.epfl.ch/urbes-viz",
+};
+
+const baseUrl = import.meta.env.DEV ? baseUrlOptions.dev : baseUrlOptions.prod;
 
 const projectStore = useProjectStore();
 const router = useRouter();
 
-// Cache for COG protocol to avoid re-registration
-let cogProtocolRegistered = false;
+// Composables
+const getMap = () => map;
+const { cleanup: cleanupLayers } = useProjectLayers(getMap);
+const {
+  isHoveringProject,
+  setupInteractionTracking,
+  startAnimation,
+  cleanup: cleanupAnimation,
+} = useGlobeAnimation(getMap);
+
+// Cache for protocol registration
 let pmtilesProtocolRegistered = false;
 
 // Watch for target coordinates changes and fly to location
@@ -31,7 +42,7 @@ watch(
   () => projectStore.targetCoordinates,
   (coords) => {
     if (coords && map) {
-      isHoveringProject = true;
+      isHoveringProject.value = true;
 
       // Get project to access zoom and pitch
       const project = projectsGeoJSON.features.find(
@@ -47,89 +58,10 @@ watch(
         duration: 1000,
       });
     } else {
-      isHoveringProject = false;
+      isHoveringProject.value = false;
     }
   },
 );
-
-// Watch for hovered project and add/remove preview layer
-watch(
-  () => projectStore.hoveredProjectId,
-  (projectId, oldProjectId) => {
-    console.log("Hovered project changed:", oldProjectId, "->", projectId);
-
-    if (!map) {
-      console.log("Map not initialized");
-      return;
-    }
-
-    // Check if map style is loaded
-    if (!map.isStyleLoaded()) {
-      console.log("Style not loaded, queuing for later");
-      // Wait for style to load
-      map.once("styledata", () => {
-        // Retry the watch callback
-        if (projectId && projectStore.hoveredProjectId === projectId) {
-          addPreviewLayer(projectId);
-        }
-      });
-      return;
-    }
-
-    // Remove old layer if exists
-    if (oldProjectId && oldProjectId !== projectId) {
-      removePreviewLayer(oldProjectId);
-    }
-
-    // Add new layer if project is hovered
-    if (projectId) {
-      addPreviewLayer(projectId);
-    }
-  },
-);
-
-const removePreviewLayer = (projectId: string) => {
-  if (!map) return;
-  const layerId = `${projectId}-preview`;
-  if (map.getLayer(layerId)) {
-    map.removeLayer(layerId);
-  }
-  if (map.getSource(projectId)) {
-    map.removeSource(projectId);
-  }
-};
-
-const addPreviewLayer = (projectId: string) => {
-  if (!map) return;
-
-  const layerConfig = mapConfig.layers.find((l) => l.id === projectId);
-  if (layerConfig) {
-    console.log("Adding preview for:", projectId);
-
-    // Add source if it doesn't exist
-    if (!map.getSource(projectId)) {
-      console.log("Adding source:", projectId, layerConfig.source);
-      map.addSource(projectId, layerConfig.source);
-    }
-
-    // Add layer with preview styling
-    const previewLayer = {
-      ...layerConfig.layer,
-      id: `${projectId}-preview`,
-      source: projectId,
-    };
-
-    // Add layer before project circles to maintain proper z-ordering
-    try {
-      console.log("Adding layer:", previewLayer);
-      map.addLayer(previewLayer, "project-circles");
-    } catch (e) {
-      console.error("Error adding preview layer:", e);
-    }
-  } else {
-    console.warn("No layer config found for:", projectId);
-  }
-};
 
 onMounted(() => {
   if (!container.value) return;
@@ -138,35 +70,17 @@ onMounted(() => {
   if (!pmtilesProtocolRegistered) {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
+    maplibregl.addProtocol("cog", cogProtocol);
     pmtilesProtocolRegistered = true;
-  }
-
-  // Register COG protocol only once
-  const cogUrl = "/geodata/human_settlement_2025_cog.tif";
-
-  if (!cogProtocolRegistered) {
-    // Optimized color function with early exit
-    MaplibreCOGProtocol.setColorFunction(cogUrl, (pixel, color, metadata) => {
-      const val = pixel[0];
-      if (val === metadata.noData || val === undefined || val < 12) {
-        color.set([0, 0, 0, 0]);
-        return;
-      }
-      const c = Math.min(255, (val * 255) / 30);
-      color.set([c, c, c, 180]);
-    });
-
-    maplibregl.addProtocol("cog", MaplibreCOGProtocol.cogProtocol);
-    cogProtocolRegistered = true;
   }
 
   // Initialize map with globe projection and performance settings
   map = new maplibregl.Map({
     container: container.value,
-    center: [8.2, 46.8],
-    zoom: 3,
-    minZoom: 2,
-    maxZoom: 10,
+    center: [6.3, 46.2], // Switzerland
+    zoom: 3, // Start at zoom 10 (middle of range)
+    minZoom: 3, // Match file's minimum
+    maxZoom: 14, // Match file's maximum
     refreshExpiredTiles: false,
     maxTileCacheSize: 100,
     style: {
@@ -179,11 +93,16 @@ onMounted(() => {
           type: "geojson",
           data: "/geodata/ne_110m_land.geojson",
         },
-        "cog-urban": {
+        "ghsl-urban": {
           type: "raster",
-          url: `cog://${cogUrl}`,
+          url: `cog://${baseUrl}/human_settlement_2025_cog.tif#color:BrewerGreys9,9,30,-`,
           tileSize: 256,
-          maxzoom: 10,
+          maxzoom: 14,
+        },
+        "osm-buildings": {
+          type: "vector",
+          minzoom: 10,
+          url: "https://tiles.openfreemap.org/planet",
         },
       },
       layers: [
@@ -194,21 +113,41 @@ onMounted(() => {
             "background-color": "#000000",
           },
         },
+        // {
+        //   id: "land",
+        //   type: "fill",
+        //   source: "earth-land",
+        //   paint: {
+        //     "fill-color": "#101010",
+        //   },
+        // },
+
         {
-          id: "land",
-          type: "fill",
-          source: "earth-land",
+          id: "ghsl-layer",
+          type: "raster",
+          source: "ghsl-urban",
+          maxzoom: 15,
           paint: {
-            "fill-color": "#101010",
+            "raster-opacity": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              1,
+              14,
+              0.5,
+            ],
           },
         },
         {
-          id: "cog-layer",
-          type: "raster",
-          source: "cog-urban",
+          id: "buildings",
+          type: "fill",
+          source: "osm-buildings",
+          "source-layer": "building",
+          minzoom: 10,
           paint: {
-            "raster-resampling": "linear",
-            "raster-fade-duration": 0,
+            "fill-color": "#FFFFFF",
+            "fill-outline-color": "#FFFFFF",
           },
         },
       ],
@@ -218,6 +157,7 @@ onMounted(() => {
   // Add project markers and set projection after map loads
   map.on("load", () => {
     isLoading.value = false;
+    map?.on("zoom", () => console.log("Zoom:", map.getZoom()));
 
     // Add projects as GeoJSON source
     map!.addSource("projects", {
@@ -270,59 +210,19 @@ onMounted(() => {
     });
   });
 
-  // Track user interaction
-  const startInteraction = () => {
-    isUserInteracting = true;
-    if (interactionTimeout) {
-      clearTimeout(interactionTimeout);
-    }
-  };
-
-  const endInteraction = () => {
-    if (interactionTimeout) {
-      clearTimeout(interactionTimeout);
-    }
-  };
-
-  map.on("dragstart", startInteraction);
-  map.on("zoomstart", startInteraction);
-  map.on("pitchstart", startInteraction);
-  map.on("rotatestart", startInteraction);
-  map.on("dragend", endInteraction);
-  map.on("zoomend", endInteraction);
-  map.on("pitchend", endInteraction);
-  map.on("rotateend", endInteraction);
-
-  // Throttled spin animation - only when not interacting and not hovering project
-  const animate = (timestamp: number) => {
-    if (!isUserInteracting && !isHoveringProject && map) {
-      // Throttle animation to reduce CPU usage
-      if (timestamp - lastAnimationTime >= ANIMATION_THROTTLE) {
-        const center = map.getCenter();
-        map.setCenter([center.lng + 0.05, center.lat]);
-        lastAnimationTime = timestamp;
-      }
-    }
-    animationFrame = requestAnimationFrame(animate);
-  };
-
-  animationFrame = requestAnimationFrame(animate);
+  // Setup interaction tracking and animation
+  setupInteractionTracking();
+  startAnimation();
 });
 
 onUnmounted(() => {
-  if (animationFrame) {
-    cancelAnimationFrame(animationFrame);
-    animationFrame = null;
-  }
-  if (interactionTimeout) {
-    clearTimeout(interactionTimeout);
-    interactionTimeout = null;
-  }
+  cleanupAnimation();
+  cleanupLayers();
+
   if (map) {
     map.remove();
     map = null;
   }
-  // Keep COG protocol registered for reuse
 });
 </script>
 

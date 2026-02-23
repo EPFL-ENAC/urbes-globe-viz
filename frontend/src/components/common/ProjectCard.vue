@@ -37,14 +37,12 @@ const handleHover = () => {
 };
 
 const handleLeave = () => {
-  // Clear any pending timeout
-  if (leaveTimeout) {
-    clearTimeout(leaveTimeout);
+  // Add small delay before clearing to prevent flickering
+  leaveTimeout = window.setTimeout(() => {
+    projectStore.clearTargetCoordinates();
+    projectStore.setHoveredProject(null);
     leaveTimeout = null;
-  }
-
-  projectStore.clearTargetCoordinates();
-  projectStore.setHoveredProject(null);
+  }, 100);
 };
 
 const handleClick = () => {
