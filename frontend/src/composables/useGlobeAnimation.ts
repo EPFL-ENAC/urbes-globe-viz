@@ -3,7 +3,7 @@ import type maplibregl from "maplibre-gl";
 
 export function useGlobeAnimation(map: () => maplibregl.Map | null) {
   let animationFrame: number | null = null;
-  let isUserInteracting = ref(true);
+  let isUserInteracting = ref(false);
   let interactionTimeout: number | null = null;
   const isHoveringProject = ref(false);
   let lastAnimationTime = 0;

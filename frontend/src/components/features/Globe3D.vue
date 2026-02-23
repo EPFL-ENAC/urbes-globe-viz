@@ -157,7 +157,6 @@ onMounted(() => {
   // Add project markers and set projection after map loads
   map.on("load", () => {
     isLoading.value = false;
-    map?.on("zoom", () => console.log("Zoom:", map.getZoom()));
 
     // Add projects as GeoJSON source
     map!.addSource("projects", {
