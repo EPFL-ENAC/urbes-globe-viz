@@ -99,6 +99,25 @@ export const projectsGeoJSON: ProjectCollection = {
       type: "Feature",
       geometry: {
         type: "Point",
+        coordinates: [6.5, 46.55], // Vaud-Geneva region
+      },
+      properties: {
+        id: "dave_flows_work",
+        title: "Work Commute Flows (DAVE)",
+        description:
+          "Origin-destination mobility flows for the work environment at 10am, modelled by the DAVE activity-based simulation for the Vaud-Geneva region (500m grid).",
+        unit: "persons",
+        year: 2024,
+        info: "Source: DAVE simulation model, EPFL",
+        category: "Mobility",
+        zoom: 9,
+        pitch: 0,
+      },
+    },
+    {
+      type: "Feature",
+      geometry: {
+        type: "Point",
         coordinates: [120.5, 30.5], // Zhejiang/Jiangsu region, China
       },
       properties: {
