@@ -103,7 +103,8 @@ export const projectsGeoJSON: ProjectCollection = {
       },
       properties: {
         id: "dave_flows_work",
-        title: "Work Commute Flows (DAVE)",
+        title: "DAVE Flows",
+        preview: "dave_flows_work.png",
         description:
           "Origin-destination mobility flows for the work environment at 10am, modelled by the DAVE activity-based simulation for the Vaud-Geneva region (500m grid).",
         unit: "persons",

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
+import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
 import { projectsGeoJSON } from "@/data/projects";
 import { computed, ref } from "vue";
 
@@ -94,7 +95,14 @@ const goBack = () => {
       class="map-container absolute"
       :class="{ 'map-with-drawer': drawerOpen, 'map-full': !drawerOpen }"
     >
-      <ProjectMap v-if="project" :project-id="projectId" />
+      <DaveFlowsMap
+        v-if="project && projectId === 'dave_flows_work'"
+        :project-id="projectId"
+      />
+      <ProjectMap
+        v-else-if="project"
+        :project-id="projectId"
+      />
     </div>
   </div>
 </template>

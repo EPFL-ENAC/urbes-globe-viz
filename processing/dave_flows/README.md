@@ -19,12 +19,12 @@ origin,dest,flow
 
 All source files are in `frontend/public/DAVE simulations/`:
 
-| File | Environment | Time | Rows |
-|------|-------------|------|------|
-| `flows_1_199_10_min1persons.csv` | Work | Day 199, 10am | ~65k |
-| `flows_5_199_18_min1persons.csv` | Indoor leisure | Day 199, 6pm | ~7k |
-| `flows_6_199_18_min1persons.csv` | Outdoor | Day 199, 6pm | ~3.7k |
-| `500_grid_Vaud_Geneva_within.shp` | Grid geometry | — | 14,817 cells |
+| File                              | Environment    | Time          | Rows         |
+| --------------------------------- | -------------- | ------------- | ------------ |
+| `flows_1_199_10_min1persons.csv`  | Work           | Day 199, 10am | ~65k         |
+| `flows_5_199_18_min1persons.csv`  | Indoor leisure | Day 199, 6pm  | ~7k          |
+| `flows_6_199_18_min1persons.csv`  | Outdoor        | Day 199, 6pm  | ~3.7k        |
+| `500_grid_Vaud_Geneva_within.shp` | Grid geometry  | —             | 14,817 cells |
 
 The grid shapefile uses **EPSG:2056** (Swiss CH1903+ LV95). The `id` column links grid cells to the flow CSV `origin`/`dest` columns.
 
@@ -97,12 +97,12 @@ flows_N_199_HH_min1persons.csv  +  500_grid_Vaud_Geneva_within.shp
 
 ### tippecanoe flags explained
 
-| Flag | Reason |
-|------|--------|
-| `--minimum-zoom=5` | No need to show flows at continental scale |
-| `--maximum-zoom=12` | 500 m grid cells are not meaningful at street level |
+| Flag                       | Reason                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--minimum-zoom=5`         | No need to show flows at continental scale                                                           |
+| `--maximum-zoom=12`        | 500 m grid cells are not meaningful at street level                                                  |
 | `--drop-densest-as-needed` | Work flows have ~65k lines — drops least-significant flows at low zoom to stay under tile size limit |
-| `--layer=dave_flows` | All environments use the same layer name so app config is reusable |
+| `--layer=dave_flows`       | All environments use the same layer name so app config is reusable                                   |
 
 ## App Integration
 
@@ -176,11 +176,11 @@ The `source-layer` is always `dave_flows` regardless of which environment you pr
 
 PMTiles files are written to `frontend/public/geodata/`:
 
-| Target | Output file |
-|--------|-------------|
-| `make work` | `dave_flows_work.pmtiles` |
+| Target                | Output file                         |
+| --------------------- | ----------------------------------- |
+| `make work`           | `dave_flows_work.pmtiles`           |
 | `make indoor_leisure` | `dave_flows_indoor_leisure.pmtiles` |
-| `make outdoor` | `dave_flows_outdoor.pmtiles` |
+| `make outdoor`        | `dave_flows_outdoor.pmtiles`        |
 
 To upload to the CDN after processing:
 
