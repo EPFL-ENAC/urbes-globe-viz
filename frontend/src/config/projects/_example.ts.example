@@ -1,0 +1,88 @@
+/**
+ * HOW TO ADD A NEW PROJECT
+ * ─────────────────────────
+ * 1. Copy this file to `my_project_id.ts` (use snake_case, matching your data file names)
+ * 2. Fill in all fields below
+ * 3. Add your export to `index.ts`:
+ *      import { myProjectConfig } from "./my_project_id";
+ *      // and add it to the allProjects array
+ * 4. Drop your data file(s) in `frontend/public/geodata/` (dev) or upload to the CDN (prod)
+ * 5. Run `npm run dev` — your project card and map will appear automatically
+ */
+
+import type { ProjectConfig } from "./types";
+
+// The CDN base URL is resolved at build time.
+// In dev, data is served from frontend/public/geodata/.
+// In prod, data is fetched from the ENACIT4R CDN.
+const baseUrl = import.meta.env.DEV
+  ? "/geodata"
+  : "https://enacit4r-cdn-s3.epfl.ch/urbes-viz";
+
+export const myProjectConfig: ProjectConfig = {
+  // ── Identity ────────────────────────────────────────────────────────────────
+  // Must be unique. Used as the URL slug (/project/<id>) and data file prefix.
+  id: "my_project_id",
+
+  // Globe marker position [longitude, latitude]
+  coordinates: [6.6327, 46.5397],
+
+  // ── Card metadata ────────────────────────────────────────────────────────────
+  title: "My Project Title",
+  description: "One or two sentences describing what this dataset shows.",
+  // Categories shown as filter chips: Infrastructure | Climate | Transport |
+  //   Demographics | Mobility | … (add new ones freely)
+  category: "Infrastructure",
+  year: 2024,
+  // Preview image filename — place the file in frontend/public/previews/
+  preview: "my_project_id.png",
+  // Default map zoom (1 = world, 14 = street level) and camera tilt (0–75°)
+  zoom: 10,
+  pitch: 0,
+
+  // ── Display labels ───────────────────────────────────────────────────────────
+  unit: "my unit", // e.g. "vehicles/day", "meters", "year", "persons"
+  info: "Source: My Institution, Year", // shown as attribution in the UI
+
+  // ── MapLibre source ──────────────────────────────────────────────────────────
+  // Choose ONE of the source types below and delete the others.
+
+  // OPTION A — Vector tiles (PMTiles file)
+  source: {
+    type: "vector",
+    url: `pmtiles://${baseUrl}/my_project_id.pmtiles`,
+  },
+
+  // OPTION B — Raster image (georeferenced PNG/TIFF, bounding box in WGS84)
+  // source: {
+  //   type: "image",
+  //   url: `${baseUrl}/my_project_id.png`,
+  //   coordinates: [
+  //     [west, north], // top-left
+  //     [east, north], // top-right
+  //     [east, south], // bottom-right
+  //     [west, south], // bottom-left
+  //   ],
+  // },
+
+  // ── MapLibre layer ───────────────────────────────────────────────────────────
+  // The `source` field must match the project `id`.
+  // Common layer types: "fill-extrusion", "line", "circle", "fill", "raster"
+  // Full reference: https://maplibre.org/maplibre-style-spec/layers/
+  layer: {
+    id: "my_project_id-layer",
+    type: "circle", // change to match your data
+    source: "my_project_id",
+    "source-layer": "my_source_layer_name", // name inside the PMTiles (omit for image sources)
+    paint: {
+      "circle-radius": 4,
+      "circle-color": "#ff6600",
+      "circle-opacity": 0.8,
+    },
+  },
+
+  // ── Custom renderer (advanced) ───────────────────────────────────────────────
+  // Only set this if your project needs a completely custom map component
+  // (e.g. deck.gl). Leave commented out for standard MapLibre projects.
+  // renderer: "deckgl-arcs",
+};

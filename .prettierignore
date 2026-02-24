@@ -73,3 +73,6 @@ public
 *.svg
 *.ico
 *.toml
+
+# Template/example files with non-standard extensions
+*.example

@@ -6,7 +6,7 @@ import { Protocol } from "pmtiles";
 import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
-import { projectsGeoJSON } from "@/data/projects";
+import { projectsGeoJSON } from "@/config/projects";
 
 const props = defineProps<{
   projectId: string;
@@ -59,15 +59,15 @@ function makeLayers() {
       getTargetPosition: (d) => d.geometry.coordinates[1] as [number, number],
       getSourceColor: (d) => {
         if (!brushActive) return [200, 80, 220, 180];
-        const [sLng, sLat] = d.geometry.coordinates[0];
-        const [tLng, tLat] = d.geometry.coordinates[1];
+        const [sLng, sLat] = d.geometry.coordinates[0] as [number, number];
+        const [tLng, tLat] = d.geometry.coordinates[1] as [number, number];
         const near = isWithinBrush(sLng, sLat) || isWithinBrush(tLng, tLat);
         return near ? [220, 80, 255, 255] : [200, 80, 220, 18];
       },
       getTargetColor: (d) => {
         if (!brushActive) return [80, 200, 255, 180];
-        const [sLng, sLat] = d.geometry.coordinates[0];
-        const [tLng, tLat] = d.geometry.coordinates[1];
+        const [sLng, sLat] = d.geometry.coordinates[0] as [number, number];
+        const [tLng, tLat] = d.geometry.coordinates[1] as [number, number];
         const near = isWithinBrush(sLng, sLat) || isWithinBrush(tLng, tLat);
         return near ? [80, 220, 255, 255] : [80, 200, 255, 18];
       },

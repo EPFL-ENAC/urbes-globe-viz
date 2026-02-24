@@ -2,9 +2,8 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { mapConfig } from "@/config/mapConfig";
+import { mapLayers, projectsGeoJSON } from "@/config/projects";
 import { Protocol } from "pmtiles";
-import { projectsGeoJSON } from "@/data/projects";
 
 const props = defineProps<{
   projectId: string;
@@ -30,9 +29,7 @@ const initializeMap = () => {
   if (!mapContainer.value || map) return;
 
   // Find the layer configuration for this project
-  const layerConfig = mapConfig.layers.find(
-    (layer) => layer.id === props.projectId,
-  );
+  const layerConfig = mapLayers.find((layer) => layer.id === props.projectId);
 
   if (!layerConfig) {
     console.error(

@@ -1,6 +1,6 @@
 import { ref, watch } from "vue";
 import type maplibregl from "maplibre-gl";
-import { mapConfig } from "@/config/mapConfig";
+import { mapLayers } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 
 export function useProjectLayers(map: () => maplibregl.Map | null) {
@@ -35,7 +35,7 @@ export function useProjectLayers(map: () => maplibregl.Map | null) {
     if (!mapInstance) return;
 
     console.log("Removing all preview layers");
-    const allProjectIds = mapConfig.layers.map((l) => l.id);
+    const allProjectIds = mapLayers.map((l) => l.id);
     allProjectIds.forEach((projectId) => {
       removePreviewLayer(projectId);
     });
@@ -65,7 +65,7 @@ export function useProjectLayers(map: () => maplibregl.Map | null) {
     const mapInstance = map();
     if (!mapInstance) return;
 
-    const layerConfig = mapConfig.layers.find((l) => l.id === projectId);
+    const layerConfig = mapLayers.find((l) => l.id === projectId);
     if (layerConfig) {
       console.log("Adding preview for:", projectId);
 

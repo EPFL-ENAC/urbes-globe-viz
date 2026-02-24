@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ProjectProperties } from "@/data/projects";
+import type { ProjectProperties } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
-import { projectsGeoJSON } from "@/data/projects";
+import { projectsGeoJSON } from "@/config/projects";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 

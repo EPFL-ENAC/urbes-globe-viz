@@ -2,7 +2,7 @@
 import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
 import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
-import { projectsGeoJSON } from "@/data/projects";
+import { projectsGeoJSON } from "@/config/projects";
 import { computed, ref } from "vue";
 
 const route = useRoute();
@@ -96,13 +96,10 @@ const goBack = () => {
       :class="{ 'map-with-drawer': drawerOpen, 'map-full': !drawerOpen }"
     >
       <DaveFlowsMap
-        v-if="project && projectId === 'dave_flows_work'"
+        v-if="project?.renderer === 'deckgl-arcs'"
         :project-id="projectId"
       />
-      <ProjectMap
-        v-else-if="project"
-        :project-id="projectId"
-      />
+      <ProjectMap v-else-if="project" :project-id="projectId" />
     </div>
   </div>
 </template>

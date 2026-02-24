@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
 import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
-import { projectsGeoJSON } from "@/data/projects";
+import { projectsGeoJSON } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useProjectLayers } from "@/composables/useProjectLayers";

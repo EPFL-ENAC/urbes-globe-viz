@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Globe3D from "@/components/features/Globe3D.vue";
 import ProjectCard from "@/components/common/ProjectCard.vue";
-import { projectsGeoJSON } from "@/data/projects";
+import { projectsGeoJSON } from "@/config/projects";
 
 const projectsDuplicated = projectsGeoJSON.features.concat(
   projectsGeoJSON.features,
