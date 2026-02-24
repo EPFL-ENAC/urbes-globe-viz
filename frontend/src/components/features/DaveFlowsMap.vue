@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
@@ -10,7 +10,14 @@ import { projectsGeoJSON } from "@/config/projects";
 
 const props = defineProps<{
   projectId: string;
+  dataUrl?: string;
 }>();
+
+const flowUrl = computed(() =>
+  props.dataUrl
+    ? `${baseUrl}/${props.dataUrl}`
+    : `${baseUrl}/${props.projectId}.geojson`,
+);
 
 const baseUrlOptions = {
   dev: "/geodata",
@@ -91,18 +98,29 @@ function scheduleRedraw() {
   });
 }
 
-const loadFlows = async () => {
-  const resp = await fetch(`${baseUrl}/${props.projectId}.geojson`);
+const loadFlows = async (url: string) => {
+  const resp = await fetch(url);
   const geojson: GeoJSON.FeatureCollection = await resp.json();
   arcs = geojson.features as FlowFeature[];
   maxFlow = Math.max(...arcs.map((f) => f.properties!.flow));
 
-  deckOverlay = new MapboxOverlay({
-    interleaved: false,
-    layers: makeLayers(),
-  });
-  map!.addControl(deckOverlay as unknown as maplibregl.IControl);
+  if (!deckOverlay) {
+    deckOverlay = new MapboxOverlay({
+      interleaved: false,
+      layers: makeLayers(),
+    });
+    map!.addControl(deckOverlay as unknown as maplibregl.IControl);
+  } else {
+    deckOverlay.setProps({ layers: makeLayers() });
+  }
 };
+
+// When dataUrl changes (sub-viz switch), reload arcs without recreating the map
+watch(flowUrl, (url) => {
+  if (map) {
+    loadFlows(url).catch((e) => console.error("Failed to load flows:", e));
+  }
+});
 
 onMounted(() => {
   if (!mapContainer.value) return;
@@ -172,7 +190,9 @@ onMounted(() => {
 
   map.on("load", () => {
     isLoading.value = false;
-    loadFlows().catch((e) => console.error("Failed to load flows:", e));
+    loadFlows(flowUrl.value).catch((e) =>
+      console.error("Failed to load flows:", e),
+    );
   });
 
   // MapLibre's mousemove always fires, regardless of what's under the cursor —

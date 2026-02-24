@@ -85,4 +85,25 @@ export const myProjectConfig: ProjectConfig = {
   // Only set this if your project needs a completely custom map component
   // (e.g. deck.gl). Leave commented out for standard MapLibre projects.
   // renderer: "deckgl-arcs",
+
+  // ── Sub-visualizations (optional) ──────────────────────────────────────────
+  // If your project has multiple related datasets, add them as sub-viz entries.
+  // The detail page shows a scrollytelling layout: scrolling through sections
+  // on the left updates the map on the right.
+  // subViz: [
+  //   {
+  //     id: "variant_a",
+  //     title: "Variant A",
+  //     description: "Description of the first sub-visualization.",
+  //     renderer: "deckgl-arcs",          // or omit for standard MapLibre
+  //     dataUrl: "my_project_variant_a.geojson",
+  //   },
+  //   {
+  //     id: "variant_b",
+  //     title: "Variant B",
+  //     description: "Description of the second sub-visualization.",
+  //     renderer: "deckgl-arcs",
+  //     dataUrl: "my_project_variant_b.geojson",
+  //   },
+  // ],
 };

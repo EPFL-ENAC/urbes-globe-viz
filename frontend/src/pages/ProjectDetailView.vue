@@ -2,8 +2,8 @@
 import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
 import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
-import { projectsGeoJSON } from "@/config/projects";
-import { computed, ref } from "vue";
+import { allProjects, projectsGeoJSON } from "@/config/projects";
+import { computed, onUnmounted, ref } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -15,6 +15,51 @@ const project = computed(() => {
     (f) => f.properties.id === projectId,
   );
   return feature?.properties;
+});
+
+const projectConfig = computed(() =>
+  allProjects.find((p) => p.id === projectId),
+);
+
+const subVizList = computed(() => projectConfig.value?.subViz);
+
+const activeSubVizIndex = ref(0);
+
+const activeRenderer = computed(() => {
+  if (subVizList.value) {
+    return subVizList.value[activeSubVizIndex.value]?.renderer;
+  }
+  return project.value?.renderer;
+});
+
+const activeDataUrl = computed(() => {
+  if (subVizList.value) {
+    return subVizList.value[activeSubVizIndex.value]?.dataUrl;
+  }
+  return undefined;
+});
+
+// Scroll to switch sub-viz — debounced so one scroll gesture = one step
+let scrollCooldown = false;
+
+function onWheel(e: WheelEvent) {
+  if (!subVizList.value || scrollCooldown) return;
+  const list = subVizList.value;
+  if (e.deltaY > 0 && activeSubVizIndex.value < list.length - 1) {
+    activeSubVizIndex.value++;
+  } else if (e.deltaY < 0 && activeSubVizIndex.value > 0) {
+    activeSubVizIndex.value--;
+  } else {
+    return;
+  }
+  scrollCooldown = true;
+  setTimeout(() => {
+    scrollCooldown = false;
+  }, 500);
+}
+
+onUnmounted(() => {
+  scrollCooldown = false;
 });
 
 const toggleDrawer = () => {
@@ -46,6 +91,21 @@ const goBack = () => {
           size="md"
         />
 
+        <!-- Vertical dot indicators — shown below back button when drawer open -->
+        <div
+          v-if="drawerOpen && subVizList && subVizList.length > 1"
+          class="dot-indicators"
+        >
+          <button
+            v-for="(viz, i) in subVizList"
+            :key="viz.id"
+            class="dot"
+            :class="{ 'dot-active': i === activeSubVizIndex }"
+            :aria-label="viz.title"
+            @click="activeSubVizIndex = i"
+          />
+        </div>
+
         <div
           v-if="!drawerOpen"
           class="toggle-button-centered"
@@ -61,8 +121,12 @@ const goBack = () => {
       </div>
 
       <!-- Drawer content (only visible when open) -->
-      <div class="drawer-content" v-if="drawerOpen">
-        <div v-if="project" class="text-white drawer-inner-content">
+      <div class="drawer-content" v-if="drawerOpen" @wheel.passive="onWheel">
+        <!-- Sub-viz carousel layout -->
+        <div
+          v-if="subVizList && project"
+          class="text-white drawer-inner-content"
+        >
           <h1 class="text-h2 text-weight-light q-mb-xs">
             {{ project.title }}
           </h1>
@@ -70,21 +134,29 @@ const goBack = () => {
             {{ project.year }}
           </div>
 
-          <div class="text-body1 q-mb-lg" style="line-height: 1.8">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat. Duis aute irure dolor in
-            reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-            pariatur.
-          </div>
+          <!-- Active sub-viz content -->
+          <transition name="fade" mode="out-in">
+            <div :key="activeSubVizIndex">
+              <h2 class="text-h4 text-weight-light q-mb-sm">
+                {{ subVizList[activeSubVizIndex].title }}
+              </h2>
+              <div class="text-body1" style="line-height: 1.8">
+                {{ subVizList[activeSubVizIndex].description }}
+              </div>
+            </div>
+          </transition>
+        </div>
 
-          <div class="text-body1 q-mb-lg" style="line-height: 1.8">
-            Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-            accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
-            quae ab illo inventore veritatis et quasi architecto beatae vitae
-            dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit
-            aspernatur aut odit aut fugit.
+        <!-- Standard single-viz layout -->
+        <div v-else-if="project" class="text-white drawer-inner-content">
+          <h1 class="text-h2 text-weight-light q-mb-xs">
+            {{ project.title }}
+          </h1>
+          <div class="text-body1 text-grey-5 q-mb-xl">
+            {{ project.year }}
+          </div>
+          <div class="text-body1" style="line-height: 1.8">
+            {{ project.description }}
           </div>
         </div>
       </div>
@@ -96,8 +168,9 @@ const goBack = () => {
       :class="{ 'map-with-drawer': drawerOpen, 'map-full': !drawerOpen }"
     >
       <DaveFlowsMap
-        v-if="project?.renderer === 'deckgl-arcs'"
+        v-if="activeRenderer === 'deckgl-arcs'"
         :project-id="projectId"
+        :data-url="activeDataUrl"
       />
       <ProjectMap v-else-if="project" :project-id="projectId" />
     </div>
@@ -135,6 +208,36 @@ const goBack = () => {
   margin-top: 15vh;
 }
 
+.dot-indicators {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dot-active {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.5);
+}
+
 .toggle-button-centered {
   position: absolute;
   top: 50%;
@@ -149,7 +252,7 @@ const goBack = () => {
 
 .toggle-button-right {
   position: absolute;
-  right: 0;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
@@ -174,13 +277,29 @@ const goBack = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .drawer-inner-content {
   flex: 1;
   padding: 15vh 12% 8vh 12%;
   max-width: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.drawer-inner-content::-webkit-scrollbar {
+  display: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .map-container {

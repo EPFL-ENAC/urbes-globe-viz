@@ -1,5 +1,15 @@
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
+export interface SubViz {
+  id: string;
+  title: string;
+  description: string;
+  source?: SourceSpecification;
+  layer?: LayerSpecification;
+  renderer?: string;
+  dataUrl?: string;
+}
+
 export interface ProjectConfig {
   // Identity & geography
   id: string;
@@ -26,4 +36,9 @@ export interface ProjectConfig {
   // Leave undefined for standard MapLibre ProjectMap.
   // "deckgl-arcs" → DaveFlowsMap (ArcLayer with brushing)
   renderer?: string;
+
+  // Optional sub-visualizations for scrollytelling layout.
+  // If present, ProjectDetailView renders one section per sub-viz.
+  // Top-level source/layer/renderer are still used for globe preview.
+  subViz?: SubViz[];
 }

@@ -4,7 +4,7 @@ import { buildingsProject } from "./buildings";
 import { wrfProject } from "./wrf";
 import { roadsSwissStatisticsProject } from "./roads_swiss_statistics";
 import { hourlyAdultPopulationProject } from "./hourly_adult_population";
-import { daveFlowsWorkProject } from "./dave_flows_work";
+import { daveFlowsProject } from "./dave_flows";
 import { buildingHeightsChinaProject } from "./building_heights_china";
 
 // ─── All projects — add new project imports + entries here ───────────────────
@@ -13,7 +13,7 @@ const allProjects: ProjectConfig[] = [
   wrfProject,
   roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
-  daveFlowsWorkProject,
+  daveFlowsProject,
   buildingHeightsChinaProject,
 ];
 
