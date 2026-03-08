@@ -42,6 +42,12 @@ cd guf_urban_footprint
 
 See [guf_urban_footprint/README.md](guf_urban_footprint/README.md) for more options.
 
+### Cookbook (Processing Recipes)
+
+Ready-to-use recipes for converting common data formats (CSV, SHP, GPKG, GeoJSON, GeoTIFF) into web-optimized tiles. Copy a script, edit the variables, run it.
+
+See [cookbook/README.md](cookbook/README.md) — start there to find the right recipe for your data.
+
 ## Output
 
 All processed files are placed in `../frontend/public/geodata/`

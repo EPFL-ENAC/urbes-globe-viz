@@ -76,3 +76,9 @@ public
 
 # Template/example files with non-standard extensions
 *.example
+
+# Data files with no prettier parser
+*.txt
+*.tif
+*.geojson
+*.pmtiles

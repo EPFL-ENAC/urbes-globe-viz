@@ -80,7 +80,7 @@ onMounted(() => {
     center: [6.3, 46.2], // Switzerland
     zoom: 3, // Start at zoom 10 (middle of range)
     minZoom: 3, // Match file's minimum
-    maxZoom: 14, // Match file's maximum
+    maxZoom: 15, // Match file's maximum
     refreshExpiredTiles: false,
     maxTileCacheSize: 100,
     style: {
@@ -96,8 +96,8 @@ onMounted(() => {
         "ghsl-urban": {
           type: "raster",
           url: `cog://${baseUrl}/human_settlement_2025_cog.tif#color:BrewerGreys9,9,30,-`,
-          tileSize: 256,
-          maxzoom: 14,
+          // url: `cog://${baseUrl}/ghsl_ch_512_cog_fast.tif#color:BrewerGreys9,0,50,c-`,
+          tileSize: 512,
         },
         "osm-buildings": {
           type: "vector",
@@ -126,7 +126,6 @@ onMounted(() => {
           id: "ghsl-layer",
           type: "raster",
           source: "ghsl-urban",
-          maxzoom: 15,
           paint: {
             "raster-opacity": [
               "interpolate",
@@ -134,8 +133,10 @@ onMounted(() => {
               ["zoom"],
               13,
               1,
+              13.5,
+              0.8,
               14,
-              0.5,
+              0.2,
             ],
           },
         },
@@ -147,7 +148,15 @@ onMounted(() => {
           minzoom: 10,
           paint: {
             "fill-color": "#FFFFFF",
-            "fill-outline-color": "#FFFFFF",
+            "fill-outline-color": [
+              "interpolate-hcl",
+              ["linear"],
+              ["zoom"],
+              14,
+              "#FFFFFF",
+              15,
+              "#222222",
+            ],
           },
         },
       ],
