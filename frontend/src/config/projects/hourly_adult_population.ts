@@ -54,4 +54,19 @@ export const hourlyAdultPopulationProject: ProjectConfig = {
       ],
     },
   },
+  legend: {
+    title: "Hourly population",
+    gradient: {
+      stops: [
+        { value: "0", color: "#00ffff" },
+        { value: "500", color: "#0080FF" },
+        { value: "1'000", color: "#4000FF" },
+        { value: "2'000", color: "#8000FF" },
+        { value: "3'000", color: "#C000FF" },
+        { value: "4'000", color: "#FF00FF" },
+        { value: "5'000", color: "#FF80FF" },
+      ],
+      unit: "adults/500m²",
+    },
+  },
 };

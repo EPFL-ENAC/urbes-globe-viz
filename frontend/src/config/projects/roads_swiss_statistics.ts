@@ -58,4 +58,14 @@ export const roadsSwissStatisticsProject: ProjectConfig = {
       "line-opacity": 0.8,
     },
   },
+
+  legend: {
+    title: "Traffic volume",
+    items: [
+      { color: "#b0e0e6", label: "0-5 000", shape: "line" },
+      { color: "#4682b4", label: "5 000-10 000", shape: "line" },
+      { color: "#ff4500", label: "10 000-20 000", shape: "line" },
+      { color: "#8b0000", label: "20 000+", shape: "line" },
+    ],
+  },
 };

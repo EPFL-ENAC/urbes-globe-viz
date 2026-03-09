@@ -67,4 +67,18 @@ export const buildingHeightsChinaProject: ProjectConfig = {
       "circle-stroke-width": 0,
     },
   },
+  legend: {
+    title: "Building height",
+    items: [
+      { color: "#ffffcc", label: "0-2m", shape: "square" },
+      { color: "#ffeda0", label: "2-3m", shape: "square" },
+      { color: "#fed976", label: "3-4m", shape: "square" },
+      { color: "#feb24c", label: "4-5m", shape: "square" },
+      { color: "#fd8d3c", label: "5-6m", shape: "square" },
+      { color: "#fc4e2a", label: "6-8m", shape: "square" },
+      { color: "#e31a1c", label: "8-10m", shape: "square" },
+      { color: "#bd0026", label: "10-12m", shape: "square" },
+      { color: "#800026", label: "12m+", shape: "square" },
+    ],
+  },
 };
