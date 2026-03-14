@@ -52,6 +52,7 @@ frontend/src/
 ### `ProjectConfig` (in `types.ts`)
 
 Key fields:
+
 - `id`: unique slug, matches GeoJSON/image filenames on CDN
 - `coordinates`: `[lng, lat]` — globe camera target
 - `source?` + `layer?`: MapLibre source/layer spec (omit for custom renderers)
@@ -72,9 +73,9 @@ Each sub-viz has `id`, `title`, `description`, and optionally `renderer`, `sourc
 
 ## Renderer System
 
-| `renderer` | Component | Use case |
-|-----------|-----------|----------|
-| *(undefined)* | `ProjectMap.vue` | Standard MapLibre source/layer |
+| `renderer`      | Component          | Use case                        |
+| --------------- | ------------------ | ------------------------------- |
+| _(undefined)_   | `ProjectMap.vue`   | Standard MapLibre source/layer  |
 | `"deckgl-arcs"` | `DaveFlowsMap.vue` | OD arc flows (deck.gl ArcLayer) |
 
 `DaveFlowsMap` accepts a `dataUrl` prop. When it changes, it hot-swaps the arc data via `deckOverlay.setProps()` — no map recreation, no camera reset.
@@ -86,9 +87,11 @@ The globe basemap displays GHSL built-surface data. **COG streaming was attempte
 ### Why COG failed
 
 `gdal_translate -of COG -co TILING_SCHEME=GoogleMapsCompatible` crashes globally with:
+
 ```
 ERROR 1: TIFFSetupStrips:Too large Strip/Tile Offsets/ByteCounts arrays
 ```
+
 67M+ tiles at zoom 13 overflows libtiff's tile offset arrays. No fix exists in GDAL ≤ 3.13, regardless of machine, RAM, or GDAL version.
 
 ### PMTiles pipeline (working approach)
@@ -126,16 +129,19 @@ s3cmd put ghsl.pmtiles s3://urbes-viz/
 ### Frontend integration (Globe3D.vue)
 
 ```typescript
-import { Protocol } from 'pmtiles';
+import { Protocol } from "pmtiles";
 const protocol = new Protocol();
-maplibregl.addProtocol('pmtiles', protocol.tile);
-map.addSource('ghsl', {
-  type: 'raster',
-  url: 'pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles',
+maplibregl.addProtocol("pmtiles", protocol.tile);
+map.addSource("ghsl", {
+  type: "raster",
+  url: "pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles",
   tileSize: 256,
 });
-map.addLayer({ id: 'ghsl-layer', type: 'raster', source: 'ghsl',
-  paint: { 'raster-opacity': 0.8 }
+map.addLayer({
+  id: "ghsl-layer",
+  type: "raster",
+  source: "ghsl",
+  paint: { "raster-opacity": 0.8 },
 });
 ```
 

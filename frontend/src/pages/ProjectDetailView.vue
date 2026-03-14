@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
 import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
+import MapLegend from "@/components/features/MapLegend.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
 import { computed, onUnmounted, ref } from "vue";
 
@@ -37,6 +38,16 @@ const activeDataUrl = computed(() => {
     return subVizList.value[activeSubVizIndex.value]?.dataUrl;
   }
   return undefined;
+});
+
+const activeLegend = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.legend ??
+      projectConfig.value?.legend
+    );
+  }
+  return projectConfig.value?.legend;
 });
 
 // Scroll to switch sub-viz — debounced so one scroll gesture = one step
@@ -173,6 +184,7 @@ const goBack = () => {
         :data-url="activeDataUrl"
       />
       <ProjectMap v-else-if="project" :project-id="projectId" />
+      <MapLegend v-if="activeLegend" :legend="activeLegend" />
     </div>
   </div>
 </template>

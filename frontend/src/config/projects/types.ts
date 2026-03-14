@@ -1,5 +1,22 @@
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
+export interface LegendItem {
+  color: string;
+  label: string;
+  shape?: "line" | "circle" | "square";
+}
+
+export interface LegendGradient {
+  stops: Array<{ value: string | number; color: string }>;
+  unit?: string;
+}
+
+export interface ProjectLegend {
+  title?: string;
+  items?: LegendItem[];
+  gradient?: LegendGradient;
+}
+
 export interface SubViz {
   id: string;
   title: string;
@@ -8,6 +25,7 @@ export interface SubViz {
   layer?: LayerSpecification;
   renderer?: string;
   dataUrl?: string;
+  legend?: ProjectLegend;
 }
 
 export interface ProjectConfig {
@@ -36,6 +54,9 @@ export interface ProjectConfig {
   // Leave undefined for standard MapLibre ProjectMap.
   // "deckgl-arcs" → DaveFlowsMap (ArcLayer with brushing)
   renderer?: string;
+
+  // Optional map legend overlay — shown bottom-left of the map.
+  legend?: ProjectLegend;
 
   // Optional sub-visualizations for scrollytelling layout.
   // If present, ProjectDetailView renders one section per sub-viz.

@@ -60,4 +60,13 @@ export const buildingsProject: ProjectConfig = {
       ],
     },
   },
+
+  legend: {
+    title: "Construction year",
+    items: [
+      { color: "#FF0000", label: "Pre-1950", shape: "square" },
+      { color: "#FFFF00", label: "1950–2000", shape: "square" },
+      { color: "#00FF00", label: "Post-2000", shape: "square" },
+    ],
+  },
 };

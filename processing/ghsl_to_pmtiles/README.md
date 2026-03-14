@@ -5,20 +5,22 @@ Converts the GHSL Built Surface 2018 dataset into a PMTiles raster archive serve
 ## Why PMTiles (not COG)?
 
 `gdal_translate -of COG -co TILING_SCHEME=GoogleMapsCompatible` crashes at global scale:
+
 ```
 ERROR 1: TIFFSetupStrips:Too large Strip/Tile Offsets/ByteCounts arrays
 ```
+
 67M+ tiles at zoom 13 overflows libtiff. No fix exists in GDAL ≤ 3.13. PMTiles pre-renders WebP tiles and packages them into a single file with HTTP range support — no tile server needed.
 
 ## Source data
 
 **Machine**: ENACIT4R-CUDA — `/mnt/nvme/urbes-globe-viz/geodata/`
 
-| File | Size | Description |
-|------|------|-------------|
-| `ghsl_built_3857_cog.tif` | 47 GB | PRIMARY SOURCE — EPSG:3857, NoData=255 |
-| `ghsl_colors.txt` | 88 B | RGBA color ramp (5-column format) |
-| `ghsl_rgba.vrt` | 3.5 KB | RGBA VRT from gdaldem — verify SourceFilename before use |
+| File                      | Size   | Description                                              |
+| ------------------------- | ------ | -------------------------------------------------------- |
+| `ghsl_built_3857_cog.tif` | 47 GB  | PRIMARY SOURCE — EPSG:3857, NoData=255                   |
+| `ghsl_colors.txt`         | 88 B   | RGBA color ramp (5-column format)                        |
+| `ghsl_rgba.vrt`           | 3.5 KB | RGBA VRT from gdaldem — verify SourceFilename before use |
 
 ## Pipeline
 
@@ -69,6 +71,7 @@ gdal2tiles.py \
 ```
 
 Notes:
+
 - `-x` skips fully-transparent tiles (skips ~60% of globe = ocean)
 - WebP requires 4-band RGBA input — gdaldem `-alpha` provides this
 - Do NOT run two gdal2tiles jobs in parallel — `--processes=14` already saturates all CPUs
@@ -101,19 +104,19 @@ s3cmd put ghsl.pmtiles s3://urbes-viz/
 ## Frontend integration (Globe3D.vue)
 
 ```typescript
-import { Protocol } from 'pmtiles';
+import { Protocol } from "pmtiles";
 const protocol = new Protocol();
-maplibregl.addProtocol('pmtiles', protocol.tile);
+maplibregl.addProtocol("pmtiles", protocol.tile);
 
-map.addSource('ghsl', {
-  type: 'raster',
-  url: 'pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles',
+map.addSource("ghsl", {
+  type: "raster",
+  url: "pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles",
   tileSize: 256,
 });
 map.addLayer({
-  id: 'ghsl-layer',
-  type: 'raster',
-  source: 'ghsl',
-  paint: { 'raster-opacity': 0.8 },
+  id: "ghsl-layer",
+  type: "raster",
+  source: "ghsl",
+  paint: { "raster-opacity": 0.8 },
 });
 ```
