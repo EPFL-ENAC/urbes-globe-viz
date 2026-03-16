@@ -19,53 +19,89 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 > **WSL2** (Windows Subsystem for Linux) — open a WSL terminal and all commands in this
 > cookbook will work as written. See the [Windows section](#windows) below for details.
 
-Install these tools once:
+Install these tools once — jump to the section for your OS:
+
+- [macOS](#macos)
+- [Linux / WSL2](#linux--wsl2)
+- [Windows](#windows)
+
+---
+
+### macOS
 
 ```bash
 # uv — Python package manager (needed for CSV recipes)
-curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS / Linux
-# Windows (PowerShell): irm https://astral.sh/uv/install.ps1 | iex
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# tippecanoe — vector tile generation (needed for all vector recipes)
+brew install tippecanoe
+
+# GDAL/OGR — geospatial Swiss army knife (needed for SHP, GPKG, and raster recipes)
+brew install gdal
 
 # Python dependencies (from the processing/ directory)
 cd .. && uv sync
-
-# tippecanoe — vector tile generation (needed for all vector recipes)
-brew install tippecanoe        # macOS
-sudo apt install tippecanoe    # Ubuntu 23.04+
-# Windows: no native binary — use WSL2 or Docker (see below)
-
-# GDAL/OGR — geospatial Swiss army knife (needed for SHP, GPKG, and raster recipes)
-brew install gdal              # macOS
-sudo apt install gdal-bin      # Ubuntu/Debian
-# Windows: install via OSGeo4W (https://trac.osgeo.org/osgeo4w/) or conda-forge
 ```
 
-## Windows
+---
 
-**Recommended: WSL2** — install the Windows Subsystem for Linux, open a WSL terminal, and
-follow all cookbook instructions exactly as written. All tools (uv, tippecanoe, GDAL) install
-normally inside WSL.
+### Linux / WSL2
+
+**Check your Ubuntu version first** — tippecanoe is only in apt on Ubuntu 23.04+:
+
+```bash
+lsb_release -a
+```
+
+#### GDAL
+
+```bash
+sudo apt update
+sudo apt install -y gdal-bin
+# Verify:
+ogr2ogr --version
+```
+
+#### tippecanoe — Ubuntu 23.04 and newer
+
+```bash
+sudo apt install -y tippecanoe
+```
+
+#### tippecanoe — Ubuntu 22.04 (common WSL default) — build from source
+
+```bash
+sudo apt install -y build-essential libsqlite3-dev zlib1g-dev
+git clone https://github.com/felt/tippecanoe.git
+cd tippecanoe && make -j && sudo make install
+cd .. && rm -rf tippecanoe   # clean up the source folder
+# Verify:
+tippecanoe --version
+```
+
+#### uv and Python dependencies
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc   # or open a new terminal
+
+# Python dependencies (from the processing/ directory)
+cd .. && uv sync
+```
+
+---
+
+### Windows
+
+**Recommended: WSL2** — install the Windows Subsystem for Linux, then follow the
+[Linux / WSL2](#linux--wsl2) instructions above. All tools work normally inside WSL.
 
 ```powershell
-# One-time WSL setup (run in PowerShell as Administrator)
+# One-time WSL setup (run in PowerShell as Administrator, then restart)
 wsl --install
 ```
 
-**Alternative: Docker** — if you'd rather avoid WSL, run tippecanoe in Docker. Replace any
-`tippecanoe ...` command with:
-
-```powershell
-# In PowerShell (from the directory containing your data)
-docker run --rm -v "${PWD}:/data" -w /data ghcr.io/felt/tippecanoe tippecanoe `
-  --output=my_data.pmtiles `
-  --layer=my_data `
-  --minimum-zoom=4 --maximum-zoom=12 `
-  --drop-densest-as-needed --force `
-  my_data.geojson
-```
-
-For GDAL natively on Windows, install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) and use the
-**OSGeo4W Shell** to run `ogr2ogr`, `gdalwarp`, etc. Alternatively, `conda install -c conda-forge gdal`.
+After the restart, open the **Ubuntu** app from the Start menu to get a Linux terminal.
 
 ## After processing
 
