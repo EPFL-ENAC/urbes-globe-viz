@@ -14,13 +14,6 @@ const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 
-const baseUrlOptions = {
-  dev: "/geodata",
-  prod: "https://enacit4r-cdn-s3.epfl.ch/urbes-viz",
-};
-
-const baseUrl = import.meta.env.DEV ? baseUrlOptions.dev : baseUrlOptions.prod;
-
 const projectStore = useProjectStore();
 const router = useRouter();
 
@@ -89,15 +82,10 @@ onMounted(() => {
         type: "globe",
       },
       sources: {
-        "earth-land": {
-          type: "geojson",
-          data: "/geodata/ne_110m_land.geojson",
-        },
         "ghsl-urban": {
           type: "raster",
-          url: `cog://${baseUrl}/human_settlement_2025_cog.tif#color:BrewerGreys9,9,30,-`,
-          // url: `cog://${baseUrl}/ghsl_ch_512_cog_fast.tif#color:BrewerGreys9,0,50,c-`,
-          tileSize: 512,
+          url: "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles",
+          tileSize: 256,
         },
         "osm-buildings": {
           type: "vector",
@@ -164,17 +152,15 @@ onMounted(() => {
   });
 
   // Add project markers and set projection after map loads
-  map.on("load", () => {
-    isLoading.value = false;
+  const setupProjectMarkers = () => {
+    if (!map || map.getSource("projects")) return;
 
-    // Add projects as GeoJSON source
-    map!.addSource("projects", {
+    map.addSource("projects", {
       type: "geojson",
       data: projectsGeoJSON,
     });
 
-    // Add circle layer for projects
-    map!.addLayer({
+    map.addLayer({
       id: "project-circles",
       type: "circle",
       source: "projects",
@@ -186,17 +172,15 @@ onMounted(() => {
       },
     });
 
-    // Change cursor on hover
-    map!.on("mouseenter", "project-circles", () => {
+    map.on("mouseenter", "project-circles", () => {
       map!.getCanvas().style.cursor = "pointer";
     });
 
-    map!.on("mouseleave", "project-circles", () => {
+    map.on("mouseleave", "project-circles", () => {
       map!.getCanvas().style.cursor = "grab";
     });
 
-    // Handle project clicks
-    map!.on("click", "project-circles", (e) => {
+    map.on("click", "project-circles", (e) => {
       if (e.features && e.features[0]) {
         const projectId = e.features[0].properties?.id;
         if (projectId) {
@@ -205,17 +189,27 @@ onMounted(() => {
       }
     });
 
-    // Handle hover for project store
-    map!.on("mousemove", "project-circles", (e) => {
+    map.on("mousemove", "project-circles", (e) => {
       if (e.features && e.features[0]) {
         const projectId = e.features[0].properties?.id;
         projectStore.setHoveredProject(projectId);
       }
     });
 
-    map!.on("mouseleave", "project-circles", () => {
+    map.on("mouseleave", "project-circles", () => {
       projectStore.setHoveredProject(null);
     });
+  };
+
+  map.once("render", () => {
+    isLoading.value = false;
+    setupProjectMarkers();
+  });
+
+  // Fallback: load fires normally when PMTiles doesn't block it
+  map.on("load", () => {
+    isLoading.value = false;
+    setupProjectMarkers();
   });
 
   // Setup interaction tracking and animation
