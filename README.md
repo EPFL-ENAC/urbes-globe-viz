@@ -26,13 +26,20 @@ Quick summary:
 
 ### Prerequisites
 
-- Node.js v22+, npm
+- **Node.js v22+ and npm** — download from [nodejs.org](https://nodejs.org/) (LTS version). npm is bundled with Node.
 - Python 3 (for data processing)
+
+> **Windows users**: after installing Node.js, use the commands below via PowerShell or the
+> Node.js command prompt. Replace `make install` with the two commands it wraps:
+> ```powershell
+> npm install
+> npx lefthook install
+> ```
 
 ### Commands
 
 ```bash
-make install   # install frontend dependencies
+make install   # install frontend dependencies + git hooks
 make lint      # ESLint + Prettier check
 make format    # Prettier auto-format
 
