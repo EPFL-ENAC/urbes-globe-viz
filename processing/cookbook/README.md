@@ -15,93 +15,61 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 
 ## Prerequisites
 
-> **Windows users**: All tools below are Linux/macOS-native. The easiest path is to use
-> **WSL2** (Windows Subsystem for Linux) — open a WSL terminal and all commands in this
-> cookbook will work as written. See the [Windows section](#windows) below for details.
+> ### Windows users — read this first
+>
+> The tools in this cookbook do not run natively on Windows. You **must** use
+> **WSL2** (Windows Subsystem for Linux). Open PowerShell as Administrator and run:
+>
+> ```powershell
+> wsl --install
+> ```
+>
+> Restart your computer, then open the **Ubuntu** app from the Start menu.
+> You now have a Linux terminal — follow all instructions below from there.
 
-Install these tools once — jump to the section for your OS:
+Install these tools once from a Linux / WSL2 terminal:
 
-- [macOS](#macos)
-- [Linux / WSL2](#linux--wsl2)
-- [Windows](#windows)
-
----
-
-### macOS
+### GDAL
 
 ```bash
-# uv — Python package manager (needed for CSV recipes)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# tippecanoe — vector tile generation (needed for all vector recipes)
-brew install tippecanoe
-
-# GDAL/OGR — geospatial Swiss army knife (needed for SHP, GPKG, and raster recipes)
-brew install gdal
-
-# Python dependencies (from the processing/ directory)
-cd .. && uv sync
+sudo apt update
+sudo apt install -y gdal-bin
+ogr2ogr --version  # verify
 ```
 
----
+### tippecanoe
 
-### Linux / WSL2
-
-**Check your Ubuntu version first** — tippecanoe is only in apt on Ubuntu 23.04+:
+The apt package only exists on Ubuntu 23.04+. Check your version first:
 
 ```bash
 lsb_release -a
 ```
 
-#### GDAL
-
-```bash
-sudo apt update
-sudo apt install -y gdal-bin
-# Verify:
-ogr2ogr --version
-```
-
-#### tippecanoe — Ubuntu 23.04 and newer
+**Ubuntu 23.04 or newer:**
 
 ```bash
 sudo apt install -y tippecanoe
 ```
 
-#### tippecanoe — Ubuntu 22.04 (common WSL default) — build from source
+**Ubuntu 22.04 (the WSL default) — build from source:**
 
 ```bash
 sudo apt install -y build-essential libsqlite3-dev zlib1g-dev
 git clone https://github.com/felt/tippecanoe.git
 cd tippecanoe && make -j && sudo make install
-cd .. && rm -rf tippecanoe   # clean up the source folder
-# Verify:
-tippecanoe --version
+cd .. && rm -rf tippecanoe
+tippecanoe --version  # verify
 ```
 
-#### uv and Python dependencies
+### uv and Python dependencies
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-source ~/.bashrc   # or open a new terminal
+source ~/.bashrc  # or open a new terminal
 
-# Python dependencies (from the processing/ directory)
+# From the processing/ directory:
 cd .. && uv sync
 ```
-
----
-
-### Windows
-
-**Recommended: WSL2** — install the Windows Subsystem for Linux, then follow the
-[Linux / WSL2](#linux--wsl2) instructions above. All tools work normally inside WSL.
-
-```powershell
-# One-time WSL setup (run in PowerShell as Administrator, then restart)
-wsl --install
-```
-
-After the restart, open the **Ubuntu** app from the Start menu to get a Linux terminal.
 
 ## After processing
 
