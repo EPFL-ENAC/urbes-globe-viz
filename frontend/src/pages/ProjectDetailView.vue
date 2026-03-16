@@ -149,10 +149,10 @@ const goBack = () => {
           <transition name="fade" mode="out-in">
             <div :key="activeSubVizIndex">
               <h2 class="text-h4 text-weight-light q-mb-sm">
-                {{ subVizList[activeSubVizIndex].title }}
+                {{ subVizList[activeSubVizIndex]?.title }}
               </h2>
               <div class="text-body1" style="line-height: 1.8">
-                {{ subVizList[activeSubVizIndex].description }}
+                {{ subVizList[activeSubVizIndex]?.description }}
               </div>
             </div>
           </transition>
