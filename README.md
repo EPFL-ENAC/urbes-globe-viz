@@ -79,6 +79,14 @@ Data is version-controlled and regularly updated to reflect the latest research 
 
 The platform supports multiple languages including English, French, and Arabic. Translations are managed through i18n files located in `frontend/src/i18n/`. based on `frontend/src/assets/i18n`
 
+## Adding a Dataset
+
+Want to add a new dataset to the globe? Follow the step-by-step guide:
+
+→ [ADDING_A_DATASET.md](ADDING_A_DATASET.md)
+
+It covers converting your raw data to a web-ready format, registering it in the app, and adding a map legend.
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
