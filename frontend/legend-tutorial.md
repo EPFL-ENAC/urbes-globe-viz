@@ -1,4 +1,4 @@
-# Map Legend System – A Tutorial
+# Map Legend System
 
 This tutorial will guide you through creating custom legends within the Urbes Viz Globes App.
 
@@ -8,7 +8,7 @@ A legend is a small overlay shown in the bottom-left corner of the map. It acts 
 
 To add a legend to your project:
 
-1. Open your project configuration file
+1. Open your project configuration file `/frontend/src/config/projects/**Your Project**`
 2. Add a `legend` field with your legend definition
 3. Save the file – the legend will appear automatically
 
@@ -92,7 +92,7 @@ When defining your legend items, match the shape to your map layer:
 
 Always confirm both the shape and color before interpreting what a feature means.
 
-## Step 3: Read and Interpret Your Legend
+## Good Practices
 
 Now that you've created your legend, here's how to use it effectively:
 
