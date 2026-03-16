@@ -67,14 +67,14 @@ urbes-globe-viz/
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
+| Layer              | Technology         |
+| ------------------ | ------------------ |
 | Frontend framework | Vue 3 + TypeScript |
-| UI components | Quasar |
-| Map engine | MapLibre GL JS |
-| 3D overlays | Deck.gl |
-| Build tool | Vite |
-| Web server | nginx (Docker) |
+| UI components      | Quasar             |
+| Map engine         | MapLibre GL JS     |
+| 3D overlays        | Deck.gl            |
+| Build tool         | Vite               |
+| Web server         | nginx (Docker)     |
 
 ---
 

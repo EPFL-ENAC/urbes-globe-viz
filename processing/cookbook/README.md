@@ -15,23 +15,57 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 
 ## Prerequisites
 
+> **Windows users**: All tools below are Linux/macOS-native. The easiest path is to use
+> **WSL2** (Windows Subsystem for Linux) — open a WSL terminal and all commands in this
+> cookbook will work as written. See the [Windows section](#windows) below for details.
+
 Install these tools once:
 
 ```bash
 # uv — Python package manager (needed for CSV recipes)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS / Linux
+# Windows (PowerShell): irm https://astral.sh/uv/install.ps1 | iex
 
 # Python dependencies (from the processing/ directory)
-cd .. && make install
+cd .. && uv sync
 
 # tippecanoe — vector tile generation (needed for all vector recipes)
 brew install tippecanoe        # macOS
 sudo apt install tippecanoe    # Ubuntu 23.04+
+# Windows: no native binary — use WSL2 or Docker (see below)
 
 # GDAL/OGR — geospatial Swiss army knife (needed for SHP, GPKG, and raster recipes)
 brew install gdal              # macOS
 sudo apt install gdal-bin      # Ubuntu/Debian
+# Windows: install via OSGeo4W (https://trac.osgeo.org/osgeo4w/) or conda-forge
 ```
+
+## Windows
+
+**Recommended: WSL2** — install the Windows Subsystem for Linux, open a WSL terminal, and
+follow all cookbook instructions exactly as written. All tools (uv, tippecanoe, GDAL) install
+normally inside WSL.
+
+```powershell
+# One-time WSL setup (run in PowerShell as Administrator)
+wsl --install
+```
+
+**Alternative: Docker** — if you'd rather avoid WSL, run tippecanoe in Docker. Replace any
+`tippecanoe ...` command with:
+
+```powershell
+# In PowerShell (from the directory containing your data)
+docker run --rm -v "${PWD}:/data" -w /data ghcr.io/felt/tippecanoe tippecanoe `
+  --output=my_data.pmtiles `
+  --layer=my_data `
+  --minimum-zoom=4 --maximum-zoom=12 `
+  --drop-densest-as-needed --force `
+  my_data.geojson
+```
+
+For GDAL natively on Windows, install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) and use the
+**OSGeo4W Shell** to run `ogr2ogr`, `gdalwarp`, etc. Alternatively, `conda install -c conda-forge gdal`.
 
 ## After processing
 

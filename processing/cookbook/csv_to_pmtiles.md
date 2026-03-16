@@ -10,7 +10,7 @@ sensors.csv  →  (Python)  →  sensors.geojson  →  (tippecanoe)  →  sensor
 
 ## Requirements
 
-- Python + uv (run `cd processing && make install` once)
+- Python + uv (run `cd processing && uv sync` once)
 - tippecanoe
 
 ## Step 1 — CSV to GeoJSON

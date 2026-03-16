@@ -18,7 +18,7 @@ data.csv  +  zones.shp (or .gpkg)
 
 ## Requirements
 
-- Python + uv (run `cd processing && make install` once)
+- Python + uv (run `cd processing && uv sync` once)
 - tippecanoe
 
 ## Two modes
