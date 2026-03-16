@@ -1,6 +1,6 @@
 # Processing Cookbook
 
-Guides for converting common geospatial data formats into web-optimized tiles for the globe visualization app.
+Ready-to-use recipes for converting common geospatial data formats into web-optimized tiles for the Urbes Globe Viz app. Copy a recipe, edit the variables at the top, run it.
 
 ## Which recipe do I need?
 
@@ -35,19 +35,30 @@ sudo apt install gdal-bin      # Ubuntu/Debian
 
 ## After processing
 
-Once your output file is in `frontend/public/geodata/`, register it in the app:
+### 1. Test locally
+
+Place your output file in `frontend/public/geodata/` and register it in the app:
 
 1. Copy `frontend/src/config/projects/_example.ts.example` → `frontend/src/config/projects/my_project.ts`
 2. Fill in the project metadata (id, title, coordinates, source, layer)
 3. Add the import to `frontend/src/config/projects/index.ts`
-4. `npm run dev` — your project appears automatically
+4. `cd frontend && npm run dev` — your project appears at http://localhost:9000
 
-See the [example template](../../frontend/src/config/projects/_example.ts.example) for all fields.
+See the [example template](../../frontend/src/config/projects/_example.ts.example) for all available fields.
 
-### CDN upload (production)
+### 2. Upload to production
+
+Files for production are served from the EPFL CDN (`enacit4r-cdn-s3.epfl.ch`). Upload with `s3cmd` (requires ENAC-IT4R credentials):
 
 ```bash
-s3cmd put ../../frontend/public/geodata/my_data.pmtiles s3://urbes-viz/
+# Upload a single file
+s3cmd put --acl-public --guess-mime-type my_data.pmtiles s3://urbes-viz/
+
+# Verify it's accessible
+curl -I https://enacit4r-cdn-s3.epfl.ch/urbes-viz/my_data.pmtiles
 ```
 
-The frontend switches between local `/geodata/` (dev) and the CDN (prod) automatically.
+> **`--acl-public` is required** — without it the file is private and returns 403 to browsers.
+> **`--guess-mime-type`** sets the correct `Content-Type` for PMTiles, GeoTIFF, GeoJSON, etc.
+
+The frontend uses `/geodata/` on dev and the CDN URL on prod — both are configured automatically.

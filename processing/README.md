@@ -1,87 +1,77 @@
-# URBES Globe Viz - Data Processing
+# Data Processing
 
-This directory contains scripts to download and process geospatial datasets for the URBES Globe Visualization project.
+Scripts and recipes for converting geospatial datasets into web-optimized formats for the Urbes Globe Viz platform.
+
+---
+
+## Adding new data — start here
+
+**[`cookbook/README.md`](cookbook/README.md)** — ready-to-use recipes for every common format:
+
+| I have…                      | Recipe                                                     |
+| ---------------------------- | ---------------------------------------------------------- |
+| CSV with lat/lon             | [CSV → PMTiles](cookbook/csv_to_pmtiles.md)                |
+| CSV with zone IDs + geometry | [CSV Spatial Join → PMTiles](cookbook/csv_spatial_join.md) |
+| Shapefile (.shp)             | [Shapefile → PMTiles](cookbook/shp_to_pmtiles.md)          |
+| GeoPackage (.gpkg)           | [GeoPackage → PMTiles](cookbook/gpkg_to_pmtiles.md)        |
+| GeoJSON                      | [GeoJSON → PMTiles](cookbook/geojson_to_pmtiles.md)        |
+| Raster GeoTIFF               | [Raster → COG](cookbook/raster_to_cog.md)                  |
+
+After processing, see the cookbook's [After processing](cookbook/README.md#after-processing) section for registering your data in the app and uploading to production.
+
+---
 
 ## Prerequisites
 
-### uv (Python Package Manager)
-
-This project uses [uv](https://github.com/astral-sh/uv) for fast, reliable Python dependency management.
-
-Install uv:
-
 ```bash
+# uv — Python package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Python dependencies
+make install
+
+# tippecanoe — vector tile generation
+brew install tippecanoe        # macOS
+sudo apt install tippecanoe    # Ubuntu 23.04+
+
+# GDAL — geospatial conversions
+brew install gdal              # macOS
+sudo apt install gdal-bin      # Ubuntu/Debian
 ```
 
-All Python dependencies are defined in `pyproject.toml` and will be automatically managed by uv.
+---
 
-## Available Datasets
+## Pipeline scripts
 
-### 1. Martin Building Heights
+### GHSL Built Surface (global raster basemap)
+
+Converts the GHSL 2018 built-surface dataset (61 GB, 10 m resolution) into a PMTiles raster archive for the globe basemap. Runs on EPFL's SCITAS HPC cluster.
+
+→ [`ghsl_to_pmtiles/README.md`](ghsl_to_pmtiles/README.md)
+→ SCITAS guide: [`ghsl_to_pmtiles/scitas/README.md`](ghsl_to_pmtiles/scitas/README.md)
+
+### DAVE Mobility Flows
+
+Processes origin-destination mobility data into GeoJSON arc layers for the Deck.gl renderer.
+
+→ [`dave_flows/`](dave_flows/)
+
+### Martin Building Heights
 
 Converts building height CSV data to PMTiles format.
 
-```bash
-make martin_building_heights
-```
+→ [`martin_building_heights/`](martin_building_heights/)
 
-### 2. Global Urban Footprint (GUF)
+---
 
-Downloads DLR Global Urban Footprint data and creates Cloud Optimized GeoTIFF.
+## Python environment
 
-```bash
-# Global data at 2.8 arcsec resolution
-make guf_urban_footprint
-
-# Custom regions and resolutions
-cd guf_urban_footprint
-./process.sh europe 0.4
-./process.sh asia 2.8
-```
-
-See [guf_urban_footprint/README.md](guf_urban_footprint/README.md) for more options.
-
-### Cookbook (Processing Recipes)
-
-Ready-to-use recipes for converting common data formats (CSV, SHP, GPKG, GeoJSON, GeoTIFF) into web-optimized tiles. Copy a script, edit the variables, run it.
-
-See [cookbook/README.md](cookbook/README.md) — start there to find the right recipe for your data.
-
-## Output
-
-All processed files are placed in `../frontend/public/geodata/`
-
-## Dependencies
-
-Python dependencies are defined in `pyproject.toml`:
-
-- rasterio - Geospatial raster I/O
-- requests - HTTP library
-- Pillow - Image processing
-- numpy - Numerical computing
-- tqdm - Progress bars
-- rio-cogeo - COG validation
-
-External tools:
-
-- tippecanoe - For creating PMTiles (martin_building_heights)
-- ogr2ogr/GDAL - For geospatial conversions (martin_building_heights)
-
-## Usage with uv
-
-You can run any script directly with uv:
+All scripts use [uv](https://github.com/astral-sh/uv). Dependencies are in `pyproject.toml`.
 
 ```bash
-# From processing directory
-uv run guf_urban_footprint/download_guf_cog.py --help
+# Run any script directly
+uv run cookbook/some_script.py --help
 
-# Or specify project root
-uv run --project . guf_urban_footprint/download_guf_cog.py --region europe
+# Or activate the venv manually
+uv sync && source .venv/bin/activate
 ```
-
-uv will automatically:
-
-- Create a virtual environment
-- Install dependencies from pyproject.toml
-- Run the script with the correct Python environment
