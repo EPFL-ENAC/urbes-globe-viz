@@ -30,9 +30,11 @@ Quick summary:
 - Python 3 (for data processing)
 
 > **Windows users**: after installing Node.js, use the commands below via PowerShell or the
-> Node.js command prompt. Replace `make install` with the two commands it wraps:
+> Node.js command prompt. Replace `make install` with the commands it wraps:
+>
 > ```powershell
 > npm install
+> npm install --prefix frontend
 > npx lefthook install
 > ```
 

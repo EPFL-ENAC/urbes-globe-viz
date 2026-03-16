@@ -29,8 +29,10 @@ help:
 
 # Install dependencies and set up git hooks
 install:
-	@echo "Installing npm dependencies..."
+	@echo "Installing root npm dependencies..."
 	npm install
+	@echo "Installing frontend npm dependencies..."
+	npm install --prefix frontend
 	@echo "Installing git hooks with lefthook..."
 	npx lefthook install
 	@echo "Setup complete!"
@@ -40,6 +42,8 @@ clean:
 	@echo "Cleaning dependencies..."
 	rm -rf node_modules
 	rm -f package-lock.json
+	rm -rf frontend/node_modules
+	rm -f frontend/package-lock.json
 
 # Uninstall hooks and clean
 uninstall:
