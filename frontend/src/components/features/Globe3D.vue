@@ -13,6 +13,12 @@ import { useGlobeAnimation } from "@/composables/useGlobeAnimation";
 const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
+const globeViewportPadding: maplibregl.PaddingOptions = {
+  top: 0,
+  right: 0,
+  bottom: 72,
+  left: 0,
+};
 
 const projectStore = useProjectStore();
 const router = useRouter();
@@ -71,11 +77,9 @@ onMounted(() => {
   map = new maplibregl.Map({
     container: container.value,
     center: [6.3, 46.2], // Switzerland
-    zoom: 3, // Start at zoom 10 (middle of range)
-    minZoom: 3, // Match file's minimum
+    zoom: 2, // Start at zoom 10 (middle of range)
+    minZoom: 1, // Match file's minimum
     maxZoom: 15, // Match file's maximum
-    refreshExpiredTiles: false,
-    maxTileCacheSize: 100,
     style: {
       version: 8,
       projection: {
@@ -98,23 +102,16 @@ onMounted(() => {
           id: "background",
           type: "background",
           paint: {
-            "background-color": "#000000",
+            "background-color": "#080808",
           },
         },
-        // {
-        //   id: "land",
-        //   type: "fill",
-        //   source: "earth-land",
-        //   paint: {
-        //     "fill-color": "#101010",
-        //   },
-        // },
 
         {
           id: "ghsl-layer",
           type: "raster",
           source: "ghsl-urban",
           paint: {
+            "raster-contrast": 0.6,
             "raster-opacity": [
               "interpolate",
               ["linear"],
@@ -150,6 +147,8 @@ onMounted(() => {
       ],
     },
   });
+
+  map.setPadding(globeViewportPadding);
 
   // Add project markers and set projection after map loads
   const setupProjectMarkers = () => {
@@ -244,7 +243,7 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   left: 0;
-  background: #000;
+  background: #000000;
 }
 
 .globe-container {
