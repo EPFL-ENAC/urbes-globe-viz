@@ -84,13 +84,13 @@ Your data file (CSV, Shapefile, GeoJSON, GeoTIFF, …)
 
 Not everything lives in the same place. Here is a summary:
 
-| File type | Where it lives | Committed to Git? |
-| --- | --- | --- |
-| Raw data (Shapefile, CSV, etc.) | `processing/my_dataset/` (your computer only) | No |
-| Processed data (.pmtiles, .geojson) | Shared NAS for production, `frontend/public/geodata/` for local testing | No |
-| Config file (.ts) | `frontend/src/config/projects/` | Yes |
-| Preview image (.png) | `frontend/public/previews/` | Yes |
-| index.ts changes | `frontend/src/config/projects/index.ts` | Yes |
+| File type                           | Where it lives                                                          | Committed to Git? |
+| ----------------------------------- | ----------------------------------------------------------------------- | ----------------- |
+| Raw data (Shapefile, CSV, etc.)     | `processing/my_dataset/` (your computer only)                           | No                |
+| Processed data (.pmtiles, .geojson) | Shared NAS for production, `frontend/public/geodata/` for local testing | No                |
+| Config file (.ts)                   | `frontend/src/config/projects/`                                         | Yes               |
+| Preview image (.png)                | `frontend/public/previews/`                                             | Yes               |
+| index.ts changes                    | `frontend/src/config/projects/index.ts`                                 | Yes               |
 
 **Rule of thumb:** Git stores only small text files (config, code, images). Large data files are stored on the shared NAS and served by the website automatically.
 
@@ -219,6 +219,7 @@ npx lefthook install
 ```
 
 > **What do these do?**
+>
 > - `npm install` — installs shared tools (code formatter, commit message checker)
 > - `npm install --prefix frontend` — installs the frontend app's libraries (Vue, MapLibre, etc.)
 > - `npx lefthook install` — sets up automatic code formatting before each commit
@@ -276,6 +277,7 @@ cp /path/to/your/data_file.shp processing/my_dataset_name/
 ```
 
 > **WSL tip:** Your Windows files are at `/mnt/c/Users/YourName/`. For example, if your file is on your Desktop:
+>
 > ```bash
 > cp /mnt/c/Users/YourName/Desktop/my_data.shp processing/my_dataset_name/
 > ```
@@ -290,12 +292,12 @@ cd processing/my_dataset_name
 
 **PMTiles** is a compact tile format that loads quickly in the browser because it only fetches the visible area of the map. You need it when your data is large.
 
-| Your situation | What to do |
-| --- | --- |
+| Your situation                      | What to do                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------ |
 | GeoJSON file **smaller than 50 MB** | Use it directly — copy to `frontend/public/geodata/` and skip tippecanoe |
-| GeoJSON file **larger than 50 MB** | Convert to PMTiles (see [2.3](#23-pick-your-recipe)) |
-| Shapefile, GeoPackage, or CSV | Must convert — follow the appropriate recipe |
-| Raster GeoTIFF | Convert to Cloud Optimized GeoTIFF (COG) — no PMTiles needed |
+| GeoJSON file **larger than 50 MB**  | Convert to PMTiles (see [2.3](#23-pick-your-recipe))                     |
+| Shapefile, GeoPackage, or CSV       | Must convert — follow the appropriate recipe                             |
+| Raster GeoTIFF                      | Convert to Cloud Optimized GeoTIFF (COG) — no PMTiles needed             |
 
 > **How to check your file size:** run `ls -lh my_data.geojson` in the terminal. Look at the number before the date — for example `12M` means 12 MB, `340M` means 340 MB.
 
@@ -303,18 +305,19 @@ cd processing/my_dataset_name
 
 Choose the recipe that matches your input file format. Each recipe is a separate page with detailed commands — open it in a new tab and follow the steps, then come back here.
 
-| I have… | Recipe | Notes |
-| --- | --- | --- |
-| CSV with lat/lon columns | [CSV → PMTiles](../processing/cookbook/csv_to_pmtiles.md) | Needs Python (install uv first: `curl -LsSf https://astral.sh/uv/install.sh \| sh`) |
-| CSV + a geometry file (Shapefile/GeoPackage) | [CSV Spatial Join → PMTiles](../processing/cookbook/csv_spatial_join.md) | For zone-based data or flow arcs |
-| Shapefile (.shp) | [Shapefile → PMTiles](../processing/cookbook/shp_to_pmtiles.md) | Uses ogr2ogr + tippecanoe |
-| GeoPackage (.gpkg) | [GeoPackage → PMTiles](../processing/cookbook/gpkg_to_pmtiles.md) | Uses ogr2ogr + tippecanoe |
-| GeoJSON (.geojson) | [GeoJSON → PMTiles](../processing/cookbook/geojson_to_pmtiles.md) | Simplest — only needs tippecanoe |
-| Raster GeoTIFF (.tif) | [Raster → COG](../processing/cookbook/raster_to_cog.md) | Uses GDAL only, no tippecanoe |
+| I have…                                      | Recipe                                                                   | Notes                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| CSV with lat/lon columns                     | [CSV → PMTiles](../processing/cookbook/csv_to_pmtiles.md)                | Needs Python (install uv first: `curl -LsSf https://astral.sh/uv/install.sh \| sh`) |
+| CSV + a geometry file (Shapefile/GeoPackage) | [CSV Spatial Join → PMTiles](../processing/cookbook/csv_spatial_join.md) | For zone-based data or flow arcs                                                    |
+| Shapefile (.shp)                             | [Shapefile → PMTiles](../processing/cookbook/shp_to_pmtiles.md)          | Uses ogr2ogr + tippecanoe                                                           |
+| GeoPackage (.gpkg)                           | [GeoPackage → PMTiles](../processing/cookbook/gpkg_to_pmtiles.md)        | Uses ogr2ogr + tippecanoe                                                           |
+| GeoJSON (.geojson)                           | [GeoJSON → PMTiles](../processing/cookbook/geojson_to_pmtiles.md)        | Simplest — only needs tippecanoe                                                    |
+| Raster GeoTIFF (.tif)                        | [Raster → COG](../processing/cookbook/raster_to_cog.md)                  | Uses GDAL only, no tippecanoe                                                       |
 
 > **Important:** In the recipe commands, replace `my_data` with your actual dataset name (the same `my_dataset_name` you used for your folder).
 
 > **tippecanoe tip:** When running tippecanoe, choose the right strategy for your geometry type:
+>
 > - **Points or lines:** use `--drop-densest-as-needed` (thins dense clusters at low zoom)
 > - **Polygons:** use `--coalesce-densest-as-needed` (merges small polygons instead of dropping)
 > - **Small datasets (< 10k features):** use `--no-feature-limit --no-tile-size-limit` (keeps everything)
@@ -323,12 +326,12 @@ Choose the recipe that matches your input file format. Each recipe is a separate
 
 When using tippecanoe, you must specify `--minimum-zoom` and `--maximum-zoom`. These control how far users can zoom in and out on your data.
 
-| Your data covers… | `--minimum-zoom` | `--maximum-zoom` | Example |
-| --- | --- | --- | --- |
-| The whole world | 0 | 6 | Global population grid |
-| A continent or large region | 2 | 8 | European roads |
-| A single country | 4 | 12 | Swiss buildings |
-| A city or metro area | 8 | 14 | Lausanne bike lanes |
+| Your data covers…           | `--minimum-zoom` | `--maximum-zoom` | Example                |
+| --------------------------- | ---------------- | ---------------- | ---------------------- |
+| The whole world             | 0                | 6                | Global population grid |
+| A continent or large region | 2                | 8                | European roads         |
+| A single country            | 4                | 12               | Swiss buildings        |
+| A city or metro area        | 8                | 14               | Lausanne bike lanes    |
 
 **When in doubt, use `--minimum-zoom=4 --maximum-zoom=12`.** You can always regenerate with different values later.
 
@@ -403,13 +406,13 @@ Now you tell the app about your dataset by creating a configuration file.
 
 Look at the existing project configs and pick the one most similar to your data. This will be your starting point.
 
-| File | What it shows | Layer type | Good starting point for… |
-| --- | --- | --- | --- |
-| `buildings.ts` | Swiss buildings colored by construction year | `fill-extrusion` (3D) | 3D polygon data |
-| `roads_swiss_statistics.ts` | Swiss roads colored by traffic volume | `line` | Line data (roads, rivers, …) |
-| `building_heights_china.ts` | Building heights as colored dots | `circle` | Point data |
-| `hourly_adult_population.ts` | Population density grid | `fill` | Area/polygon data (flat) |
-| `dave_flows.ts` | Mobility flow arcs (Deck.gl) | custom renderer | Origin-destination flows |
+| File                         | What it shows                                | Layer type            | Good starting point for…     |
+| ---------------------------- | -------------------------------------------- | --------------------- | ---------------------------- |
+| `buildings.ts`               | Swiss buildings colored by construction year | `fill-extrusion` (3D) | 3D polygon data              |
+| `roads_swiss_statistics.ts`  | Swiss roads colored by traffic volume        | `line`                | Line data (roads, rivers, …) |
+| `building_heights_china.ts`  | Building heights as colored dots             | `circle`              | Point data                   |
+| `hourly_adult_population.ts` | Population density grid                      | `fill`                | Area/polygon data (flat)     |
+| `dave_flows.ts`              | Mobility flow arcs (Deck.gl)                 | custom renderer       | Origin-destination flows     |
 
 All files are in `frontend/src/config/projects/`.
 
@@ -487,6 +490,7 @@ This tells the app where to find your data and how to draw it. There are two par
 ```
 
 > **If using GeoJSON directly** (small files < 50 MB), use this instead:
+>
 > ```typescript
 >   source: {
 >     type: "geojson",
@@ -518,12 +522,12 @@ The layer defines how features are drawn on the map. The most important fields:
 
 #### Which layer type should I use?
 
-| Your data is… | Layer `type` | Example paint |
-| --- | --- | --- |
-| Points (sensors, buildings, cities) | `"circle"` | `{ "circle-radius": 4, "circle-color": "#ff6600" }` |
-| Lines (roads, rivers, routes) | `"line"` | `{ "line-color": "#4682b4", "line-width": 2 }` |
-| Polygons (zones, districts) — flat | `"fill"` | `{ "fill-color": "#088", "fill-opacity": 0.6 }` |
-| Polygons — 3D extrusion | `"fill-extrusion"` | `{ "fill-extrusion-height": 50, "fill-extrusion-color": "#088" }` |
+| Your data is…                       | Layer `type`       | Example paint                                                     |
+| ----------------------------------- | ------------------ | ----------------------------------------------------------------- |
+| Points (sensors, buildings, cities) | `"circle"`         | `{ "circle-radius": 4, "circle-color": "#ff6600" }`               |
+| Lines (roads, rivers, routes)       | `"line"`           | `{ "line-color": "#4682b4", "line-width": 2 }`                    |
+| Polygons (zones, districts) — flat  | `"fill"`           | `{ "fill-color": "#088", "fill-opacity": 0.6 }`                   |
+| Polygons — 3D extrusion             | `"fill-extrusion"` | `{ "fill-extrusion-height": 50, "fill-extrusion-color": "#088" }` |
 
 You can color features based on their attributes using expressions. See [Appendix B](#appendix-b--common-layer-paint-styles) for copy-pasteable examples.
 
@@ -551,7 +555,7 @@ const allProjects: ProjectConfig[] = [
   hourlyAdultPopulationProject,
   daveFlowsProject,
   buildingHeightsChinaProject,
-  myDatasetNameProject,           // ← add this line
+  myDatasetNameProject, // ← add this line
 ];
 ```
 
@@ -615,12 +619,12 @@ cd ..
 
 **Common problems:**
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| Card appears but **map is blank** | `source-layer` in your config doesn't match `--layer` from tippecanoe | Open your config, check the `"source-layer"` value matches exactly |
-| **Data appears at coordinates 0,0** (in the ocean near Africa) | Coordinate system was not converted to WGS84 | Re-run ogr2ogr with `-t_srs EPSG:4326` |
-| **No card appears** on the globe | Project not registered in `index.ts` | Check you added the import and array entry in [Step 3.5](#35-register-your-project) |
-| **Build error** in the terminal | Syntax error in your .ts file | Check for missing commas, unmatched brackets, or typos |
+| Symptom                                                        | Likely cause                                                          | Fix                                                                                 |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Card appears but **map is blank**                              | `source-layer` in your config doesn't match `--layer` from tippecanoe | Open your config, check the `"source-layer"` value matches exactly                  |
+| **Data appears at coordinates 0,0** (in the ocean near Africa) | Coordinate system was not converted to WGS84                          | Re-run ogr2ogr with `-t_srs EPSG:4326`                                              |
+| **No card appears** on the globe                               | Project not registered in `index.ts`                                  | Check you added the import and array entry in [Step 3.5](#35-register-your-project) |
+| **Build error** in the terminal                                | Syntax error in your .ts file                                         | Check for missing commas, unmatched brackets, or typos                              |
 
 ### 4.3 Take a screenshot for the preview
 
@@ -701,18 +705,19 @@ The data file (.pmtiles, .geojson, or .tif) must be placed on the **shared EPFL 
 
 ## Appendix A — Zoom level reference
 
-| Zoom level | Approximate scale | What's visible |
-| --- | --- | --- |
-| 0 | Whole world | Continents |
-| 2 | Subcontinental | Large countries |
-| 4 | Large country | Country outlines, major regions |
-| 6 | Small country | Regions, major cities |
-| 8 | State / canton | Cities, main roads |
-| 10 | Metro area | Neighborhoods, secondary roads |
-| 12 | City district | Individual blocks, all roads |
-| 14 | Street level | Individual buildings |
+| Zoom level | Approximate scale | What's visible                  |
+| ---------- | ----------------- | ------------------------------- |
+| 0          | Whole world       | Continents                      |
+| 2          | Subcontinental    | Large countries                 |
+| 4          | Large country     | Country outlines, major regions |
+| 6          | Small country     | Regions, major cities           |
+| 8          | State / canton    | Cities, main roads              |
+| 10         | Metro area        | Neighborhoods, secondary roads  |
+| 12         | City district     | Individual blocks, all roads    |
+| 14         | Street level      | Individual buildings            |
 
 **Rule of thumb for tippecanoe:**
+
 - `--minimum-zoom` = the most zoomed-out level where your data is still meaningful
 - `--maximum-zoom` = the most zoomed-in level where additional detail is useful
 
