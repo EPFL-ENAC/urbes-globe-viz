@@ -3,18 +3,8 @@
 GEODATA_URL := https://urbes-viz.epfl.ch/geodata
 GEODATA_DIR := frontend/public/geodata
 
-# Files actively referenced in frontend source (config/projects/*.ts and Globe3D.vue)
-GEODATA_FILES := \
-	building_heights_china.pmtiles \
-	buildings_swiss.pmtiles \
-	hourly_adult_population.pmtiles \
-	roads_swiss_statistics.pmtiles \
-	dave_flows_work.geojson \
-	dave_flows_outdoor.geojson \
-	dave_flows_indoor_leisure.geojson \
-	ne_110m_land.geojson \
-	human_settlement_2025_cog.tif \
-	wrf_t2/t2_012.png
+# Files too large for local download — always streamed from NAS
+GEODATA_EXCLUDE := ghsl.pmtiles,index.html,robots.txt
 
 # Default target
 help:
@@ -57,11 +47,9 @@ uninstall:
 download-geodata:
 	@echo "Downloading geodata from $(GEODATA_URL)..."
 	@mkdir -p $(GEODATA_DIR)
-	@for file in $(GEODATA_FILES); do \
-		mkdir -p "$(GEODATA_DIR)/$$(dirname $$file)"; \
-		echo "  ↓ $$file"; \
-		curl -# -C - -L --fail -o "$(GEODATA_DIR)/$$file" "$(GEODATA_URL)/$$file" || echo "  ✗ Failed: $$file"; \
-	done
+	wget -r -np -nH --cut-dirs=1 -P $(GEODATA_DIR) -N -q --show-progress \
+		--reject="$(GEODATA_EXCLUDE)" \
+		$(GEODATA_URL)/
 	@echo "Done! Files in $(GEODATA_DIR)/"
 
 upload-geodata:
