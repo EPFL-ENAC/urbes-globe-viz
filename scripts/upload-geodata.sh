@@ -49,12 +49,9 @@ if [ ! -d "$TARGET_DIR" ]; then
     exit 1
 fi
 
-# Sync files to the geodata/ subdirectory
-DEST="$TARGET_DIR/geodata"
-mkdir -p "$DEST"
-
+# Sync geodata files to the NAS web root (nginx serves this directory directly)
 echo "Syncing files with rsync..."
-rsync -rlvc --no-times --progress frontend/public/geodata/ "$DEST/"
+rsync -rlvc --no-times --progress frontend/public/geodata/ "$TARGET_DIR/"
 
 echo ""
 echo "✓ Files uploaded successfully"
