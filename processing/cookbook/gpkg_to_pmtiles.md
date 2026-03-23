@@ -105,11 +105,9 @@ tippecanoe \
   my_data.geojson
 ```
 
-## Step 3 (optional) — Upload to CDN
+## Step 3 (optional) — Upload for production
 
-```bash
-s3cmd put ../../frontend/public/geodata/my_data.pmtiles s3://urbes-viz/
-```
+Copy your `.pmtiles` file to the shared NAS `geodata/` folder. See the [guide](../../docs/guide.md#46-upload-your-data-file-for-production) for details.
 
 ## Real-world example from this project
 

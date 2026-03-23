@@ -1,5 +1,7 @@
 # Processing Cookbook
 
+> **New here?** The full step-by-step tutorial (from WSL install to pull request) is at [`docs/guide.md`](../../docs/guide.md). This page is a quick reference for individual data conversion recipes.
+
 Ready-to-use recipes for converting common geospatial data formats into web-optimized tiles for the Urbes Globe Viz app. Copy a recipe, edit the variables at the top, run it.
 
 ## Which recipe do I need?
@@ -13,7 +15,24 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 | GeoJSON                                  | Vector tiles                            | [GeoJSON → PMTiles](geojson_to_pmtiles.md)        |
 | Raster GeoTIFF                           | Cloud Optimized GeoTIFF for web display | [Raster → COG](raster_to_cog.md)                  |
 
+## Choosing zoom levels
+
+When using tippecanoe, `--minimum-zoom` and `--maximum-zoom` control how far users can zoom in/out on your data.
+
+| Data covers…          | `--minimum-zoom` | `--maximum-zoom` |
+| --------------------- | ---------------- | ---------------- |
+| Whole world           | 0                | 6                |
+| Continent / region    | 2                | 8                |
+| Single country        | 4                | 12               |
+| City / metro area     | 8                | 14               |
+
+When in doubt, use `--minimum-zoom=4 --maximum-zoom=12`. More zoom levels = larger output file.
+
+---
+
 ## Prerequisites
+
+> For detailed installation instructions with explanations, see [Part 1 of the guide](../../docs/guide.md#part-1--one-time-setup).
 
 > ### Windows users — read this first
 >
@@ -73,6 +92,8 @@ cd .. && uv sync
 
 ## After processing
 
+> For a full walkthrough of adding your project to the frontend and submitting a PR, see [Parts 3–4 of the guide](../../docs/guide.md#part-3--add-your-project-to-the-frontend).
+
 ### 1. Test locally
 
 Place your output file in `frontend/public/geodata/` and register it in the app:
@@ -86,17 +107,10 @@ See the [example template](../../frontend/src/config/projects/_example.ts.exampl
 
 ### 2. Upload to production
 
-Files for production are served from the EPFL CDN (`enacit4r-cdn-s3.epfl.ch`). Upload with `s3cmd` (requires ENAC-IT4R credentials):
+Files for production are served from the shared EPFL NAS via nginx.
 
-```bash
-# Upload a single file
-s3cmd put --acl-public --guess-mime-type my_data.pmtiles s3://urbes-viz/
+1. Connect to the shared NAS drive using your EPFL credentials (ask Pierre for the path if you don't have it)
+2. Copy your data file into the `geodata/` folder
+3. It will be automatically served at `https://urbes-viz.epfl.ch/geodata/your_file.pmtiles`
 
-# Verify it's accessible
-curl -I https://enacit4r-cdn-s3.epfl.ch/urbes-viz/my_data.pmtiles
-```
-
-> **`--acl-public` is required** — without it the file is private and returns 403 to browsers.
-> **`--guess-mime-type`** sets the correct `Content-Type` for PMTiles, GeoTIFF, GeoJSON, etc.
-
-The frontend uses `/geodata/` on dev and the CDN URL on prod — both are configured automatically.
+See [Step 4.6 of the guide](../../docs/guide.md#46-upload-your-data-file-for-production) for detailed instructions.

@@ -10,15 +10,11 @@ Interactive 3D globe visualization platform for the [URBES research group](https
 
 ## Adding New Data
 
-**Start here:** [`processing/cookbook/README.md`](processing/cookbook/README.md)
+**Researchers:** follow the step-by-step guide → [`docs/guide.md`](docs/guide.md)
 
-The cookbook has ready-to-use recipes for every common data format (CSV, Shapefile, GeoPackage, GeoJSON, GeoTIFF). Pick the recipe that matches your data, run it, then register the output in the app config.
+It covers everything from installing tools to submitting your dataset as a pull request. No programming experience required.
 
-Quick summary:
-
-1. **Convert your data** — pick a recipe from [`processing/cookbook/`](processing/cookbook/)
-2. **Register it in the app** — add a project config in [`frontend/src/config/projects/`](frontend/src/config/projects/)
-3. **Upload for production** — `s3cmd put my_data.pmtiles s3://urbes-viz/`
+For quick reference on individual data conversion commands, see the [processing cookbook](processing/cookbook/README.md).
 
 ---
 

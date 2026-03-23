@@ -111,11 +111,9 @@ tippecanoe \
 
 > **Warning:** this can produce very large tiles if your data is dense. Only use for small datasets.
 
-## Step 3 (optional) — Upload to CDN
+## Step 3 (optional) — Upload for production
 
-```bash
-s3cmd put ../../frontend/public/geodata/my_data.pmtiles s3://urbes-viz/
-```
+Copy your `.pmtiles` file to the shared NAS `geodata/` folder. See the [guide](../../docs/guide.md#46-upload-your-data-file-for-production) for details.
 
 ## Useful ogr2ogr commands
 

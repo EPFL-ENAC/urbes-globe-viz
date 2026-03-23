@@ -157,8 +157,6 @@ gdalwarp \
 
 See also the [GUF Urban Footprint](../guf_urban_footprint/) pipeline for downloading raster data from a WMS service and creating COGs programmatically with Python/rasterio.
 
-## Upload to CDN (optional)
+## Upload for production (optional)
 
-```bash
-s3cmd put output_cog.tif s3://urbes-viz/
-```
+Copy your COG file to the shared NAS `geodata/` folder. See the [guide](../../docs/guide.md#46-upload-your-data-file-for-production) for details.

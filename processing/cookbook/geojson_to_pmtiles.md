@@ -110,8 +110,6 @@ tippecanoe \
   --named-layer=buildings:buildings.geojson
 ```
 
-## Upload to CDN (optional)
+## Upload for production (optional)
 
-```bash
-s3cmd put ../../frontend/public/geodata/my_data.pmtiles s3://urbes-viz/
-```
+Copy your `.pmtiles` file to the shared NAS `geodata/` folder. See the [guide](../../docs/guide.md#46-upload-your-data-file-for-production) for details.
