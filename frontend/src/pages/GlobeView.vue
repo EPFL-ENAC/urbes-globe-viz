@@ -5,9 +5,6 @@ import { projectsGeoJSON } from "@/config/projects";
 
 const projectsDuplicated = projectsGeoJSON.features.concat(
   projectsGeoJSON.features,
-  projectsGeoJSON.features,
-  projectsGeoJSON.features,
-  projectsGeoJSON.features,
 );
 </script>
 
@@ -17,7 +14,7 @@ const projectsDuplicated = projectsGeoJSON.features.concat(
 
     <div class="absolute-bottom full-width q-pa-md" style="z-index: 100">
       <div
-        class="row q-gutter-md no-wrap overflow-auto"
+        class="row q-gutter-md no-wrap justify-center overflow-auto"
         style="scrollbar-width: none; -ms-overflow-style: none"
       >
         <ProjectCard
