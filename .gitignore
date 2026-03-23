@@ -9,3 +9,4 @@ processing/**/*.mbtiles
 processing/**/*.tif
 processing/**/*.tfw
 
+.env
