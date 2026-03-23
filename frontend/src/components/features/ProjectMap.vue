@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
+import { basemapSources, basemapLayers } from "@/config/basemap";
 import { Protocol } from "pmtiles";
 
 const props = defineProps<{
@@ -142,16 +143,11 @@ const initializeMap = () => {
     style: {
       version: 8,
       sources: {
+        ...basemapSources,
         [layerConfig.id]: layerConfig.source,
       },
       layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: {
-            "background-color": "rgb(20, 20, 20)",
-          },
-        },
+        ...basemapLayers,
         getLayerForTime(
           props.activeTime ?? layerConfig.timeControl?.initial ?? 0,
         ) ?? layerConfig.layer,

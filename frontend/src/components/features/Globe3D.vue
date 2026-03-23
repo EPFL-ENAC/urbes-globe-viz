@@ -3,8 +3,8 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
 import { projectsGeoJSON } from "@/config/projects";
+import { basemapSources, basemapLayers } from "@/config/basemap";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useProjectLayers } from "@/composables/useProjectLayers";
@@ -69,7 +69,6 @@ onMounted(() => {
   if (!pmtilesProtocolRegistered) {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
-    maplibregl.addProtocol("cog", cogProtocol);
     pmtilesProtocolRegistered = true;
   }
 
@@ -85,66 +84,8 @@ onMounted(() => {
       projection: {
         type: "globe",
       },
-      sources: {
-        "ghsl-urban": {
-          type: "raster",
-          url: "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles",
-          tileSize: 256,
-        },
-        "osm-buildings": {
-          type: "vector",
-          minzoom: 10,
-          url: "https://tiles.openfreemap.org/planet",
-        },
-      },
-      layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: {
-            "background-color": "#080808",
-          },
-        },
-
-        {
-          id: "ghsl-layer",
-          type: "raster",
-          source: "ghsl-urban",
-          paint: {
-            "raster-contrast": 0.6,
-            "raster-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              13,
-              1,
-              13.5,
-              0.8,
-              14,
-              0.2,
-            ],
-          },
-        },
-        {
-          id: "buildings",
-          type: "fill",
-          source: "osm-buildings",
-          "source-layer": "building",
-          minzoom: 10,
-          paint: {
-            "fill-color": "#FFFFFF",
-            "fill-outline-color": [
-              "interpolate-hcl",
-              ["linear"],
-              ["zoom"],
-              14,
-              "#FFFFFF",
-              15,
-              "#222222",
-            ],
-          },
-        },
-      ],
+      sources: { ...basemapSources },
+      layers: [...basemapLayers],
     },
   });
 

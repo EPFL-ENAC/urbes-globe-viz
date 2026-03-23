@@ -3,10 +3,10 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
+import { basemapSources, basemapLayers } from "@/config/basemap";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 
 const props = defineProps<{
@@ -123,7 +123,6 @@ onMounted(() => {
   try {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
-    maplibregl.addProtocol("cog", cogProtocol);
   } catch {
     // Already registered from Globe3D
   }
@@ -140,38 +139,8 @@ onMounted(() => {
     container: mapContainer.value,
     style: {
       version: 8,
-      sources: {
-        "ghsl-urban": {
-          type: "raster",
-          url: `cog://${baseUrl}/human_settlement_2025_cog.tif#color:BrewerGreys9,9,30,-`,
-          tileSize: 256,
-          maxzoom: 14,
-        },
-      },
-      layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: { "background-color": "#000000" },
-        },
-        {
-          id: "ghsl-layer",
-          type: "raster",
-          source: "ghsl-urban",
-          maxzoom: 15,
-          paint: {
-            "raster-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              13,
-              1,
-              14,
-              0.5,
-            ],
-          },
-        },
-      ],
+      sources: { ...basemapSources },
+      layers: [...basemapLayers],
     },
     center,
     zoom: project?.properties.zoom || 8,
