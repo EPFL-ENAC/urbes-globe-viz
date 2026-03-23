@@ -17,6 +17,19 @@ export interface ProjectLegend {
   gradient?: LegendGradient;
 }
 
+export interface TimeControlConfig {
+  min: number;
+  max: number;
+  step?: number;
+  initial: number;
+  fieldTemplate: string;
+  placeholderField: string;
+  valuePadding?: number;
+  autoplayIntervalMs?: number;
+  label?: string;
+  displayFormat?: "hour" | "number";
+}
+
 export interface SubViz {
   id: string;
   title: string;
@@ -26,6 +39,7 @@ export interface SubViz {
   renderer?: string;
   dataUrl?: string;
   legend?: ProjectLegend;
+  timeControl?: TimeControlConfig;
 }
 
 export interface ProjectConfig {
@@ -57,6 +71,10 @@ export interface ProjectConfig {
 
   // Optional map legend overlay — shown bottom-left of the map.
   legend?: ProjectLegend;
+
+  // Optional time control used by map overlays with time-indexed fields.
+  // Example: hourly fields stored as hour_0 ... hour_23.
+  timeControl?: TimeControlConfig;
 
   // Optional sub-visualizations for scrollytelling layout.
   // If present, ProjectDetailView renders one section per sub-viz.

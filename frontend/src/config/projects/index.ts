@@ -68,6 +68,7 @@ export interface MapLayerConfig {
   info: string;
   source: NonNullable<ProjectConfig["source"]>;
   layer: NonNullable<ProjectConfig["layer"]>;
+  timeControl?: ProjectConfig["timeControl"];
 }
 
 export const mapLayers: MapLayerConfig[] = allProjects
@@ -86,4 +87,5 @@ export const mapLayers: MapLayerConfig[] = allProjects
     info: p.info,
     source: p.source,
     layer: p.layer,
+    timeControl: p.timeControl,
   }));

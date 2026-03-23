@@ -3,8 +3,9 @@ import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
 import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
 import MapLegend from "@/components/features/MapLegend.vue";
+import TimeSlider from "@/components/common/TimeSlider.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -49,6 +50,26 @@ const activeLegend = computed(() => {
   }
   return projectConfig.value?.legend;
 });
+
+const activeTimeControl = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.timeControl ??
+      projectConfig.value?.timeControl
+    );
+  }
+  return projectConfig.value?.timeControl;
+});
+
+const activeTimeValue = ref<number | undefined>(undefined);
+
+watch(
+  activeTimeControl,
+  (control) => {
+    activeTimeValue.value = control?.initial;
+  },
+  { immediate: true },
+);
 
 // Scroll to switch sub-viz — debounced so one scroll gesture = one step
 let scrollCooldown = false;
@@ -183,8 +204,30 @@ const goBack = () => {
         :project-id="projectId"
         :data-url="activeDataUrl"
       />
-      <ProjectMap v-else-if="project" :project-id="projectId" />
-      <MapLegend v-if="activeLegend" :legend="activeLegend" />
+      <ProjectMap
+        v-else-if="project"
+        :project-id="projectId"
+        :active-time="activeTimeValue"
+      />
+      <MapLegend
+        v-if="activeLegend"
+        :legend="activeLegend"
+        :style="activeTimeControl ? { bottom: '90px' } : undefined"
+      />
+      <div
+        v-if="activeTimeControl && activeTimeValue !== undefined"
+        class="time-slider-wrap"
+      >
+        <TimeSlider
+          v-model="activeTimeValue"
+          :min="activeTimeControl.min"
+          :max="activeTimeControl.max"
+          :step="activeTimeControl.step"
+          :label="activeTimeControl.label"
+          :display-format="activeTimeControl.displayFormat"
+          :autoplay-interval-ms="activeTimeControl.autoplayIntervalMs"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -329,4 +372,13 @@ const goBack = () => {
 .map-full {
   left: 70px;
 }
-</style>
+
+.time-slider-wrap {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 110;
+  display: flex;
+  justify-content: center;
+}</style>

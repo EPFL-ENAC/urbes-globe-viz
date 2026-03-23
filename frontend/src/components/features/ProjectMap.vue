@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
@@ -7,16 +7,104 @@ import { Protocol } from "pmtiles";
 
 const props = defineProps<{
   projectId: string;
+  activeTime?: number;
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
-const isVisible = ref(false);
 let map: maplibregl.Map | null = null;
-let observer: IntersectionObserver | null = null;
 
 // Shared protocol instance to avoid re-registration
 let protocolInstance: Protocol | null = null;
+
+const getLayerConfig = () =>
+  mapLayers.find((layer) => layer.id === props.projectId);
+
+const buildTemporalField = (
+  template: string,
+  value: number,
+  valuePadding?: number,
+) => {
+  const roundedValue = Math.round(value);
+  const formattedValue = valuePadding
+    ? `${roundedValue}`.padStart(valuePadding, "0")
+    : `${roundedValue}`;
+  return template.replace("{value}", formattedValue);
+};
+
+const replacePlaceholderDeep = (
+  value: unknown,
+  placeholderField: string,
+  targetField: string,
+): unknown => {
+  if (typeof value === "string") {
+    return value === placeholderField ? targetField : value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      replacePlaceholderDeep(item, placeholderField, targetField),
+    );
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        replacePlaceholderDeep(nestedValue, placeholderField, targetField),
+      ]),
+    );
+  }
+
+  return value;
+};
+
+const getLayerForTime = (timeValue: number) => {
+  const layerConfig = getLayerConfig();
+  if (!layerConfig) return null;
+
+  if (!layerConfig.timeControl) {
+    return layerConfig.layer;
+  }
+
+  const targetField = buildTemporalField(
+    layerConfig.timeControl.fieldTemplate,
+    timeValue,
+    layerConfig.timeControl.valuePadding,
+  );
+
+  return replacePlaceholderDeep(
+    layerConfig.layer,
+    layerConfig.timeControl.placeholderField,
+    targetField,
+  ) as typeof layerConfig.layer;
+};
+
+const applyLayerTime = (timeValue: number) => {
+  if (!map) return;
+
+  const layerConfig = getLayerConfig();
+  if (!layerConfig || !layerConfig.timeControl) return;
+
+  const timedLayer = getLayerForTime(timeValue);
+  if (!timedLayer) return;
+
+  const timedLayerRecord = timedLayer as Record<string, unknown>;
+  const filter = timedLayerRecord.filter;
+  if (filter) {
+    map.setFilter(
+      layerConfig.layer.id,
+      filter as maplibregl.FilterSpecification,
+    );
+  }
+
+  const paint = timedLayerRecord.paint;
+  if (paint && typeof paint === "object") {
+    Object.entries(paint).forEach(([paintKey, paintValue]) => {
+      map!.setPaintProperty(layerConfig.layer.id, paintKey, paintValue as any);
+    });
+  }
+};
 
 const ensureProtocol = () => {
   if (!protocolInstance) {
@@ -29,7 +117,7 @@ const initializeMap = () => {
   if (!mapContainer.value || map) return;
 
   // Find the layer configuration for this project
-  const layerConfig = mapLayers.find((layer) => layer.id === props.projectId);
+  const layerConfig = getLayerConfig();
 
   if (!layerConfig) {
     console.error(
@@ -64,7 +152,9 @@ const initializeMap = () => {
             "background-color": "rgb(20, 20, 20)",
           },
         },
-        layerConfig.layer,
+        getLayerForTime(
+          props.activeTime ?? layerConfig.timeControl?.initial ?? 0,
+        ) ?? layerConfig.layer,
       ],
     },
     center: center,
@@ -94,46 +184,24 @@ const initializeMap = () => {
 
 onMounted(() => {
   if (!mapContainer.value) return;
-
-  // Ensure PMTiles protocol is registered (only once globally)
   ensureProtocol();
-
-  // Use Intersection Observer for lazy loading
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !isVisible.value) {
-          isVisible.value = true;
-          initializeMap();
-          // Stop observing once initialized
-          if (observer && mapContainer.value) {
-            observer.unobserve(mapContainer.value);
-          }
-        }
-      });
-    },
-    {
-      threshold: 0.1, // Initialize when 10% visible
-      rootMargin: "50px", // Start loading 50px before visible
-    },
-  );
-
-  if (mapContainer.value) {
-    observer.observe(mapContainer.value);
-  }
+  initializeMap();
 });
 
 onUnmounted(() => {
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
   if (map) {
     map.remove();
     map = null;
   }
-  // Don't remove protocol - keep it registered for reuse
 });
+
+watch(
+  () => props.activeTime,
+  (nextValue) => {
+    if (nextValue === undefined) return;
+    applyLayerTime(nextValue);
+  },
+);
 </script>
 
 <template>

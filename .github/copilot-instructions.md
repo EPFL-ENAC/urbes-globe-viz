@@ -80,6 +80,13 @@ Each sub-viz has `id`, `title`, `description`, and optionally `renderer`, `sourc
 
 `DaveFlowsMap` accepts a `dataUrl` prop. When it changes, it hot-swaps the arc data via `deckOverlay.setProps()` — no map recreation, no camera reset.
 
+## Reusable Time Slider Pattern
+
+- `ProjectConfig` and `SubViz` now support optional `timeControl` metadata (see `frontend/src/config/projects/types.ts`).
+- `timeControl` drives a reusable `TimeSlider` UI (`frontend/src/components/common/TimeSlider.vue`) shown in `ProjectDetailView`.
+- `ProjectMap.vue` applies time changes by replacing a configured placeholder field (example: `hour_12`) with a generated target field from `fieldTemplate` (example: `hour_{value}`).
+- This supports wide-table temporal datasets (`hour_0..hour_23`) without hard-coding dataset logic inside the map component.
+
 ## GHSL Raster Basemap (Critical Knowledge)
 
 The globe basemap displays GHSL built-surface data. **COG streaming was attempted but abandoned** due to a hard libtiff crash at global scale — we now use **PMTiles** (pre-rendered WebP raster tiles).
