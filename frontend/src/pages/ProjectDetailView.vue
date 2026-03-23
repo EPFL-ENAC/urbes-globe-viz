@@ -381,4 +381,5 @@ const goBack = () => {
   z-index: 110;
   display: flex;
   justify-content: center;
-}</style>
+}
+</style>

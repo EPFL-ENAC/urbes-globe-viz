@@ -97,7 +97,9 @@ onUnmounted(stop);
         :icon="isPlaying ? 'pause' : 'play_arrow'"
         @click="togglePlay"
       />
-      <span class="text-grey-5 text-caption">{{ formatDisplayValue(min) }}</span>
+      <span class="text-grey-5 text-caption">{{
+        formatDisplayValue(min)
+      }}</span>
       <q-slider
         v-model="sliderValue"
         :min="min"
@@ -108,7 +110,9 @@ onUnmounted(stop);
         thumb-color="white"
         class="time-slider-input"
       />
-      <span class="text-grey-5 text-caption">{{ formatDisplayValue(max) }}</span>
+      <span class="text-grey-5 text-caption">{{
+        formatDisplayValue(max)
+      }}</span>
     </div>
   </div>
 </template>
