@@ -6,18 +6,13 @@
  * 3. Add your export to `index.ts`:
  *      import { myProjectConfig } from "./my_project_id";
  *      // and add it to the allProjects array
- * 4. Drop your data file(s) in `frontend/public/geodata/` (dev) or upload to the CDN (prod)
+ * 4. Drop your data file(s) in `frontend/public/geodata/` (dev) or upload to the NAS (prod)
  * 5. Run `npm run dev` — your project card and map will appear automatically
  */
 
 import type { ProjectConfig } from "./types";
-
-// The CDN base URL is resolved at build time.
-// In dev, data is served from frontend/public/geodata/.
-// In prod, data is fetched from the ENACIT4R CDN.
-const baseUrl = import.meta.env.DEV
-  ? "/geodata"
-  : "https://enacit4r-cdn-s3.epfl.ch/urbes-viz";
+import { geodataBaseUrl as baseUrl } from "../geodata";
+// baseUrl resolves to /geodata in dev and the EPFL NAS URL in prod.
 
 export const myProjectConfig: ProjectConfig = {
   // ── Identity ────────────────────────────────────────────────────────────────

@@ -1,8 +1,5 @@
 import type { ProjectConfig } from "./types";
-
-const baseUrl = import.meta.env.DEV
-  ? "/geodata"
-  : "https://enacit4r-cdn-s3.epfl.ch/urbes-viz";
+import { geodataBaseUrl as baseUrl } from "../geodata";
 
 export const buildingsProject: ProjectConfig = {
   id: "buildings",

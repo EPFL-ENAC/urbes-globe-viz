@@ -7,6 +7,7 @@ import { cogProtocol } from "@geomatico/maplibre-cog-protocol";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
+import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 
 const props = defineProps<{
   projectId: string;
@@ -18,12 +19,6 @@ const flowUrl = computed(() =>
     ? `${baseUrl}/${props.dataUrl}`
     : `${baseUrl}/${props.projectId}.geojson`,
 );
-
-const baseUrlOptions = {
-  dev: "/geodata",
-  prod: "https://enacit4r-cdn-s3.epfl.ch/urbes-viz",
-};
-const baseUrl = import.meta.env.DEV ? baseUrlOptions.dev : baseUrlOptions.prod;
 const BRUSH_RADIUS_M = 8000;
 
 const mapContainer = ref<HTMLDivElement | null>(null);

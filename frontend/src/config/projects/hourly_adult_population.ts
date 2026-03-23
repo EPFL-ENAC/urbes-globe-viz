@@ -1,8 +1,5 @@
 import type { ProjectConfig } from "./types";
-
-const baseUrl = import.meta.env.DEV
-  ? "/geodata"
-  : "https://enacit4r-cdn-s3.epfl.ch/urbes-viz";
+import { geodataBaseUrl as baseUrl } from "../geodata";
 
 export const hourlyAdultPopulationProject: ProjectConfig = {
   id: "hourly_adult_population",
@@ -68,5 +65,16 @@ export const hourlyAdultPopulationProject: ProjectConfig = {
       ],
       unit: "adults/500m²",
     },
+  },
+  timeControl: {
+    min: 0,
+    max: 23,
+    step: 1,
+    initial: 12,
+    fieldTemplate: "hour_{value}",
+    placeholderField: "hour_12",
+    label: "Hour",
+    displayFormat: "hour",
+    autoplayIntervalMs: 500,
   },
 };
