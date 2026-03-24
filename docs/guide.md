@@ -242,7 +242,8 @@ Start the local development server:
 cd frontend && npm run dev
 ```
 
-Open http://localhost:9000 in your browser (Chrome, Firefox, or Edge). You should see a spinning globe with project cards.
+Open http://localhost:5173 in your browser (Chrome, Firefox, or Edge). You should see a spinning globe with project cards.
+Warning : the port number may vary, check the terminal output for the correct URL.
 
 Click on a project card to verify the maps load correctly.
 
@@ -321,6 +322,18 @@ Choose the recipe that matches your input file format. Each recipe is a separate
 > - **Points or lines:** use `--drop-densest-as-needed` (thins dense clusters at low zoom)
 > - **Polygons:** use `--coalesce-densest-as-needed` (merges small polygons instead of dropping)
 > - **Small datasets (< 10k features):** use `--no-feature-limit --no-tile-size-limit` (keeps everything)
+
+ogr2ogr command example (Shapefile or GeoPackage to GeoJSON, with coordinate conversion):
+
+```bash
+ogr2ogr -t_srs EPSG:4326 my_dataset_name.json my_dataset_name.gpkg
+```
+
+tippecanoe command example (GeoJSON to PMTiles):
+
+```bash
+tippecanoe -zg --projection=EPSG:4326 --layer=my_dataset_name --minimum-zoom=4 --maximum-zoom=12 -o my_dataset_name.pmtiles my_dataset_name.json
+```
 
 ### 2.4 Choosing zoom levels
 
