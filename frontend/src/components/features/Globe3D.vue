@@ -183,6 +183,9 @@ onMounted(() => {
   });
 
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
+  map.setPadding(globeViewportPadding);
+  projectStore.setMapInstance(map);
+  projectStore.setZoomLevel(2);
 
   // Project markers
   const setupMarkers = () => {
@@ -230,11 +233,25 @@ onMounted(() => {
   });
 
   startSpin();
+  // Track zoom level in store
+  map.on("zoom", () => {
+    if (map) {
+      projectStore.setZoomLevel(map.getZoom());
+    }
+  });
+
+  // Setup interaction tracking and animation
+  setupInteractionTracking();
+  startAnimation();
 });
 
 onUnmounted(() => {
   stopSpin();
   removePreview();
+  cleanupAnimation();
+  cleanupLayers();
+
+  projectStore.setMapInstance(null);
   if (map) {
     map.remove();
     map = null;
