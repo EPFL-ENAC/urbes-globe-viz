@@ -19,12 +19,12 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 
 When using tippecanoe, `--minimum-zoom` and `--maximum-zoom` control how far users can zoom in/out on your data.
 
-| Data covers…          | `--minimum-zoom` | `--maximum-zoom` |
-| --------------------- | ---------------- | ---------------- |
-| Whole world           | 0                | 6                |
-| Continent / region    | 2                | 8                |
-| Single country        | 4                | 12               |
-| City / metro area     | 8                | 14               |
+| Data covers…       | `--minimum-zoom` | `--maximum-zoom` |
+| ------------------ | ---------------- | ---------------- |
+| Whole world        | 0                | 6                |
+| Continent / region | 2                | 8                |
+| Single country     | 4                | 12               |
+| City / metro area  | 8                | 14               |
 
 When in doubt, use `--minimum-zoom=4 --maximum-zoom=12`. More zoom levels = larger output file.
 
