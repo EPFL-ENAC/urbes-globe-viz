@@ -3,103 +3,192 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import { projectsGeoJSON } from "@/config/projects";
+import { projectsGeoJSON, mapLayers } from "@/config/projects";
 import { basemapSources, basemapLayers } from "@/config/basemap";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
-import { useProjectLayers } from "@/composables/useProjectLayers";
-import { useGlobeAnimation } from "@/composables/useGlobeAnimation";
 
 const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
-let map: maplibregl.Map | null = null;
-const globeViewportPadding: maplibregl.PaddingOptions = {
-  top: 0,
-  right: 0,
-  bottom: 72,
-  left: 0,
-};
-
 const projectStore = useProjectStore();
 const router = useRouter();
 
-// Composables
-const getMap = () => map;
-const { cleanup: cleanupLayers } = useProjectLayers(getMap);
-const {
-  isHoveringProject,
-  setupInteractionTracking,
-  startAnimation,
-  cleanup: cleanupAnimation,
-} = useGlobeAnimation(getMap);
+let map: maplibregl.Map | null = null;
+let animationFrame: number | null = null;
+let activePreviewId: string | null = null;
+let spinActive = true; // spin stops permanently on first user interaction
+let pmtilesRegistered = false;
 
-// Cache for protocol registration
-let pmtilesProtocolRegistered = false;
+// Camera state saved before hover — restored on unhover
+let savedCamera: {
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+} | null = null;
 
-// Watch for target coordinates changes and fly to location
+const initialCamera = {
+  center: [6.3, 46.2] as [number, number],
+  zoom: 2,
+};
+
+// --- Preview layer management ---
+
+function removePreview() {
+  if (!map || !activePreviewId) return;
+  const layerId = `${activePreviewId}-preview`;
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  if (map.getSource(activePreviewId)) map.removeSource(activePreviewId);
+  activePreviewId = null;
+}
+
+function addPreview(projectId: string) {
+  if (!map) return;
+  const config = mapLayers.find((l) => l.id === projectId);
+  if (!config) return;
+  if (!map.getSource(projectId)) {
+    map.addSource(projectId, config.source);
+  }
+  const layerId = `${projectId}-preview`;
+  if (!map.getLayer(layerId)) {
+    map.addLayer(
+      { ...config.layer, id: layerId, source: projectId },
+      "project-circles",
+    );
+  }
+  activePreviewId = projectId;
+}
+
+function filterCircles(projectId: string | null) {
+  if (!map?.getLayer("project-circles")) return;
+  map.setFilter(
+    "project-circles",
+    projectId ? ["==", ["get", "id"], projectId] : null,
+  );
+}
+
+// --- Spin animation (speed decreases with zoom, stops at zoom ≥ 10) ---
+
+function stopSpin() {
+  spinActive = false;
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+}
+
+function startSpin() {
+  let userInteracted = false;
+
+  const onInteraction = () => {
+    userInteracted = true;
+    stopSpin();
+  };
+
+  const spin = () => {
+    if (!spinActive || userInteracted) return;
+    if (map) {
+      const zoom = map.getZoom();
+      if (zoom < 10) {
+        const speed = 0.05 * (1 - zoom / 10);
+        const c = map.getCenter();
+        map.setCenter([c.lng + speed, c.lat]);
+      }
+    }
+    animationFrame = requestAnimationFrame(spin);
+  };
+
+  // Any user gesture permanently kills spin
+  map
+    ?.getCanvas()
+    .addEventListener("pointerdown", onInteraction, { once: true });
+  map?.getCanvas().addEventListener("wheel", onInteraction, { once: true });
+
+  animationFrame = requestAnimationFrame(spin);
+}
+
+// --- Hover watcher: single source of truth ---
+
 watch(
-  () => projectStore.targetCoordinates,
-  (coords) => {
-    if (coords && map) {
-      isHoveringProject.value = true;
+  () => projectStore.hoveredProjectId,
+  (projectId) => {
+    if (!map) return;
 
-      // Get project to access zoom and pitch
-      const project = projectsGeoJSON.features.find(
-        (f) =>
-          f.geometry.coordinates[0] === coords.longitude &&
-          f.geometry.coordinates[1] === coords.latitude,
+    // First hover permanently kills the idle spin
+    if (spinActive) stopSpin();
+
+    map.stop();
+    removePreview();
+    filterCircles(projectId);
+
+    if (projectId) {
+      // Save current camera before zooming in
+      const c = map.getCenter();
+      savedCamera = {
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+        pitch: map.getPitch(),
+        bearing: map.getBearing(),
+      };
+
+      const feature = projectsGeoJSON.features.find(
+        (f) => f.properties.id === projectId,
       );
-
+      if (!feature) return;
+      const [lng, lat] = feature.geometry.coordinates;
+      if (lng && lat)
+        map.flyTo({
+          center: [lng, lat],
+          zoom: feature.properties.zoom || 8,
+          pitch: feature.properties.pitch || 0,
+          duration: 1200,
+        });
+      addPreview(projectId);
+    } else if (savedCamera) {
+      // Restore previous camera instantly
+      console.log(savedCamera);
       map.flyTo({
-        center: [coords.longitude, coords.latitude],
-        zoom: project?.properties.zoom || 8,
-        pitch: project?.properties.pitch || 0,
-        duration: 1000,
+        pitch: 0,
+        bearing: 0,
+        duration: 1200,
       });
-    } else {
-      isHoveringProject.value = false;
+      savedCamera = null;
     }
   },
 );
 
+// --- Map setup ---
+
 onMounted(() => {
   if (!container.value) return;
 
-  // Register PMTiles protocol
-  if (!pmtilesProtocolRegistered) {
+  if (!pmtilesRegistered) {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
-    pmtilesProtocolRegistered = true;
+    pmtilesRegistered = true;
   }
 
-  // Initialize map with globe projection and performance settings
   map = new maplibregl.Map({
     container: container.value,
-    center: [6.3, 46.2], // Switzerland
-    zoom: 2, // Start at zoom 10 (middle of range)
-    minZoom: 1, // Match file's minimum
-    maxZoom: 15, // Match file's maximum
+    center: initialCamera.center,
+    zoom: initialCamera.zoom,
+    minZoom: 1,
+    maxZoom: 15,
     style: {
       version: 8,
-      projection: {
-        type: "globe",
-      },
+      projection: { type: "globe" },
       sources: { ...basemapSources },
       layers: [...basemapLayers],
     },
   });
 
-  map.setPadding(globeViewportPadding);
+  map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
 
-  // Add project markers and set projection after map loads
-  const setupProjectMarkers = () => {
+  // Project markers
+  const setupMarkers = () => {
     if (!map || map.getSource("projects")) return;
 
-    map.addSource("projects", {
-      type: "geojson",
-      data: projectsGeoJSON,
-    });
-
+    map.addSource("projects", { type: "geojson", data: projectsGeoJSON });
     map.addLayer({
       id: "project-circles",
       type: "circle",
@@ -115,27 +204,17 @@ onMounted(() => {
     map.on("mouseenter", "project-circles", () => {
       map!.getCanvas().style.cursor = "pointer";
     });
-
     map.on("mouseleave", "project-circles", () => {
       map!.getCanvas().style.cursor = "grab";
     });
-
     map.on("click", "project-circles", (e) => {
-      if (e.features && e.features[0]) {
-        const projectId = e.features[0].properties?.id;
-        if (projectId) {
-          router.push(`/project/${projectId}`);
-        }
-      }
+      const id = e.features?.[0]?.properties?.id;
+      if (id) router.push(`/project/${id}`);
     });
-
     map.on("mousemove", "project-circles", (e) => {
-      if (e.features && e.features[0]) {
-        const projectId = e.features[0].properties?.id;
-        projectStore.setHoveredProject(projectId);
-      }
+      const id = e.features?.[0]?.properties?.id;
+      if (id) projectStore.setHoveredProject(id);
     });
-
     map.on("mouseleave", "project-circles", () => {
       projectStore.setHoveredProject(null);
     });
@@ -143,24 +222,19 @@ onMounted(() => {
 
   map.once("render", () => {
     isLoading.value = false;
-    setupProjectMarkers();
+    setupMarkers();
   });
-
-  // Fallback: load fires normally when PMTiles doesn't block it
   map.on("load", () => {
     isLoading.value = false;
-    setupProjectMarkers();
+    setupMarkers();
   });
 
-  // Setup interaction tracking and animation
-  setupInteractionTracking();
-  startAnimation();
+  startSpin();
 });
 
 onUnmounted(() => {
-  cleanupAnimation();
-  cleanupLayers();
-
+  stopSpin();
+  removePreview();
   if (map) {
     map.remove();
     map = null;
