@@ -1,7 +1,12 @@
+<script lang="ts">
+// Module-level: shared across all ProjectCard instances so card A's leave
+// timeout is properly cancelled when card B's hover fires
+let sharedLeaveTimeout: number | null = null;
+</script>
+
 <script setup lang="ts">
 import type { ProjectProperties } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
-import { projectsGeoJSON } from "@/config/projects";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
@@ -11,37 +16,23 @@ const props = defineProps<{
 
 const projectStore = useProjectStore();
 const router = useRouter();
-let leaveTimeout: number | null = null;
 
 const isHovered = computed(
   () => projectStore.hoveredProjectId === props.project.id,
 );
 
 const handleHover = () => {
-  // Clear any pending leave timeout
-  if (leaveTimeout) {
-    clearTimeout(leaveTimeout);
-    leaveTimeout = null;
-  }
-
-  const feature = projectsGeoJSON.features.find(
-    (f) => f.properties.id === props.project.id,
-  );
-  if (feature && feature.geometry.coordinates) {
-    const [longitude, latitude] = feature.geometry.coordinates;
-    if (longitude !== undefined && latitude !== undefined) {
-      projectStore.setTargetCoordinates(longitude, latitude);
-    }
+  if (sharedLeaveTimeout) {
+    clearTimeout(sharedLeaveTimeout);
+    sharedLeaveTimeout = null;
   }
   projectStore.setHoveredProject(props.project.id);
 };
 
 const handleLeave = () => {
-  // Add small delay before clearing to prevent flickering
-  leaveTimeout = window.setTimeout(() => {
-    projectStore.clearTargetCoordinates();
+  sharedLeaveTimeout = window.setTimeout(() => {
     projectStore.setHoveredProject(null);
-    leaveTimeout = null;
+    sharedLeaveTimeout = null;
   }, 100);
 };
 
