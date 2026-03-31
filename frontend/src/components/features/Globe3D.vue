@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import maplibregl from "maplibre-gl";
+import maplibregl, { type LayerSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
 import { projectsGeoJSON, mapLayers } from "@/config/projects";
@@ -52,7 +52,7 @@ function addPreview(projectId: string) {
   const layerId = `${projectId}-preview`;
   if (!map.getLayer(layerId)) {
     map.addLayer(
-      { ...config.layer, id: layerId, source: projectId },
+      { ...config.layer, id: layerId, source: projectId } as LayerSpecification,
       "project-circles",
     );
   }
