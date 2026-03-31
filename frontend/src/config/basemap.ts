@@ -29,7 +29,7 @@ export const basemapLayers: LayerSpecification[] = [
     id: "background",
     type: "background",
     paint: {
-      "background-color": "#080808",
+      "background-color": "#111111",
     },
   },
   {
@@ -37,7 +37,7 @@ export const basemapLayers: LayerSpecification[] = [
     type: "raster",
     source: "ghsl-urban",
     paint: {
-      "raster-contrast": 0.6,
+      "raster-contrast": ["interpolate", ["linear"], ["zoom"], 2, 0.9, 6, 0.7],
       "raster-opacity": [
         "interpolate",
         ["linear"],
