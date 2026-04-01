@@ -18,6 +18,7 @@ let animationFrame: number | null = null;
 let activePreviewId: string | null = null;
 let spinActive = true; // spin stops permanently on first user interaction
 let pmtilesRegistered = false;
+let flyingToProject = false; // true while a hover-triggered flyTo is in progress
 
 // Camera state saved before hover — restored on unhover
 let savedCamera: {
@@ -117,6 +118,7 @@ watch(
     // First hover permanently kills the idle spin
     if (spinActive) stopSpin();
 
+    flyingToProject = false;
     map.stop();
     removePreview();
     filterCircles(projectId);
@@ -136,13 +138,18 @@ watch(
       );
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
-      if (lng && lat)
+      if (lng && lat) {
+        flyingToProject = true;
         map.flyTo({
           center: [lng, lat],
           zoom: feature.properties.zoom || 8,
           pitch: feature.properties.pitch || 0,
           duration: 1200,
         });
+        map.once("moveend", () => {
+          flyingToProject = false;
+        });
+      }
       addPreview(projectId);
     } else if (savedCamera) {
       // Restore previous camera instantly
@@ -174,6 +181,7 @@ onMounted(() => {
     zoom: initialCamera.zoom,
     minZoom: 1,
     maxZoom: 15,
+    attributionControl: false,
     style: {
       version: 8,
       projection: { type: "globe" },
@@ -183,7 +191,6 @@ onMounted(() => {
   });
 
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
-  map.setPadding(globeViewportPadding);
   projectStore.setMapInstance(map);
   projectStore.setZoomLevel(2);
 
@@ -219,7 +226,9 @@ onMounted(() => {
       if (id) projectStore.setHoveredProject(id);
     });
     map.on("mouseleave", "project-circles", () => {
-      projectStore.setHoveredProject(null);
+      if (!flyingToProject) {
+        projectStore.setHoveredProject(null);
+      }
     });
   };
 
@@ -240,16 +249,11 @@ onMounted(() => {
     }
   });
 
-  // Setup interaction tracking and animation
-  setupInteractionTracking();
-  startAnimation();
 });
 
 onUnmounted(() => {
   stopSpin();
   removePreview();
-  cleanupAnimation();
-  cleanupLayers();
 
   projectStore.setMapInstance(null);
   if (map) {
