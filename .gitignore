@@ -9,4 +9,7 @@ processing/**/*.mbtiles
 processing/**/*.tif
 processing/**/*.tfw
 
+processing/**/*.nc
+processing/**/wrfout_*
+
 .env
