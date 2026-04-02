@@ -4,7 +4,7 @@ import { useProjectStore } from "@/stores/project";
 
 const projectStore = useProjectStore();
 const zoom = computed(() => projectStore.zoomLevel);
-const isHoveringCard = computed(() => !!projectStore.targetCoordinates);
+const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const panel1Opacity = computed(() =>
   isHoveringCard.value ? 0 : clamp01(1 - (zoom.value - 2) / 0.4),
@@ -21,9 +21,7 @@ const heroVisible = computed(() => zoom.value < 4.8);
 const activePanel = computed(() => (zoom.value < 2.4 ? 0 : 1));
 
 function goToPanel(index: number) {
-  const map = projectStore.mapInstance;
-  if (!map) return;
-  map.easeTo({ zoom: index === 0 ? 2 : 3.3, duration: 600 });
+  projectStore.requestZoom(index === 0 ? 2 : 3.3);
 }
 </script>
 
@@ -45,51 +43,53 @@ function goToPanel(index: number) {
         ></div>
       </div>
 
-      <!-- Panel 1: Hero -->
-      <div
-        v-show="panel1Opacity > 0"
-        class="hero-panel"
-        :style="{ opacity: panel1Opacity }"
-      >
-        <h1 class="text-h2 text-weight-light q-mb-xs">
-          DECODING THE<br />
-          PHYSICS OF <br />
-          CITIES
-        </h1>
-        <p class="text-body1 text-grey q-mt-lg">
-          From the heartbeat of daily mobility to the temperature of their skin,
-          cities are complex adaptive systems made of multiple interconnected
-          components (e.g., demography, transport, energy). At URBES, a
-          multidisciplinary research group at EPFL, we explore their dynamics
-          across scales, quantify their interactions with the biosphere, and
-          seek to uncover the fundamental laws that govern their behaviour.
-        </p>
-      </div>
+      <!-- Panels: stacked in same grid cell so only the visible one sets height -->
+      <div class="panels-container">
+        <!-- Panel 1: Hero — always rendered to hold the reference height -->
+        <div
+          class="hero-panel"
+          :style="{ opacity: panel1Opacity }"
+        >
+          <h1 class="text-h2 text-weight-light q-mb-xs">
+            DECODING THE<br />
+            PHYSICS OF <br />
+            CITIES
+          </h1>
+          <p class="text-body1 text-grey q-mt-lg">
+            From the heartbeat of daily mobility to the temperature of their skin,
+            cities are complex adaptive systems made of multiple interconnected
+            components (e.g., demography, transport, energy). At URBES, a
+            multidisciplinary research group at EPFL, we explore their dynamics
+            across scales, quantify their interactions with the biosphere, and
+            seek to uncover the fundamental laws that govern their behaviour.
+          </p>
+        </div>
 
-      <!-- Panel 2: Info Sections -->
-      <div
-        v-show="panel2Opacity > 0"
-        class="hero-panel"
-        :style="{ opacity: panel2Opacity }"
-      >
-        <h1 class="text-h2 text-weight-light q-mb-xs">
-          COMPLEXITY <br />
-          IN TIME AND<br />
-          SPACE
-        </h1>
-        <p class="text-body1 text-grey q-mt-lg">
-          URBES Globe brings our research to life through visualizations, open
-          data, and model simulations - start exploring!
-        </p>
-        <div class="btn-row q-pt-md">
-          <q-btn
-            class="btn"
-            href="https://www.epfl.ch/labs/urbes/"
-            target="_blank"
-            rel="noopener"
-          >
-            Visit Urbes Lab
-          </q-btn>
+        <!-- Panel 2: Info Sections -->
+        <div
+          v-show="panel2Opacity > 0"
+          class="hero-panel"
+          :style="{ opacity: panel2Opacity }"
+        >
+          <h1 class="text-h2 text-weight-light q-mb-xs">
+            COMPLEXITY <br />
+            IN TIME AND<br />
+            SPACE
+          </h1>
+          <p class="text-body1 text-grey q-mt-lg">
+            URBES Globe brings our research to life through visualizations, open
+            data, and model simulations - start exploring!
+          </p>
+          <div class="btn-row q-pt-md">
+            <q-btn
+              class="btn"
+              href="https://www.epfl.ch/labs/urbes/"
+              target="_blank"
+              rel="noopener"
+            >
+              Visit Urbes Lab
+            </q-btn>
+          </div>
         </div>
       </div>
     </div>
@@ -98,29 +98,21 @@ function goToPanel(index: number) {
 
 <style scoped>
 .hero-overlay {
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
   pointer-events: none;
 }
 
 .scroll-zone {
-  position: absolute;
-  left: 0;
-  top: 42%;
   width: 750px;
-  padding-left: 2rem;
+  padding: 1rem 2rem;
   pointer-events: none;
 }
 
 .dot-indicators {
-  position: relative;
-  left: 0;
-  margin-bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .dot {
@@ -137,9 +129,12 @@ function goToPanel(index: number) {
   background: #e30613;
 }
 
+.panels-container {
+  display: grid;
+}
+
 .hero-panel {
-  position: absolute;
-  left: 2rem;
+  grid-area: 1 / 1;
   max-width: 550px;
 }
 

@@ -12,17 +12,19 @@ const projectsDuplicated = projectsGeoJSON.features.concat(
 <template>
   <div class="relative bg-black overflow-hidden" style="height: 100vh">
     <Globe3D />
-    <HeroSection />
-    <div class="absolute-bottom full-width q-pa-md" style="z-index: 100">
-      <div
-        class="row q-gutter-md no-wrap justify-center overflow-auto"
-        style="scrollbar-width: none; -ms-overflow-style: none"
-      >
-        <ProjectCard
-          v-for="feature in projectsDuplicated"
-          :key="feature.properties.id"
-          :project="feature.properties"
-        />
+    <div class="absolute-full column no-wrap" style="z-index: 100; pointer-events: none">
+      <HeroSection style="margin-top: auto" />
+      <div class="full-width q-pa-md" style="pointer-events: auto">
+        <div
+          class="row q-gutter-md no-wrap justify-center overflow-auto"
+          style="scrollbar-width: none; -ms-overflow-style: none"
+        >
+          <ProjectCard
+            v-for="feature in projectsDuplicated"
+            :key="feature.properties.id"
+            :project="feature.properties"
+          />
+        </div>
       </div>
     </div>
   </div>
