@@ -191,7 +191,6 @@ onMounted(() => {
   });
 
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
-  projectStore.setMapInstance(map);
   projectStore.setZoomLevel(2);
 
   // Project markers
@@ -248,14 +247,21 @@ onMounted(() => {
       projectStore.setZoomLevel(map.getZoom());
     }
   });
-
 });
+
+// React to zoom requests from other components (e.g. HeroSection dot nav)
+watch(
+  () => projectStore.targetZoom,
+  (zoom) => {
+    if (zoom == null || !map) return;
+    map.easeTo({ zoom, duration: 600 });
+    projectStore.targetZoom = null;
+  },
+);
 
 onUnmounted(() => {
   stopSpin();
   removePreview();
-
-  projectStore.setMapInstance(null);
   if (map) {
     map.remove();
     map = null;

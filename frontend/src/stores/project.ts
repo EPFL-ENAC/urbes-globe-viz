@@ -1,14 +1,11 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef } from "vue";
+import { ref } from "vue";
 
 export const useProjectStore = defineStore("project", () => {
   const selectedProject = ref<string | null>(null);
-  const mapInstance = shallowRef<maplibregl.Map | null>(null);
-  const targetCoordinates = ref<{ longitude: number; latitude: number } | null>(
-    null,
-  );
   const hoveredProjectId = ref<string | null>(null);
   const zoomLevel = ref(2);
+  const targetZoom = ref<number | null>(null);
 
   function selectProject(id: string) {
     selectedProject.value = id;
@@ -22,18 +19,18 @@ export const useProjectStore = defineStore("project", () => {
     zoomLevel.value = zoom;
   }
 
-  function setMapInstance(map: maplibregl.Map | null) {
-    mapInstance.value = map;
+  function requestZoom(zoom: number) {
+    targetZoom.value = zoom;
   }
 
   return {
     selectedProject,
     hoveredProjectId,
     zoomLevel,
-    mapInstance,
+    targetZoom,
     selectProject,
     setHoveredProject,
     setZoomLevel,
-    setMapInstance,
+    requestZoom,
   };
 });
