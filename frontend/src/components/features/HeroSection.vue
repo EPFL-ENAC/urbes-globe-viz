@@ -46,22 +46,20 @@ function goToPanel(index: number) {
       <!-- Panels: stacked in same grid cell so only the visible one sets height -->
       <div class="panels-container">
         <!-- Panel 1: Hero — always rendered to hold the reference height -->
-        <div
-          class="hero-panel"
-          :style="{ opacity: panel1Opacity }"
-        >
+        <div class="hero-panel" :style="{ opacity: panel1Opacity }">
           <h1 class="text-h2 text-weight-light q-mb-xs">
             DECODING THE<br />
             PHYSICS OF <br />
             CITIES
           </h1>
           <p class="text-body1 text-grey q-mt-lg">
-            From the heartbeat of daily mobility to the temperature of their skin,
-            cities are complex adaptive systems made of multiple interconnected
-            components (e.g., demography, transport, energy). At URBES, a
-            multidisciplinary research group at EPFL, we explore their dynamics
-            across scales, quantify their interactions with the biosphere, and
-            seek to uncover the fundamental laws that govern their behaviour.
+            From the heartbeat of daily mobility to the temperature of their
+            skin, cities are complex adaptive systems made of multiple
+            interconnected components (e.g., demography, transport, energy). At
+            URBES, a multidisciplinary research group at EPFL, we explore their
+            dynamics across scales, quantify their interactions with the
+            biosphere, and seek to uncover the fundamental laws that govern
+            their behaviour.
           </p>
         </div>
 
