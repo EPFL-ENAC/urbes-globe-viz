@@ -13,10 +13,10 @@ const projectsDuplicated = projectsGeoJSON.features.concat(
   <div class="relative bg-black overflow-hidden" style="height: 100vh">
     <Globe3D />
     <div
-      class="absolute-full column no-wrap"
+      class="absolute-full column no-wrap justify-end"
       style="z-index: 100; pointer-events: none"
     >
-      <HeroSection style="margin-top: auto" />
+      <HeroSection />
       <div class="full-width q-pa-md" style="pointer-events: auto">
         <div
           class="row q-gutter-md no-wrap justify-center overflow-auto"
