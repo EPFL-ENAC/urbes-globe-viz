@@ -119,8 +119,9 @@ onUnmounted(stop);
 
 <style scoped>
 .time-slider {
-  width: min(460px, calc(100vw - 40px));
-  padding: 12px 14px;
+  width: 100%;
+  max-width: 100%;
+  padding: 14px 16px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);

@@ -62,12 +62,14 @@ defineProps<{ legend: ProjectLegend }>();
 
 <style scoped>
 .map-legend {
-  position: absolute;
-  bottom: 28px;
-  left: 16px;
-  background: rgba(0, 0, 0, 0.65);
-  border-radius: 8px;
-  padding: 10px 12px;
+  position: relative;
+  flex-shrink: 0;
+  align-self: flex-end;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 12px 14px;
   min-width: 140px;
   max-width: 220px;
   z-index: 10;
