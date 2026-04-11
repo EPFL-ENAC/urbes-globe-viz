@@ -209,24 +209,28 @@ const goBack = () => {
         :project-id="projectId"
         :active-time="activeTimeValue"
       />
-      <MapLegend
-        v-if="activeLegend"
-        :legend="activeLegend"
-        :style="activeTimeControl ? { bottom: '90px' } : undefined"
-      />
       <div
-        v-if="activeTimeControl && activeTimeValue !== undefined"
-        class="time-slider-wrap"
+        v-if="
+          activeLegend ||
+          (activeTimeControl && activeTimeValue !== undefined)
+        "
+        class="map-bottom-bar"
       >
-        <TimeSlider
-          v-model="activeTimeValue"
-          :min="activeTimeControl.min"
-          :max="activeTimeControl.max"
-          :step="activeTimeControl.step"
-          :label="activeTimeControl.label"
-          :display-format="activeTimeControl.displayFormat"
-          :autoplay-interval-ms="activeTimeControl.autoplayIntervalMs"
-        />
+        <MapLegend v-if="activeLegend" :legend="activeLegend" />
+        <div
+          v-if="activeTimeControl && activeTimeValue !== undefined"
+          class="time-slider-wrap"
+        >
+          <TimeSlider
+            v-model="activeTimeValue"
+            :min="activeTimeControl.min"
+            :max="activeTimeControl.max"
+            :step="activeTimeControl.step"
+            :label="activeTimeControl.label"
+            :display-format="activeTimeControl.displayFormat"
+            :autoplay-interval-ms="activeTimeControl.autoplayIntervalMs"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -373,13 +377,27 @@ const goBack = () => {
   left: 70px;
 }
 
-.time-slider-wrap {
+.map-bottom-bar {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
+  left: 20px;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   z-index: 110;
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.map-bottom-bar > * {
+  pointer-events: auto;
+}
+
+.time-slider-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: stretch;
 }
 </style>

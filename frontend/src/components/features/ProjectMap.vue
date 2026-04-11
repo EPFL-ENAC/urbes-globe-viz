@@ -140,6 +140,7 @@ const initializeMap = () => {
   // Initialize map with optimized settings
   map = new maplibregl.Map({
     container: mapContainer.value,
+    attributionControl: false,
     style: {
       version: 8,
       sources: {
