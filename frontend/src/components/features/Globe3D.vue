@@ -169,6 +169,11 @@ watch(
 onMounted(() => {
   if (!container.value) return;
 
+  // Pinia survives route changes; stale hover/zoom hid the hero.
+  savedCamera = null;
+  projectStore.setHoveredProject(null);
+  projectStore.setZoomLevel(initialCamera.zoom);
+
   if (!pmtilesRegistered) {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
