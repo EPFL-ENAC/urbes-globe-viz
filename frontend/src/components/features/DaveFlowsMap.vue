@@ -137,6 +137,7 @@ onMounted(() => {
 
   map = new maplibregl.Map({
     container: mapContainer.value,
+    attributionControl: false,
     style: {
       version: 8,
       sources: { ...basemapSources },
