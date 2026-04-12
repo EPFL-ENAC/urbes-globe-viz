@@ -14,3 +14,6 @@ processing/**/wrfout_*
 
 .env
 .venv/
+
+# GDAL documentation files (local reference only)
+*.rst
