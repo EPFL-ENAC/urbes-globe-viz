@@ -13,3 +13,6 @@ processing/**/*.nc
 processing/**/wrfout_*
 
 .env
+
+# GDAL documentation files (local reference only)
+*.rst
