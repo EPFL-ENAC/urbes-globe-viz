@@ -24,6 +24,7 @@ pre-commit:
       glob: "*"
       tags: prettier
       run: npx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
     # eslint:
     #   glob: "*.{js,ts,jsx,tsx,vue}"
     #   tags: frontend eslint
