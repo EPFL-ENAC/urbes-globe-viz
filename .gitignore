@@ -13,6 +13,7 @@ processing/**/*.nc
 processing/**/wrfout_*
 
 .env
+CLAUDE.md
 
 # GDAL documentation files (local reference only)
 *.rst
