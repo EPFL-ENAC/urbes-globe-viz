@@ -10,7 +10,7 @@ Instructions
 - After zoom 0–8 finishes (~30 min), visually verify tiles before launching zoom 9–13 (~8–15 hours)
 - Post-process: delete near-empty tiles (-size -500c) to save ~20–30% space
 - Final pipeline: MBTiles (via mb-util) → PMTiles (via pmtiles convert) → CDN upload (s3cmd put)
-- CDN target: s3://urbes-viz/ → https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles
+- NAS target: upload to shared EPFL NAS geodata/ folder → https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles
 - Do not update Globe3D.vue as part of this task (user will handle frontend separately)
   Discoveries
 - ghsl_built_3857_cog.tif (47 GB, EPSG:3857, NoData=255) already exists on ENACIT4R-CUDA — no need to re-run gdalwarp

@@ -61,8 +61,8 @@ pmtiles:
 	@ls -lh $(GEODATA)/ghsl.pmtiles
 
 upload:
-	s3cmd put $(GEODATA)/ghsl.pmtiles s3://urbes-viz/
-	@echo "Available at: https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles"
+	@echo "Upload ghsl.pmtiles to the shared EPFL NAS geodata/ folder"
+	@echo "Available at: https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles"
 
 clean:
 	rm -rf $(GEODATA)/ghsl_tiles/

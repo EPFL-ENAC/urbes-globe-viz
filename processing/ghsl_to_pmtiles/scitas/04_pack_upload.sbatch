@@ -65,8 +65,9 @@ s3cmd put \
   --progress \
   $WORK/ghsl.pmtiles \
   s3://urbes-viz/
-echo "Available at: https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles"
+echo "Upload ghsl.pmtiles to the shared EPFL NAS geodata/ folder"
+echo "Available at: https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles"
 
 echo ""
 echo "=== All done ==="
-echo "Next: update Globe3D.vue to use pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles"
+echo "Next: update Globe3D.vue to use pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles"

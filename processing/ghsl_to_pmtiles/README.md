@@ -94,12 +94,11 @@ find ./ghsl_tiles/ -name "*.webp" | wc -l
 pmtiles convert ./ghsl_tiles/ ghsl.pmtiles
 ```
 
-### 5. Upload to CDN
+### 5. Upload to NAS
 
-```bash
-s3cmd put ghsl.pmtiles s3://urbes-viz/
-# Available at: https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles
-```
+Copy `ghsl.pmtiles` to the shared EPFL NAS `geodata/` folder (ask Pierre for the path).
+
+It will be served at: `https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles`
 
 ## Frontend integration (Globe3D.vue)
 
@@ -110,7 +109,7 @@ maplibregl.addProtocol("pmtiles", protocol.tile);
 
 map.addSource("ghsl", {
   type: "raster",
-  url: "pmtiles://https://enacit4r-cdn-s3.epfl.ch/urbes-viz/ghsl.pmtiles",
+  url: "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles",
   tileSize: 256,
 });
 map.addLayer({

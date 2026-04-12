@@ -448,7 +448,16 @@ Or open it in VS Code (if installed): `code frontend/src/config/projects/my_data
 
 ### 3.3 Fill in the metadata
 
-Here is what each field means. Replace every value with your own:
+Here is what each field means. Replace every value with your own.
+
+> **Important:** Make sure the top of your file has these two import lines (they should already be there if you copied an existing config):
+>
+> ```typescript
+> import type { ProjectConfig } from "./types";
+> import { geodataBaseUrl as baseUrl } from "../geodata";
+> ```
+>
+> `baseUrl` automatically points to the right server — `/geodata` during local development, and `https://urbes-viz.epfl.ch/geodata` in production. **Do not hardcode a URL.**
 
 ```typescript
 export const myDatasetNameProject: ProjectConfig = {
