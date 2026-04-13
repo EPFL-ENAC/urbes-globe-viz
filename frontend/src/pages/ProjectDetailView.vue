@@ -81,7 +81,7 @@ watch(
   activeCogVariables,
   (vars) => {
     if (vars?.length) {
-      activeVariableId.value = vars[0].id;
+      activeVariableId.value = vars[0]!.id;
     } else {
       activeVariableId.value = "";
     }
@@ -480,9 +480,11 @@ const goBack = () => {
 .legend-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
   align-self: flex-end;
+  min-width: 140px;
+  max-width: 220px;
 }
 
 .time-slider-wrap {
