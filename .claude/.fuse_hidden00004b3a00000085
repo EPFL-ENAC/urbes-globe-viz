@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(ogrinfo:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:cogeotiff.github.io)",
+      "Bash(grep:*)",
+      "WebFetch(domain:scitas-doc.epfl.ch)",
+      "WebFetch(domain:scitas-data.epfl.ch)",
+      "WebFetch(domain:www.epfl.ch)",
+      "Read(//home/pierre/jed-ghsl/**)",
+      "Read(//mnt/data/Documents/Code/**)",
+      "Read(//mnt/data/**)",
+      "Read(//home/pierre/**)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(git status:*)",
+      "Bash(gdalinfo)",
+      "Bash(gdalinfo *)",
+      "Bash(gh pr:*)",
+      "WebFetch(domain:deck.gl)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
