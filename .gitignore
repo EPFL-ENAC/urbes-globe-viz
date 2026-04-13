@@ -11,6 +11,7 @@ processing/**/*.tfw
 
 processing/**/*.nc
 processing/**/wrfout_*
+processing/**/*.xml
 
 .env
 .venv/
