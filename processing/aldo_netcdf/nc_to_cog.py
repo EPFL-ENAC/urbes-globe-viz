@@ -360,6 +360,7 @@ def extract_variable_to_cog(
             "-co", "LEVEL=6",
             "-co", "PREDICTOR=2",
             "-co", "BLOCKSIZE=256",
+            "-co", "TILING_SCHEME=GoogleMapsCompatible",
             "-co", "OVERVIEW_RESAMPLING=AVERAGE",
             "-co", "BIGTIFF=IF_SAFER",
             "--config", "GDAL_CACHEMAX", "4096",
