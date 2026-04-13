@@ -14,6 +14,7 @@ Ready-to-use recipes for converting common geospatial data formats into web-opti
 | GeoPackage (.gpkg)                       | Vector tiles                            | [GeoPackage → PMTiles](gpkg_to_pmtiles.md)        |
 | GeoJSON                                  | Vector tiles                            | [GeoJSON → PMTiles](geojson_to_pmtiles.md)        |
 | Raster GeoTIFF                           | Cloud Optimized GeoTIFF for web display | [Raster → COG](raster_to_cog.md)                  |
+| NetCDF (WRF / PALM climate simulations)  | Multi-band COG with time slider         | [NetCDF → COG](netcdf_to_cog.md)                  |
 
 ## Choosing zoom levels
 

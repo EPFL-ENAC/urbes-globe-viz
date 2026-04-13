@@ -63,6 +63,7 @@ urbes-globe-viz/
 │       └── stores/                # Pinia stores
 └── processing/
     ├── cookbook/                  # ← Recipes for converting data (start here)
+    ├── aldo_netcdf/               # WRF/PALM NetCDF → multi-band COG pipeline
     ├── ghsl_to_pmtiles/           # GHSL built-surface pipeline (SCITAS HPC)
     ├── dave_flows/                # DAVE mobility flow processing
     └── martin_building_heights/   # Building heights → PMTiles

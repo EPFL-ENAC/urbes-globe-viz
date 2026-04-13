@@ -62,6 +62,13 @@ Converts building height CSV data to PMTiles format.
 
 → [`martin_building_heights/`](martin_building_heights/)
 
+### WRF/PALM Climate Simulations
+
+Converts WRF mesoscale and PALM microscale NetCDF outputs to multi-band COGs (one band per timestep) for the Deck.gl COG renderer. Supports variable selection, time-slider animation, and multi-domain sub-visualizations.
+
+→ [`aldo_netcdf/`](aldo_netcdf/)
+→ Recipe: [`cookbook/netcdf_to_cog.md`](cookbook/netcdf_to_cog.md)
+
 ---
 
 ## Python environment
