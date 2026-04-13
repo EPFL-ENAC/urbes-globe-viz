@@ -209,6 +209,7 @@ export const wrfProject: ProjectConfig = {
   year: 2022,
   zoom: 9,
   pitch: 0,
+  preview: "urban_climate.png",
 
   unit: "K",
   info: "Source: Aldo Brandi, URBES",

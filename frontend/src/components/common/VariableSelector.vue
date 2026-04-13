@@ -28,11 +28,12 @@ const emit = defineEmits<{
 <style scoped>
 .variable-selector {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border-radius: 10px;
   pointer-events: auto;
 }
@@ -50,6 +51,7 @@ const emit = defineEmits<{
     border-color 0.15s,
     color 0.15s;
   white-space: nowrap;
+  text-align: center;
 }
 
 .var-chip:hover {
