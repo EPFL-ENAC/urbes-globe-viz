@@ -211,8 +211,7 @@ const goBack = () => {
       />
       <div
         v-if="
-          activeLegend ||
-          (activeTimeControl && activeTimeValue !== undefined)
+          activeLegend || (activeTimeControl && activeTimeValue !== undefined)
         "
         class="map-bottom-bar"
       >

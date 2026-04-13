@@ -13,3 +13,4 @@ processing/**/*.nc
 processing/**/wrfout_*
 
 .env
+.venv/
