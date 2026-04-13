@@ -64,7 +64,10 @@ const getLayerForTime = (timeValue: number) => {
   const layerConfig = getLayerConfig();
   if (!layerConfig) return null;
 
-  if (!layerConfig.timeControl) {
+  if (
+    !layerConfig.timeControl?.fieldTemplate ||
+    !layerConfig.timeControl?.placeholderField
+  ) {
     return layerConfig.layer;
   }
 

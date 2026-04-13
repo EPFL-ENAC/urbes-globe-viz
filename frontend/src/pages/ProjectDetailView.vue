@@ -2,8 +2,10 @@
 import { useRoute, useRouter } from "vue-router";
 import ProjectMap from "@/components/features/ProjectMap.vue";
 import DaveFlowsMap from "@/components/features/DaveFlowsMap.vue";
+import CogRasterMap from "@/components/features/CogRasterMap.vue";
 import MapLegend from "@/components/features/MapLegend.vue";
 import TimeSlider from "@/components/common/TimeSlider.vue";
+import VariableSelector from "@/components/common/VariableSelector.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
 import { computed, onUnmounted, ref, watch } from "vue";
 
@@ -41,7 +43,72 @@ const activeDataUrl = computed(() => {
   return undefined;
 });
 
+const activeCenter = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.coordinates ??
+      projectConfig.value?.coordinates
+    );
+  }
+  return projectConfig.value?.coordinates;
+});
+
+const activeZoom = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.zoom ??
+      projectConfig.value?.zoom
+    );
+  }
+  return projectConfig.value?.zoom;
+});
+
+// COG variable selector — cascades subViz → project-level
+const activeCogVariables = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.cogVariables ??
+      projectConfig.value?.cogVariables
+    );
+  }
+  return projectConfig.value?.cogVariables;
+});
+
+const activeVariableId = ref<string>("");
+
+// Reset variable selection when subViz or variable list changes
+watch(
+  activeCogVariables,
+  (vars) => {
+    if (vars?.length) {
+      activeVariableId.value = vars[0].id;
+    } else {
+      activeVariableId.value = "";
+    }
+  },
+  { immediate: true },
+);
+
+const activeCogVariable = computed(() => {
+  const vars = activeCogVariables.value;
+  if (!vars?.length) return undefined;
+  return vars.find((v) => v.id === activeVariableId.value) ?? vars[0];
+});
+
+// When cogVariables is present, the selected variable overrides cogRaster and legend
+const activeCogRaster = computed(() => {
+  if (activeCogVariable.value) return activeCogVariable.value.cogRaster;
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.cogRaster ??
+      projectConfig.value?.cogRaster
+    );
+  }
+  return projectConfig.value?.cogRaster;
+});
+
 const activeLegend = computed(() => {
+  if (activeCogVariable.value?.legend) return activeCogVariable.value.legend;
   if (subVizList.value) {
     return (
       subVizList.value[activeSubVizIndex.value]?.legend ??
@@ -204,6 +271,14 @@ const goBack = () => {
         :project-id="projectId"
         :data-url="activeDataUrl"
       />
+      <CogRasterMap
+        v-else-if="activeRenderer === 'deckgl-cog' && activeCogRaster"
+        :project-id="projectId"
+        :cog-raster="activeCogRaster"
+        :active-time="activeTimeValue"
+        :center="activeCenter"
+        :zoom="activeZoom"
+      />
       <ProjectMap
         v-else-if="project"
         :project-id="projectId"
@@ -211,11 +286,20 @@ const goBack = () => {
       />
       <div
         v-if="
-          activeLegend || (activeTimeControl && activeTimeValue !== undefined)
+          activeLegend ||
+          activeCogVariables ||
+          (activeTimeControl && activeTimeValue !== undefined)
         "
         class="map-bottom-bar"
       >
-        <MapLegend v-if="activeLegend" :legend="activeLegend" />
+        <div v-if="activeCogVariables || activeLegend" class="legend-group">
+          <VariableSelector
+            v-if="activeCogVariables?.length"
+            v-model="activeVariableId"
+            :variables="activeCogVariables"
+          />
+          <MapLegend v-if="activeLegend" :legend="activeLegend" />
+        </div>
         <div
           v-if="activeTimeControl && activeTimeValue !== undefined"
           class="time-slider-wrap"
@@ -391,6 +475,14 @@ const goBack = () => {
 
 .map-bottom-bar > * {
   pointer-events: auto;
+}
+
+.legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
 .time-slider-wrap {

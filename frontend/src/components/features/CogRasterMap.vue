@@ -5,7 +5,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
-import { projectsGeoJSON } from "@/config/projects";
 import { basemapSources, basemapLayers } from "@/config/basemap";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 import type { CogRasterConfig } from "@/config/projects/types";
@@ -14,6 +13,8 @@ const props = defineProps<{
   projectId: string;
   cogRaster: CogRasterConfig;
   activeTime?: number;
+  center?: [number, number];
+  zoom?: number;
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
@@ -29,15 +30,14 @@ const cogUrl = computed(() => {
 function makeLayers() {
   return [
     new CogBitmapLayer({
-      id: `${props.projectId}-cog`,
+      id: `${props.projectId}-cog-${cogUrl.value}`,
       rasterData: cogUrl.value,
       bounds: null,
       isTiled: true,
       cogBitmapOptions: {
         type: "image",
-        format: "float32",
         useHeatMap: true,
-        useChannelIndex: props.activeTime ?? 0,
+        useChannel: (props.activeTime ?? 0) + 1,
         colorScale: props.cogRaster.colorScale,
         colorScaleValueRange: props.cogRaster.colorScaleValueRange,
         nullColor: props.cogRaster.nullColor ?? [0, 0, 0, 0],
@@ -59,6 +59,13 @@ watch(() => props.activeTime, updateLayers);
 // When cogRaster config changes (subViz switch), recreate layers
 watch(() => props.cogRaster, updateLayers, { deep: true });
 
+// When center/zoom changes (subViz switch), fly to new location
+watch([() => props.center, () => props.zoom], ([newCenter, newZoom]) => {
+  if (map && newCenter) {
+    map.flyTo({ center: newCenter, zoom: newZoom ?? 8, duration: 1200 });
+  }
+});
+
 onMounted(() => {
   if (!mapContainer.value) return;
 
@@ -69,14 +76,6 @@ onMounted(() => {
     // Already registered
   }
 
-  const project = projectsGeoJSON.features.find(
-    (f) => f.properties.id === props.projectId,
-  );
-  const center: [number, number] = (project?.geometry.coordinates as [
-    number,
-    number,
-  ]) || [6.5, 46.5];
-
   map = new maplibregl.Map({
     container: mapContainer.value,
     style: {
@@ -84,9 +83,8 @@ onMounted(() => {
       sources: { ...basemapSources },
       layers: [...basemapLayers],
     },
-    center,
-    zoom: project?.properties.zoom || 8,
-    pitch: project?.properties.pitch || 0,
+    center: props.center ?? [6.5, 46.5],
+    zoom: props.zoom ?? 8,
     refreshExpiredTiles: false,
     fadeDuration: 0,
     renderWorldCopies: false,
