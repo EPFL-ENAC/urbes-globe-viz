@@ -7,7 +7,7 @@ package-lock.json
 npm-shrinkwrap.json
 .python-version
 # Python files and environments
-backend/.venv/*
+**/.venv/
 backend/**/*.py
 backend/.dockerignore
 **/__pycache__/

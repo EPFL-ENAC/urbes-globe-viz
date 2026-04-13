@@ -17,3 +17,4 @@ CLAUDE.md
 
 # GDAL documentation files (local reference only)
 *.rst
+.venv/
