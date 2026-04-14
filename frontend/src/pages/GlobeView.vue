@@ -3,10 +3,6 @@ import Globe3D from "@/components/features/Globe3D.vue";
 import HeroSection from "@/components/features/HeroSection.vue";
 import ProjectCard from "@/components/common/ProjectCard.vue";
 import { projectsGeoJSON } from "@/config/projects";
-
-const projectsDuplicated = projectsGeoJSON.features.concat(
-  projectsGeoJSON.features,
-);
 </script>
 
 <template>
@@ -23,7 +19,7 @@ const projectsDuplicated = projectsGeoJSON.features.concat(
           style="scrollbar-width: none; -ms-overflow-style: none"
         >
           <ProjectCard
-            v-for="feature in projectsDuplicated"
+            v-for="feature in projectsGeoJSON.features"
             :key="feature.properties.id"
             :project="feature.properties"
           />
