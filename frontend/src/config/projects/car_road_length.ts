@@ -9,7 +9,8 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
   coordinates: [6.58, 46.41], // Lausanne
 
   title: "Car road length",
-  description: "Aggregated car road length processed from SwissTLM3D - input to DAVE for car capacities",
+  description:
+    "Aggregated car road length processed from SwissTLM3D - input to DAVE for car capacities",
   category: "Transport",
   year: 2025,
   preview: "car_road_length.png",
@@ -30,7 +31,15 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
     "source-layer": "other_car_roads",
     // filter: [">=", ["get", "hour_12"], 5],
     paint: {
-      "fill-extrusion-height": ["interpolate",["linear"], ["get", "sum"], 0,0,18000,30000],
+      "fill-extrusion-height": [
+        "interpolate",
+        ["linear"],
+        ["get", "sum"],
+        0,
+        0,
+        18000,
+        30000,
+      ],
       "fill-extrusion-base": 0,
       "fill-extrusion-opacity": 0.8,
       "fill-extrusion-color": [
