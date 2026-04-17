@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import maplibregl, { type LayerSpecification } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import { projectsGeoJSON, mapLayers } from "@/config/projects";
+import { projectsGeoJSON } from "@/config/projects";
 import { basemapSources, basemapLayers } from "@/config/basemap";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
+import { useMapPreview } from "@/composables/useMapPreview";
 
 const container = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 const projectStore = useProjectStore();
 const router = useRouter();
+const preview = useMapPreview();
 
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
-let activePreviewId: string | null = null;
 let spinActive = true; // spin stops permanently on first user interaction
 let pmtilesRegistered = false;
 let flyingToProject = false; // true while a hover-triggered flyTo is in progress
@@ -33,40 +34,7 @@ const initialCamera = {
   zoom: 2,
 };
 
-// --- Preview layer management ---
-
-function removePreview() {
-  if (!map || !activePreviewId) return;
-  const layerId = `${activePreviewId}-preview`;
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
-  if (map.getSource(activePreviewId)) map.removeSource(activePreviewId);
-  activePreviewId = null;
-}
-
-function addPreview(projectId: string) {
-  if (!map) return;
-  const config = mapLayers.find((l) => l.id === projectId);
-  if (!config) return;
-  if (!map.getSource(projectId)) {
-    map.addSource(projectId, config.source);
-  }
-  const layerId = `${projectId}-preview`;
-  if (!map.getLayer(layerId)) {
-    map.addLayer(
-      { ...config.layer, id: layerId, source: projectId } as LayerSpecification,
-      "project-circles",
-    );
-  }
-  activePreviewId = projectId;
-}
-
-function filterCircles(projectId: string | null) {
-  if (!map?.getLayer("project-circles")) return;
-  map.setFilter(
-    "project-circles",
-    projectId ? ["==", ["get", "id"], projectId] : null,
-  );
-}
+// --- Preview layer management (delegated to useMapPreview) ---
 
 // --- Spin animation (speed decreases with zoom, stops at zoom ≥ 10) ---
 
@@ -120,8 +88,8 @@ watch(
 
     flyingToProject = false;
     map.stop();
-    removePreview();
-    filterCircles(projectId);
+    preview.remove(map);
+    preview.filterCircles(map, projectId);
 
     if (projectId) {
       // Save current camera before zooming in
@@ -150,7 +118,7 @@ watch(
           flyingToProject = false;
         });
       }
-      addPreview(projectId);
+      preview.add(map, projectId);
     } else if (savedCamera) {
       // Restore previous camera instantly
       console.log(savedCamera);
@@ -199,19 +167,20 @@ onMounted(() => {
   projectStore.setZoomLevel(2);
 
   // Project markers
-  const setupMarkers = () => {
+  const setupMarkers = async () => {
     if (!map || map.getSource("projects")) return;
+
+    await preview.setupIcons(map);
 
     map.addSource("projects", { type: "geojson", data: projectsGeoJSON });
     map.addLayer({
       id: "project-circles",
-      type: "circle",
+      type: "symbol",
       source: "projects",
-      paint: {
-        "circle-radius": 8,
-        "circle-color": "#c8c8c8",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff",
+      layout: {
+        "icon-image": ["concat", ["get", "id"], "-marker"],
+        "icon-size": 1,
+        "icon-allow-overlap": true,
       },
     });
 
@@ -266,7 +235,7 @@ watch(
 
 onUnmounted(() => {
   stopSpin();
-  removePreview();
+  if (map) preview.remove(map);
   if (map) {
     map.remove();
     map = null;
