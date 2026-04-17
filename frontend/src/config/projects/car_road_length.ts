@@ -1,9 +1,5 @@
 import type { ProjectConfig } from "./types";
-
-const baseUrl = import.meta.env.DEV
-  ? "/geodata"
-  : "https://enacit4r-cdn-s3.epfl.ch/urbes-viz";
-
+import { geodataBaseUrl as baseUrl } from "../geodata";
 export const lenOtherCarRoadsProject: ProjectConfig = {
   id: "len_other_car_roads",
   coordinates: [6.58, 46.41], // Lausanne
@@ -29,7 +25,6 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
     type: "fill-extrusion",
     source: "len_other_car_roads",
     "source-layer": "other_car_roads",
-    // filter: [">=", ["get", "hour_12"], 5],
     paint: {
       "fill-extrusion-height": [
         "interpolate",
