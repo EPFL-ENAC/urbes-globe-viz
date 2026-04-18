@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Protocol } from "pmtiles";
+import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
@@ -121,10 +121,9 @@ onMounted(() => {
   if (!mapContainer.value) return;
 
   try {
-    const protocol = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
+    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
   } catch {
-    // Already registered from Globe3D
+    // Already registered from Globe3D / another map mount
   }
 
   const project = projectsGeoJSON.features.find(
@@ -147,7 +146,7 @@ onMounted(() => {
     zoom: project?.properties.zoom || 8,
     pitch: project?.properties.pitch || 0,
     refreshExpiredTiles: false,
-    fadeDuration: 0,
+    fadeDuration: 500,
     renderWorldCopies: false,
   });
 

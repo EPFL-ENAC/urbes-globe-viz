@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Protocol } from "pmtiles";
+import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
 import { basemapSources, basemapLayers } from "@/config/basemap";
@@ -70,8 +70,7 @@ onMounted(() => {
   if (!mapContainer.value) return;
 
   try {
-    const protocol = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
+    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
   } catch {
     // Already registered
   }
@@ -86,7 +85,7 @@ onMounted(() => {
     center: props.center ?? [6.5, 46.5],
     zoom: props.zoom ?? 8,
     refreshExpiredTiles: false,
-    fadeDuration: 0,
+    fadeDuration: 500,
     renderWorldCopies: false,
   });
 

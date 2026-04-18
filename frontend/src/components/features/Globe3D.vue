@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Protocol } from "pmtiles";
+import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { projectsGeoJSON } from "@/config/projects";
 import { basemapSources, basemapLayers } from "@/config/basemap";
 import { useProjectStore } from "@/stores/project";
@@ -143,8 +143,7 @@ onMounted(() => {
   projectStore.setZoomLevel(initialCamera.zoom);
 
   if (!pmtilesRegistered) {
-    const protocol = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
+    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
     pmtilesRegistered = true;
   }
 
@@ -155,6 +154,7 @@ onMounted(() => {
     minZoom: 1,
     maxZoom: 15,
     attributionControl: false,
+    fadeDuration: 500,
     style: {
       version: 8,
       projection: { type: "globe" },

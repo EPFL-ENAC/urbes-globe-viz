@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
 import { basemapSources, basemapLayers } from "@/config/basemap";
-import { Protocol } from "pmtiles";
+import { pmtilesProtocol } from "@/lib/pmtilesClient";
 
 const props = defineProps<{
   projectId: string;
@@ -15,8 +15,7 @@ const mapContainer = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 
-// Shared protocol instance to avoid re-registration
-let protocolInstance: Protocol | null = null;
+let pmtilesRegistered = false;
 
 const getLayerConfig = () =>
   mapLayers.find((layer) => layer.id === props.projectId);
@@ -111,9 +110,9 @@ const applyLayerTime = (timeValue: number) => {
 };
 
 const ensureProtocol = () => {
-  if (!protocolInstance) {
-    protocolInstance = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocolInstance.tile);
+  if (!pmtilesRegistered) {
+    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    pmtilesRegistered = true;
   }
 };
 
@@ -162,7 +161,7 @@ const initializeMap = () => {
     pitch: project?.properties.pitch || 0,
     // Performance optimizations
     refreshExpiredTiles: false,
-    fadeDuration: 0, // Disable fade animation for faster rendering
+    fadeDuration: 500,
     renderWorldCopies: false,
     maxTileCacheSize: 50, // Limit tile cache size
   });
