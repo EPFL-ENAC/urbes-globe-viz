@@ -22,11 +22,13 @@ const wrfVariables = (domain: string): CogVariableConfig[] => [
       title: "2m Temperature",
       gradient: {
         stops: [
-          { value: "5 °C", color: "#000004" },
-          { value: "13 °C", color: "#420a68" },
-          { value: "21 °C", color: "#932667" },
-          { value: "29 °C", color: "#dd513a" },
-          { value: "37 °C", color: "#fcffa4" },
+          { value: "37 °C", color: "#7a0403" },
+          { value: "31 °C", color: "#e4460a" },
+          { value: "26 °C", color: "#fabc29" },
+          { value: "21 °C", color: "#a4fc3b" },
+          { value: "16 °C", color: "#1ae4b6" },
+          { value: "10 °C", color: "#4687fa" },
+          { value: "5 °C", color: "#30123b" },
         ],
         unit: "°C",
       },
