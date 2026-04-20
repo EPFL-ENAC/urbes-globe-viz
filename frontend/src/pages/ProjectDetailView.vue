@@ -141,7 +141,21 @@ watch(
 // Scrollytelling — all subviz sections stacked; the one whose title
 // crosses a narrow band near the top of the scroll root becomes active.
 const scrollRoot = ref<HTMLElement | null>(null);
+const singleScrollRoot = ref<HTMLElement | null>(null);
 const sectionRefs = ref<(HTMLElement | null)[]>([]);
+
+// Scroll hint — shown only when there's more content below
+const canScrollMore = ref(false);
+
+function updateScrollHint() {
+  const el = scrollRoot.value ?? singleScrollRoot.value;
+  if (!el) {
+    canScrollMore.value = false;
+    return;
+  }
+  const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+  canScrollMore.value = remaining > 8;
+}
 
 function setSectionRef(el: Element | null, i: number) {
   sectionRefs.value[i] = el as HTMLElement | null;
@@ -183,14 +197,30 @@ watch(
   async () => {
     await nextTick();
     rebuildObserver();
+    updateScrollHint();
   },
   { immediate: true, flush: "post" },
 );
+
+watch([project, activeSubVizIndex], () => {
+  nextTick(updateScrollHint);
+});
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   if (suspendTimer) clearTimeout(suspendTimer);
 });
+
+function onScrollHintClick() {
+  const list = subVizList.value;
+  if (list && activeSubVizIndex.value < list.length - 1) {
+    scrollToSubViz(activeSubVizIndex.value + 1);
+    return;
+  }
+  const el = scrollRoot.value ?? singleScrollRoot.value;
+  if (!el) return;
+  el.scrollBy({ top: el.clientHeight * 0.9, behavior: "smooth" });
+}
 
 function scrollToSubViz(i: number) {
   activeSubVizIndex.value = i;
@@ -275,7 +305,11 @@ const goBack = () => {
             </div>
           </div>
 
-          <div ref="scrollRoot" class="subviz-scroll">
+          <div
+            ref="scrollRoot"
+            class="subviz-scroll"
+            @scroll.passive="updateScrollHint"
+          >
             <section
               v-for="(viz, i) in subVizList"
               :key="viz.id"
@@ -294,7 +328,12 @@ const goBack = () => {
         </div>
 
         <!-- Standard single-viz layout -->
-        <div v-else-if="project" class="text-white drawer-inner-content">
+        <div
+          v-else-if="project"
+          ref="singleScrollRoot"
+          class="text-white drawer-inner-content"
+          @scroll.passive="updateScrollHint"
+        >
           <h1 class="text-h2 text-weight-light q-mb-xs">
             {{ project.title }}
           </h1>
@@ -304,6 +343,29 @@ const goBack = () => {
           <div class="text-body1" style="line-height: 1.8">
             {{ project.description }}
           </div>
+        </div>
+
+        <!-- Scroll-more indicator: back-arrow styling, rotated down -->
+        <div
+          v-show="canScrollMore"
+          class="scroll-hint"
+          @click="onScrollHintClick"
+        >
+          <span class="vertical-text text-white text-caption">SCROLL</span>
+          <q-btn
+            flat
+            dense
+            square
+            icon="arrow_back"
+            color="white"
+            size="md"
+            class="scroll-hint-btn"
+            :aria-label="
+              subVizList && activeSubVizIndex < subVizList.length - 1
+                ? 'Next section'
+                : 'Scroll down'
+            "
+          />
         </div>
       </div>
     </div>
@@ -417,6 +479,7 @@ const goBack = () => {
   flex-direction: column;
   align-items: center;
   position: absolute;
+  z-index: 102;
 }
 
 .back-button-top {
@@ -527,10 +590,30 @@ const goBack = () => {
 }
 
 .drawer-content {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.scroll-hint {
+  position: absolute;
+  right: 24px;
+  bottom: 3vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.scroll-hint :deep(.q-icon) {
+  transform: rotate(-90deg);
+}
+
+.scroll-hint-btn {
+  opacity: 0.7;
 }
 
 .drawer-inner-content {
