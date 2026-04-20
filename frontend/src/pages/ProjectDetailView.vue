@@ -7,7 +7,7 @@ import MapLegend from "@/components/features/MapLegend.vue";
 import TimeSlider from "@/components/common/TimeSlider.vue";
 import VariableSelector from "@/components/common/VariableSelector.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -138,28 +138,71 @@ watch(
   { immediate: true },
 );
 
-// Scroll to switch sub-viz — debounced so one scroll gesture = one step
-let scrollCooldown = false;
+// Scrollytelling — all subviz sections stacked; the one whose title
+// crosses a narrow band near the top of the scroll root becomes active.
+const scrollRoot = ref<HTMLElement | null>(null);
+const sectionRefs = ref<(HTMLElement | null)[]>([]);
 
-function onWheel(e: WheelEvent) {
-  if (!subVizList.value || scrollCooldown) return;
-  const list = subVizList.value;
-  if (e.deltaY > 0 && activeSubVizIndex.value < list.length - 1) {
-    activeSubVizIndex.value++;
-  } else if (e.deltaY < 0 && activeSubVizIndex.value > 0) {
-    activeSubVizIndex.value--;
-  } else {
-    return;
-  }
-  scrollCooldown = true;
-  setTimeout(() => {
-    scrollCooldown = false;
-  }, 500);
+function setSectionRef(el: Element | null, i: number) {
+  sectionRefs.value[i] = el as HTMLElement | null;
 }
 
-onUnmounted(() => {
-  scrollCooldown = false;
+let observer: IntersectionObserver | null = null;
+let suspendObserver = false;
+let suspendTimer: ReturnType<typeof setTimeout> | null = null;
+
+function rebuildObserver() {
+  observer?.disconnect();
+  observer = null;
+  if (!scrollRoot.value || !subVizList.value?.length) return;
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (suspendObserver) return;
+      const topmost = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (!topmost) return;
+      const idx = Number((topmost.target as HTMLElement).dataset.idx);
+      if (!Number.isNaN(idx)) activeSubVizIndex.value = idx;
+    },
+    {
+      root: scrollRoot.value,
+      rootMargin: "0px 0px -70% 0px",
+      threshold: 0,
+    },
+  );
+
+  sectionRefs.value.forEach((el) => {
+    if (el) observer!.observe(el);
+  });
+}
+
+watch(
+  [drawerOpen, subVizList],
+  async () => {
+    await nextTick();
+    rebuildObserver();
+  },
+  { immediate: true, flush: "post" },
+);
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  if (suspendTimer) clearTimeout(suspendTimer);
 });
+
+function scrollToSubViz(i: number) {
+  activeSubVizIndex.value = i;
+  const el = sectionRefs.value[i];
+  if (!el) return;
+  suspendObserver = true;
+  if (suspendTimer) clearTimeout(suspendTimer);
+  suspendTimer = setTimeout(() => {
+    suspendObserver = false;
+  }, 800);
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 const toggleDrawer = () => {
   drawerOpen.value = !drawerOpen.value;
@@ -201,7 +244,7 @@ const goBack = () => {
             class="dot"
             :class="{ 'dot-active': i === activeSubVizIndex }"
             :aria-label="viz.title"
-            @click="activeSubVizIndex = i"
+            @click="scrollToSubViz(i)"
           />
         </div>
 
@@ -220,30 +263,34 @@ const goBack = () => {
       </div>
 
       <!-- Drawer content (only visible when open) -->
-      <div class="drawer-content" v-if="drawerOpen" @wheel.passive="onWheel">
-        <!-- Sub-viz carousel layout -->
-        <div
-          v-if="subVizList && project"
-          class="text-white drawer-inner-content"
-        >
-          <h1 class="text-h2 text-weight-light q-mb-xs">
-            {{ project.title }}
-          </h1>
-          <div class="text-body1 text-grey-5 q-mb-xl">
-            {{ project.year }}
+      <div class="drawer-content" v-if="drawerOpen">
+        <!-- Sub-viz scrollytelling layout -->
+        <div v-if="subVizList && project" class="subviz-layout text-white">
+          <div class="project-header">
+            <h1 class="text-h2 text-weight-light q-mb-xs">
+              {{ project.title }}
+            </h1>
+            <div class="text-body1 text-grey-5">
+              {{ project.year }}
+            </div>
           </div>
 
-          <!-- Active sub-viz content -->
-          <transition name="fade" mode="out-in">
-            <div :key="activeSubVizIndex">
+          <div ref="scrollRoot" class="subviz-scroll">
+            <section
+              v-for="(viz, i) in subVizList"
+              :key="viz.id"
+              :ref="(el) => setSectionRef(el as Element | null, i)"
+              :data-idx="i"
+              class="subviz-section"
+            >
               <h2 class="text-h4 text-weight-light q-mb-sm">
-                {{ subVizList[activeSubVizIndex]?.title }}
+                {{ viz.title }}
               </h2>
               <div class="text-body1" style="line-height: 1.8">
-                {{ subVizList[activeSubVizIndex]?.description }}
+                {{ viz.description }}
               </div>
-            </div>
-          </transition>
+            </section>
+          </div>
         </div>
 
         <!-- Standard single-viz layout -->
@@ -286,18 +333,46 @@ const goBack = () => {
       />
       <div
         v-if="
-          activeLegend || (activeTimeControl && activeTimeValue !== undefined)
+          (subVizList && subVizList.length > 1) ||
+          activeCogVariables ||
+          activeLegend ||
+          (activeTimeControl && activeTimeValue !== undefined)
         "
         class="map-bottom-bar"
       >
-        <div v-if="activeCogVariables || activeLegend" class="legend-group">
+        <div
+          v-if="(subVizList && subVizList.length > 1) || activeCogVariables"
+          class="selectors-group"
+        >
+          <div
+            v-if="subVizList && subVizList.length > 1"
+            class="subviz-selector"
+            role="tablist"
+          >
+            <button
+              v-for="(viz, i) in subVizList"
+              :key="viz.id"
+              type="button"
+              role="tab"
+              class="subviz-chip"
+              :class="{ active: i === activeSubVizIndex }"
+              :aria-selected="i === activeSubVizIndex"
+              @click="scrollToSubViz(i)"
+            >
+              {{ viz.title }}
+            </button>
+          </div>
           <VariableSelector
             v-if="activeCogVariables?.length"
             v-model="activeVariableId"
             :variables="activeCogVariables"
           />
-          <MapLegend v-if="activeLegend" :legend="activeLegend" />
         </div>
+        <MapLegend
+          v-if="activeLegend"
+          :legend="activeLegend"
+          class="legend-wrap"
+        />
         <div
           v-if="activeTimeControl && activeTimeValue !== undefined"
           class="time-slider-wrap"
@@ -378,6 +453,44 @@ const goBack = () => {
   transform: scale(1.5);
 }
 
+.subviz-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 10px;
+}
+
+.subviz-chip {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.subviz-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.subviz-chip.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+
 .toggle-button-centered {
   position: absolute;
   top: 50%;
@@ -432,14 +545,38 @@ const goBack = () => {
   display: none;
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+.subviz-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.project-header {
+  flex-shrink: 0;
+  padding: 12vh 12% 3vh;
+  background: #000;
+}
+
+.subviz-scroll {
+  flex: 1;
+  padding: 0 12% 8vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.subviz-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.subviz-section {
+  min-height: 30vh;
+  padding-bottom: 8vh;
+  scroll-margin-top: 4vh;
+}
+
+.subviz-section:last-of-type {
+  padding-bottom: 60vh;
 }
 
 .map-container {
@@ -475,14 +612,19 @@ const goBack = () => {
   pointer-events: auto;
 }
 
-.legend-group {
+.selectors-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
   align-self: flex-end;
   min-width: 140px;
-  max-width: 220px;
+  max-width: 260px;
+}
+
+.legend-wrap {
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
 .time-slider-wrap {
