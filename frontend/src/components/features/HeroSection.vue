@@ -52,7 +52,7 @@ function goToPanel(index: number) {
             PHYSICS OF <br />
             CITIES
           </h1>
-          <p class="text-body1 text-grey q-mt-lg">
+          <p class="text-body1 hero-body q-mt-lg">
             From the heartbeat of daily mobility to the temperature of their
             skin, cities are complex adaptive systems made of multiple
             interconnected components (e.g., demography, transport, energy). At
@@ -74,7 +74,7 @@ function goToPanel(index: number) {
             IN TIME AND<br />
             SPACE
           </h1>
-          <p class="text-body1 text-grey q-mt-lg">
+          <p class="text-body1 hero-body q-mt-lg">
             URBES Globe brings our research to life through visualizations, open
             data, and model simulations - start exploring!
           </p>
@@ -117,14 +117,14 @@ function goToPanel(index: number) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--color-border-strong);
   transition: background 0.3s ease;
   cursor: pointer;
   pointer-events: auto;
 }
 
 .dot.active {
-  background: #e30613;
+  background: #e30613; /* EPFL brand red — intentional across themes */
 }
 
 .panels-container {
@@ -149,5 +149,9 @@ function goToPanel(index: number) {
   font-weight: 600;
   text-transform: uppercase;
   pointer-events: auto;
+}
+
+.hero-body {
+  color: var(--color-text-muted);
 }
 </style>

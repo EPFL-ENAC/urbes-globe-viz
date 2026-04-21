@@ -1,32 +1,48 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import epflLogo from "@/assets/EPFL_Logo.svg";
+import { useThemeStore } from "@/stores/theme";
 
 const infoOpen = ref(false);
+const themeStore = useThemeStore();
+
+const themeIcon = computed(() =>
+  themeStore.mode === "dark" ? "light_mode" : "dark_mode",
+);
+const themeLabel = computed(() =>
+  themeStore.mode === "dark" ? "Switch to light mode" : "Switch to dark mode",
+);
 </script>
 
 <template>
-  <div class="fixed-top" style="height: 60px; z-index: 1000">
+  <div class="fixed-top nav-bar" style="height: 60px; z-index: 1000">
     <div class="row items-center justify-between q-px-lg" style="height: 100%">
       <div class="row items-center q-gutter-sm">
         <img :src="epflLogo" alt="EPFL" style="height: 16px" />
-        <q-separator vertical size="1px" color="white" />
-        <span class="text-h6 text-white text-weight-bold">URBES</span>
+        <q-separator vertical size="1px" class="nav-separator" />
+        <span class="text-h6 text-weight-bold nav-title">URBES</span>
       </div>
 
-      <q-btn
-        flat
-        round
-        color="white"
-        icon="info"
-        size="md"
-        @click="infoOpen = true"
-        style="
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          width: 40px;
-          height: 40px;
-        "
-      />
+      <div class="row items-center q-gutter-sm">
+        <q-btn
+          flat
+          round
+          :icon="themeIcon"
+          :aria-label="themeLabel"
+          size="md"
+          class="nav-btn"
+          @click="themeStore.toggle()"
+        />
+
+        <q-btn
+          flat
+          round
+          icon="info"
+          size="md"
+          class="nav-btn"
+          @click="infoOpen = true"
+        />
+      </div>
     </div>
   </div>
 
@@ -39,20 +55,19 @@ const infoOpen = ref(false);
 
     <!-- Panel -->
     <transition name="slide">
-      <div v-if="infoOpen" class="info-panel bg-black">
+      <div v-if="infoOpen" class="info-panel">
         <q-btn
           flat
           round
           dense
           icon="close"
-          color="white"
-          class="close-btn"
+          class="close-btn nav-btn"
           @click="infoOpen = false"
         />
 
         <div class="panel-content">
-          <h2 class="text-h6 text-white q-mb-lg">About Urbes Viz</h2>
-          <p class="text-body1 text-grey q-mb-md">
+          <h2 class="text-h6 q-mb-lg panel-heading">About Urbes Viz</h2>
+          <p class="text-body1 panel-body q-mb-md">
             URBES Viz is an interactive visualization platform developed to
             explore and communicate research data from the
             <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>. This demo
@@ -60,7 +75,7 @@ const infoOpen = ref(false);
             multi-scale view of urban building energy research across geographic
             contexts worldwide.
           </p>
-          <p class="text-body1 text-grey">
+          <p class="text-body1 panel-body">
             Built on the design principles, data structures, and user experience
             insights developed through earlier iterations of URBES Viz, this
             application allows users to navigate research projects, datasets,
@@ -70,16 +85,16 @@ const infoOpen = ref(false);
 
           <div class="section-divider" />
 
-          <p class="text-h6 text-white q-mb-xs">How to cite</p>
-          <p class="text-body1 text-grey">
+          <p class="text-h6 q-mb-xs panel-heading">How to cite</p>
+          <p class="text-body1 panel-body">
             If you use data or visuals from this platform in your work, please
             cite it as follows: ... ?
           </p>
 
           <div class="section-divider" />
 
-          <p class="text-h6 text-white q-mb-xs">Contributors</p>
-          <p class="text-body1 text-grey">
+          <p class="text-h6 q-mb-xs panel-heading">Contributors</p>
+          <p class="text-body1 panel-body">
             URBES Viz is developed at EPFL by
             <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>, with
             technical implementation by
@@ -91,15 +106,15 @@ const infoOpen = ref(false);
 
           <div class="section-divider" />
 
-          <p class="text-h6 text-white q-mb-xs">Suggestions</p>
-          <p class="text-body1 text-grey">
+          <p class="text-h6 q-mb-xs panel-heading">Suggestions</p>
+          <p class="text-body1 panel-body">
             Report bugs and suggestions directly on GitHub.
           </p>
 
           <div class="section-divider" />
 
-          <p class="text-h6 text-white q-mb-xs">Basemap data</p>
-          <p class="text-body1 text-grey">
+          <p class="text-h6 q-mb-xs panel-heading">Basemap data</p>
+          <p class="text-body1 panel-body">
             GHSL layer data provided by the
             <a href="https://emergency.copernicus.eu/"
               >Copernicus Emergency Management Service</a
@@ -112,6 +127,25 @@ const infoOpen = ref(false);
 </template>
 
 <style>
+.nav-bar {
+  color: var(--color-text);
+}
+
+.nav-title {
+  color: var(--color-text);
+}
+
+.nav-separator {
+  background-color: var(--color-border-strong);
+}
+
+.nav-btn {
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  width: 40px;
+  height: 40px;
+}
+
 .info-backdrop {
   position: fixed;
   inset: 0;
@@ -128,7 +162,17 @@ const infoOpen = ref(false);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-left: 1px solid var(--color-border);
+}
+
+.panel-heading {
+  color: var(--color-text);
+}
+
+.panel-body {
+  color: var(--color-text-muted);
 }
 
 .close-btn {
@@ -146,12 +190,12 @@ const infoOpen = ref(false);
 }
 
 .panel-content a {
-  color: #ffffff;
+  color: var(--color-text);
   text-decoration: underline;
 }
 
 .panel-content a:hover {
-  color: #ffffff;
+  color: var(--color-text);
   text-decoration: underline;
 }
 
@@ -161,7 +205,7 @@ const infoOpen = ref(false);
 
 .section-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border);
   margin: 28px 0;
 }
 

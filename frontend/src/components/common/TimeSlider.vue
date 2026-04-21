@@ -81,8 +81,8 @@ onUnmounted(stop);
 <template>
   <div class="time-slider">
     <div class="time-slider-header">
-      <div class="text-caption text-grey-4">{{ label }}</div>
-      <div class="text-body2 text-white text-weight-medium">
+      <div class="text-caption slider-muted">{{ label }}</div>
+      <div class="text-body2 slider-value text-weight-medium">
         {{ formatDisplayValue(sliderValue) }}
       </div>
     </div>
@@ -92,12 +92,12 @@ onUnmounted(stop);
         dense
         flat
         round
-        color="white"
         size="sm"
+        class="slider-btn"
         :icon="isPlaying ? 'pause' : 'play_arrow'"
         @click="togglePlay"
       />
-      <span class="text-grey-5 text-caption">{{
+      <span class="slider-muted text-caption">{{
         formatDisplayValue(min)
       }}</span>
       <q-slider
@@ -105,12 +105,9 @@ onUnmounted(stop);
         :min="min"
         :max="max"
         :step="step"
-        color="white"
-        track-color="grey-7"
-        thumb-color="white"
         class="time-slider-input"
       />
-      <span class="text-grey-5 text-caption">{{
+      <span class="slider-muted text-caption">{{
         formatDisplayValue(max)
       }}</span>
     </div>
@@ -123,8 +120,21 @@ onUnmounted(stop);
   max-width: 100%;
   padding: 14px 16px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-surface);
+  color: var(--color-text);
   backdrop-filter: blur(4px);
+}
+
+.slider-value {
+  color: var(--color-text);
+}
+
+.slider-muted {
+  color: var(--color-text-muted);
+}
+
+.slider-btn {
+  color: var(--color-text);
 }
 
 .time-slider-header {

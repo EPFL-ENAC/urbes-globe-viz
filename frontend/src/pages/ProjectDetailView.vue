@@ -244,10 +244,10 @@ const goBack = () => {
 </script>
 
 <template>
-  <div class="fit relative bg-black">
+  <div class="fit relative detail-bg">
     <!-- Project Drawer -->
     <div
-      class="project-drawer absolute-left bg-black"
+      class="project-drawer absolute-left detail-bg"
       :class="{ 'drawer-open': drawerOpen, 'drawer-closed': !drawerOpen }"
     >
       <!-- Vertical control bar (always visible) -->
@@ -257,9 +257,8 @@ const goBack = () => {
           dense
           square
           icon="arrow_back"
-          color="white"
           @click="goBack"
-          class="back-button-top"
+          class="back-button-top detail-btn"
           size="md"
         />
 
@@ -283,24 +282,24 @@ const goBack = () => {
           class="toggle-button-centered"
           @click="toggleDrawer"
         >
-          <span class="vertical-text text-white text-caption">MORE INFO</span>
+          <span class="vertical-text detail-text text-caption">MORE INFO</span>
         </div>
       </div>
 
       <!-- Toggle button on right when expanded -->
       <div v-if="drawerOpen" class="toggle-button-right" @click="toggleDrawer">
-        <span class="vertical-text text-white text-caption">REDUCE</span>
+        <span class="vertical-text detail-text text-caption">REDUCE</span>
       </div>
 
       <!-- Drawer content (only visible when open) -->
       <div class="drawer-content" v-if="drawerOpen">
         <!-- Sub-viz scrollytelling layout -->
-        <div v-if="subVizList && project" class="subviz-layout text-white">
+        <div v-if="subVizList && project" class="subviz-layout detail-text">
           <div class="project-header">
             <h1 class="text-h2 text-weight-light q-mb-xs">
               {{ project.title }}
             </h1>
-            <div class="text-body1 text-grey-5">
+            <div class="text-body1 detail-muted">
               {{ project.year }}
             </div>
           </div>
@@ -331,13 +330,13 @@ const goBack = () => {
         <div
           v-else-if="project"
           ref="singleScrollRoot"
-          class="text-white drawer-inner-content"
+          class="detail-text drawer-inner-content"
           @scroll.passive="updateScrollHint"
         >
           <h1 class="text-h2 text-weight-light q-mb-xs">
             {{ project.title }}
           </h1>
-          <div class="text-body1 text-grey-5 q-mb-xl">
+          <div class="text-body1 detail-muted q-mb-xl">
             {{ project.year }}
           </div>
           <div class="text-body1" style="line-height: 1.8">
@@ -351,15 +350,14 @@ const goBack = () => {
           class="scroll-hint"
           @click="onScrollHintClick"
         >
-          <span class="vertical-text text-white text-caption">SCROLL</span>
+          <span class="vertical-text detail-text text-caption">SCROLL</span>
           <q-btn
             flat
             dense
             square
             icon="arrow_back"
-            color="white"
             size="md"
-            class="scroll-hint-btn"
+            class="scroll-hint-btn detail-btn"
             :aria-label="
               subVizList && activeSubVizIndex < subVizList.length - 1
                 ? 'Next section'
@@ -499,7 +497,7 @@ const goBack = () => {
   height: 5px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--color-border-strong);
   cursor: pointer;
   padding: 0;
   transition:
@@ -508,11 +506,11 @@ const goBack = () => {
 }
 
 .dot:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--color-text-muted);
 }
 
 .dot-active {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--color-text);
   transform: scale(1.5);
 }
 
@@ -521,7 +519,7 @@ const goBack = () => {
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-surface);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border-radius: 10px;
@@ -529,10 +527,10 @@ const goBack = () => {
 
 .subviz-chip {
   padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   cursor: pointer;
   transition:
@@ -544,14 +542,14 @@ const goBack = () => {
 }
 
 .subviz-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .subviz-chip.active {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.6);
-  color: #fff;
+  background: var(--color-border-strong);
+  border-color: var(--color-text);
+  color: var(--color-text);
 }
 
 .toggle-button-centered {
@@ -638,7 +636,24 @@ const goBack = () => {
 .project-header {
   flex-shrink: 0;
   padding: 12vh 12% 3vh;
-  background: #000;
+  background: var(--color-bg);
+}
+
+.detail-bg {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.detail-text {
+  color: var(--color-text);
+}
+
+.detail-muted {
+  color: var(--color-text-muted);
+}
+
+.detail-btn {
+  color: var(--color-text);
 }
 
 .subviz-scroll {

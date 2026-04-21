@@ -31,7 +31,7 @@ const emit = defineEmits<{
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-surface);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border-radius: 10px;
@@ -40,10 +40,10 @@ const emit = defineEmits<{
 
 .var-chip {
   padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   cursor: pointer;
   transition:
@@ -55,13 +55,13 @@ const emit = defineEmits<{
 }
 
 .var-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .var-chip.active {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.6);
-  color: #fff;
+  background: var(--color-border-strong);
+  border-color: var(--color-text);
+  color: var(--color-text);
 }
 </style>

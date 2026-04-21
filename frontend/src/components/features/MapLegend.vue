@@ -66,14 +66,14 @@ defineProps<{ legend: ProjectLegend }>();
   flex-shrink: 0;
   align-self: flex-end;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-surface);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   padding: 12px 14px;
   min-width: 140px;
   max-width: 220px;
   z-index: 10;
-  color: #fff;
+  color: var(--color-text);
   font-size: 11px;
   pointer-events: none;
 }

@@ -6,7 +6,7 @@ import { projectsGeoJSON } from "@/config/projects";
 </script>
 
 <template>
-  <div class="relative bg-black overflow-hidden" style="height: 100vh">
+  <div class="relative overflow-hidden globe-view-root" style="height: 100vh">
     <Globe3D />
     <div
       class="absolute-full column no-wrap justify-end"
@@ -30,6 +30,10 @@ import { projectsGeoJSON } from "@/config/projects";
 </template>
 
 <style scoped>
+.globe-view-root {
+  background: var(--color-map-bg);
+}
+
 .overflow-auto::-webkit-scrollbar {
   display: none;
 }

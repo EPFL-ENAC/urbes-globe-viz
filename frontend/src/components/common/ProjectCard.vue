@@ -57,7 +57,7 @@ const handleClick = () => {
         class="card-img"
       />
     </div>
-    <div class="q-pt-sm text-white text-left text-subtitle2">
+    <div class="q-pt-sm card-text text-left text-subtitle2">
       <div>
         {{ project.title }}
       </div>
@@ -82,7 +82,11 @@ const handleClick = () => {
 .card-image {
   width: 120px;
   height: 120px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
+}
+
+.card-text {
+  color: var(--color-text);
 }
 
 .card-img {
