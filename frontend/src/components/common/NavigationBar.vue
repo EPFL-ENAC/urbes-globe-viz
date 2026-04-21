@@ -129,6 +129,11 @@ const themeLabel = computed(() =>
 <style>
 .nav-bar {
   color: var(--color-text);
+  pointer-events: none;
+}
+
+.nav-bar > .row > * {
+  pointer-events: auto;
 }
 
 .nav-title {

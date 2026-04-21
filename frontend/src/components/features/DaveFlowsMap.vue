@@ -155,7 +155,7 @@ onMounted(() => {
     renderWorldCopies: false,
   });
 
-  map.addControl(new maplibregl.NavigationControl(), "top-right");
+  map.addControl(new maplibregl.NavigationControl(), "top-left");
 
   map.on("load", () => {
     isLoading.value = false;
