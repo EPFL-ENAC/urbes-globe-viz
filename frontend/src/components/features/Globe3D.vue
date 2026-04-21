@@ -21,18 +21,10 @@ let animationFrame: number | null = null;
 let spinRunning = false;
 let spinKilled = false; // set on first explicit user gesture (pointerdown/wheel)
 let resettingToOverview = false; // true while the scroll-back restore flyTo is in flight
+let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
 let pmtilesRegistered = false;
 let markersSetupStarted = false;
-let flyingToProject = false; // true while a hover-triggered flyTo is in progress
 let unsubscribeBasemapSync: (() => void) | null = null;
-
-// Camera state saved on first hover — restored when the user fully unhovers.
-let savedCamera: {
-  center: [number, number];
-  zoom: number;
-  pitch: number;
-  bearing: number;
-} | null = null;
 
 // Initial zoom scales with viewport width so the globe reads correctly on
 // phones and fills large monitors: smaller screens need a tighter globe.
@@ -106,6 +98,7 @@ function armKillSpinListeners() {
 function restoreOverview() {
   if (!map || resettingToOverview) return;
   resettingToOverview = true;
+  flying = true;
   map.flyTo({
     center: initialCamera.center,
     zoom: initialCamera.zoom,
@@ -115,6 +108,7 @@ function restoreOverview() {
   });
   map.once("moveend", () => {
     resettingToOverview = false;
+    flying = false;
     spinKilled = false;
     armKillSpinListeners();
     resumeSpin();
@@ -128,24 +122,12 @@ watch(
   (projectId) => {
     if (!map) return;
 
-    flyingToProject = false;
     map.stop();
     preview.remove(map);
     preview.filterCircles(map, projectId);
 
     if (projectId) {
       pauseSpin();
-      // Save the pre-hover camera on the first hover only, so rapid
-      // project-to-project hovers don't overwrite it with hover-zoom views.
-      if (!savedCamera) {
-        const c = map.getCenter();
-        savedCamera = {
-          center: [c.lng, c.lat],
-          zoom: map.getZoom(),
-          pitch: map.getPitch(),
-          bearing: map.getBearing(),
-        };
-      }
 
       const feature = projectsGeoJSON.features.find(
         (f) => f.properties.id === projectId,
@@ -153,12 +135,12 @@ watch(
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
       if (lng != null && lat != null) {
-        flyingToProject = true;
         const featureZoom = feature.properties.zoom || 8;
         const previewZoom = Math.max(
           initialCamera.zoom,
           featureZoom - PREVIEW_ZOOM_OFFSET,
         );
+        flying = true;
         map.flyTo({
           center: [lng, lat],
           zoom: previewZoom,
@@ -166,21 +148,24 @@ watch(
           duration: 1200,
         });
         map.once("moveend", () => {
-          flyingToProject = false;
+          flying = false;
         });
       }
       preview.add(map, projectId);
-    } else if (savedCamera) {
-      const restore = savedCamera;
+    } else {
+      // On unhover, zoom back out but stay at the current longitude so the
+      // camera doesn't jump away from where the user was just looking.
+      const currentLng = map.getCenter().lng;
+      flying = true;
       map.flyTo({
-        center: restore.center,
-        zoom: restore.zoom,
-        pitch: 0,
-        bearing: 0,
+        center: [currentLng, initialCamera.center[1]],
+        zoom: initialCamera.zoom,
+        pitch: initialCamera.pitch,
+        bearing: initialCamera.bearing,
         duration: 1200,
       });
       map.once("moveend", () => {
-        savedCamera = null;
+        flying = false;
         resumeSpin();
       });
     }
@@ -193,7 +178,6 @@ onMounted(() => {
   if (!container.value) return;
 
   // Pinia survives route changes; stale hover/zoom hid the hero.
-  savedCamera = null;
   projectStore.setHoveredProject(null);
   projectStore.setZoomLevel(initialCamera.zoom);
   projectStore.setInitialZoom(initialCamera.zoom);
@@ -298,15 +282,6 @@ onMounted(() => {
       const id = e.features?.[0]?.properties?.id;
       if (id) router.push(`/project/${id}`);
     });
-    map.on("mousemove", "project-circles", (e) => {
-      const id = e.features?.[0]?.properties?.id;
-      if (id) projectStore.setHoveredProject(id);
-    });
-    map.on("mouseleave", "project-circles", () => {
-      if (!flyingToProject) {
-        projectStore.setHoveredProject(null);
-      }
-    });
   };
 
   let initialPoseCaptured = false;
@@ -335,7 +310,9 @@ onMounted(() => {
   map.on("zoom", () => {
     if (!map) return;
     const z = map.getZoom();
-    if (z < initialCamera.zoom) {
+    // Don't clamp while a programmatic flyTo is running — its arc trajectory
+    // legitimately dips below initialCamera.zoom and the clamp would interrupt it.
+    if (!flying && z < initialCamera.zoom) {
       map.setZoom(initialCamera.zoom);
       return;
     }
