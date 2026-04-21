@@ -7,6 +7,7 @@ import MapLegend from "@/components/features/MapLegend.vue";
 import TimeSlider from "@/components/common/TimeSlider.vue";
 import VariableSelector from "@/components/common/VariableSelector.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
+import { DEFAULT_TITLE } from "@/router";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 const route = useRoute();
@@ -20,6 +21,14 @@ const project = computed(() => {
   );
   return feature?.properties;
 });
+
+watch(
+  () => project.value?.title,
+  (title) => {
+    document.title = title ? `${title} - URBES` : DEFAULT_TITLE;
+  },
+  { immediate: true },
+);
 
 const projectConfig = computed(() =>
   allProjects.find((p) => p.id === projectId),
