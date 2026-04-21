@@ -6,7 +6,11 @@ export const hourlyAdultPopulationProject: ProjectConfig = {
   coordinates: [6.58, 46.41], // Lausanne
 
   title: "Hourly Population",
-  description: "Dynamic population distribution by hour",
+  description: `
+Hourly adult population density on a 500 m² grid, produced by the _DAVE_ activity-based simulation at [URBES](https://www.epfl.ch/labs/urbes/). Unlike a static census, these tiles shift through the day as synthetic agents move between home, workplace, school, and leisure, making the layer a better input for time-resolved heat-exposure and air-quality work.
+`,
+  descriptionComponent: () =>
+    import("./descriptions/hourly_adult_population.vue"),
   category: "Demographics",
   year: 2020,
   preview: "hourly_population.png",

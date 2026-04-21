@@ -6,7 +6,25 @@ export const roadsSwissStatisticsProject: ProjectConfig = {
   coordinates: [6.58, 46.51], // Lausanne
 
   title: "Traffic",
-  description: "Current traffic volume on Swiss roads",
+  // HTML example. Raw HTML is valid markdown, so authoring the description as
+  // HTML gives full control over elements, classes, and attributes.
+  description: `
+<p>
+  Average daily traffic counts on Swiss roads, published by the Swiss
+  Federal Office for Spatial Development
+  (<a href="https://www.are.admin.ch/" target="_blank" rel="noopener">ARE</a>).
+</p>
+<p>
+  At <em>URBES</em> the layer closes the loop between urban form and
+  environmental exposure: high-traffic arteries heat the air around them,
+  worsen night-time cooling, and carry most of the pollution residents
+  actually breathe.
+</p>
+<p>
+  Line width encodes the <em>daily</em> average volume and colour encodes
+  the <em>weekday</em> average. Segments follow jurisdictional boundaries.
+</p>
+`,
   category: "Transport",
   year: 2017,
   preview: "traffic.png",

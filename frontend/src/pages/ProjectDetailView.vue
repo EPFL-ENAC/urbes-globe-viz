@@ -7,8 +7,17 @@ import MapLegend from "@/components/features/MapLegend.vue";
 import TimeSlider from "@/components/common/TimeSlider.vue";
 import VariableSelector from "@/components/common/VariableSelector.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
+import { renderDescription } from "@/utils/markdown";
 import { DEFAULT_TITLE } from "@/router";
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  watch,
+} from "vue";
+import type { Component } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -135,6 +144,23 @@ const activeTimeControl = computed(() => {
     );
   }
   return projectConfig.value?.timeControl;
+});
+
+// Resolve async description components once per config change, keyed by viz.id
+// for subViz and stored solo for the project-level single-viz layout.
+const subVizDescriptionComponents = computed(() => {
+  const map = new Map<string, Component>();
+  subVizList.value?.forEach((viz) => {
+    if (viz.descriptionComponent) {
+      map.set(viz.id, defineAsyncComponent(viz.descriptionComponent));
+    }
+  });
+  return map;
+});
+
+const singleDescriptionComponent = computed(() => {
+  const loader = projectConfig.value?.descriptionComponent;
+  return loader ? defineAsyncComponent(loader) : undefined;
 });
 
 const activeTimeValue = ref<number | undefined>(undefined);
@@ -328,9 +354,17 @@ const goBack = () => {
               <h2 class="text-h4 text-weight-light q-mb-sm">
                 {{ viz.title }}
               </h2>
-              <div class="text-body1" style="line-height: 1.8">
-                {{ viz.description }}
-              </div>
+              <component
+                v-if="subVizDescriptionComponents.get(viz.id)"
+                :is="subVizDescriptionComponents.get(viz.id)"
+                class="text-body1"
+                style="line-height: 1.8"
+              />
+              <div
+                v-else
+                class="text-body1 description-body"
+                v-html="renderDescription(viz.description)"
+              />
             </section>
           </div>
         </div>
@@ -348,9 +382,17 @@ const goBack = () => {
           <div class="text-body1 detail-muted q-mb-xl">
             {{ project.year }}
           </div>
-          <div class="text-body1" style="line-height: 1.8">
-            {{ project.description }}
-          </div>
+          <component
+            v-if="singleDescriptionComponent"
+            :is="singleDescriptionComponent"
+            class="text-body1"
+            style="line-height: 1.8"
+          />
+          <div
+            v-else
+            class="text-body1 description-body"
+            v-html="renderDescription(project.description)"
+          />
         </div>
 
         <!-- Scroll-more indicator: back-arrow styling, rotated down -->
@@ -606,13 +648,17 @@ const goBack = () => {
 
 .scroll-hint {
   position: absolute;
-  right: 24px;
+  right: 16px;
   bottom: 3vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+.scroll-hint :deep(.vertical-text) {
+  padding: 20px 10px;
 }
 
 .scroll-hint :deep(.q-icon) {
@@ -663,6 +709,33 @@ const goBack = () => {
 
 .detail-btn {
   color: var(--color-text);
+}
+
+.description-body {
+  line-height: 1.8;
+}
+.description-body :deep(p) {
+  margin: 0 0 0.8em;
+}
+.description-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.description-body :deep(ul),
+.description-body :deep(ol) {
+  margin: 0.4em 0 0.8em;
+  padding-left: 1.5em;
+}
+.description-body :deep(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.1em 0.3em;
+  background: rgba(128, 128, 128, 0.15);
+  border-radius: 3px;
+}
+.description-body :deep(a) {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .subviz-scroll {

@@ -6,7 +6,11 @@ export const buildingHeightsChinaProject: ProjectConfig = {
   coordinates: [120.5, 30.5], // Zhejiang/Jiangsu region, China
 
   title: "Building China",
-  description: "Observed and simulated building heights across Chinese cities",
+  description: `
+Observed versus simulated building heights across Chinese cities in 1995, reconstructed from historical satellite imagery and planning archives. The dataset anchors _URBES'_ comparative work on urban form: cross-country patterns of height, density, and growth offer a test bed for models that link morphology to heat exposure, energy demand, and the expansion pathways of rapidly urbanising cities.
+
+Per-point colour encodes the fitted height, lightest at 0 to 2 m and deepening toward the 12 m+ tier that marks the dense central cores.
+`,
   category: "Infrastructure",
   year: 1995,
   preview: "building_heights_china.png",

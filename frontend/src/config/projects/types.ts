@@ -1,4 +1,8 @@
+import type { Component } from "vue";
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
+
+// Factory that returns a Promise resolving to a Vue SFC module (e.g. `() => import("./foo.vue")`).
+export type DescriptionComponentLoader = () => Promise<{ default: Component }>;
 
 export interface LegendItem {
   color: string;
@@ -50,7 +54,19 @@ export interface CogVariableConfig {
 export interface SubViz {
   id: string;
   title: string;
+  // Rendered as Markdown (via markdown-it) with inline HTML allowed. So all of
+  // these are valid in the same field:
+  //   - plain prose: "Swiss building footprints"
+  //   - markdown:    "Swiss _building_ footprints - see [source](url)"
+  //   - raw HTML:    "<p>Swiss <em>building</em> footprints</p>"
+  // For visual coherency across descriptions, stick to normal / italic / links
+  // and avoid bold. Descriptions live in committed TS files under PR review,
+  // so no runtime sanitization is applied.
   description: string;
+  // Escape hatch for charts or other interactive content. When set, overrides
+  // `description` at render time. Point at a .vue SFC with a dynamic import,
+  // e.g. `() => import("./descriptions/my_project.vue")`.
+  descriptionComponent?: DescriptionComponentLoader;
   coordinates?: [number, number];
   zoom?: number;
   source?: SourceSpecification;
@@ -70,7 +86,19 @@ export interface ProjectConfig {
 
   // Card metadata
   title: string;
+  // Rendered as Markdown (via markdown-it) with inline HTML allowed. So all of
+  // these are valid in the same field:
+  //   - plain prose: "Swiss building footprints"
+  //   - markdown:    "Swiss _building_ footprints - see [source](url)"
+  //   - raw HTML:    "<p>Swiss <em>building</em> footprints</p>"
+  // For visual coherency across descriptions, stick to normal / italic / links
+  // and avoid bold. Descriptions live in committed TS files under PR review,
+  // so no runtime sanitization is applied.
   description: string;
+  // Escape hatch for charts or other interactive content. When set, overrides
+  // `description` at render time. Point at a .vue SFC with a dynamic import,
+  // e.g. `() => import("./descriptions/my_project.vue")`.
+  descriptionComponent?: DescriptionComponentLoader;
   category: string;
   year: number;
   preview?: string;

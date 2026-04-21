@@ -218,9 +218,9 @@ export const wrfProject: ProjectConfig = {
   coordinates: [6.63, 46.52], // Lausanne area
 
   title: "Urban Climate",
-  description:
-    "Mesoscale (WRF) and microscale (PALM) climate simulations " +
-    "over Swiss urban areas. Nested domains from 1 km to 0.5 m resolution.",
+  description: `
+Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban heat islands, linking regional circulation patterns to the street canyons where heat exposure actually plays out.
+`,
   category: "Climate",
   year: 2022,
   zoom: 9,
@@ -250,10 +250,13 @@ export const wrfProject: ProjectConfig = {
   subViz: [
     {
       id: "wrf-d02",
-      title: "WRF d02 — Leman Region",
+      title: "WRF d02 - Leman Region",
+      // Fallback text if the component fails to load; also what appears in any
+      // consumer that renders plain-text descriptions (e.g. globe tooltip).
       description:
-        "Mesoscale WRF simulation at 1 km resolution covering " +
-        "the full Leman Lake region.",
+        "Regional mesoscale field at 1 km over the Leman basin, resolving lake breezes, valley circulations, and the combined urban footprint of Lausanne and Geneva.",
+      // Component override: renders a chart + prose. See the SFC for the pattern.
+      descriptionComponent: () => import("./descriptions/wrf_d02.vue"),
       coordinates: [6.555, 46.46],
       zoom: 9,
       renderer: "deckgl-cog",
@@ -261,10 +264,12 @@ export const wrfProject: ProjectConfig = {
     },
     {
       id: "wrf-d03",
-      title: "WRF d03 — Lausanne",
+      title: "WRF d03 - Lausanne",
       description:
-        "Mesoscale WRF simulation at 333 m resolution " +
-        "over the Lausanne metropolitan area.",
+        "One-way nested field at 333 m over the Lausanne metropolitan area. The finer grid separates individual neighbourhoods from their surrounding countryside, giving the spatial detail needed to relate near-surface temperatures to urban form.",
+      // SVG-based description: shows that `descriptionComponent` isn't
+      // ECharts-specific, any Vue template works.
+      descriptionComponent: () => import("./descriptions/wrf_d03.vue"),
       coordinates: [6.606, 46.543],
       zoom: 11,
       renderer: "deckgl-cog",
@@ -272,10 +277,11 @@ export const wrfProject: ProjectConfig = {
     },
     {
       id: "wrf-d04",
-      title: "WRF d04 — Geneva",
+      title: "WRF d04 - Geneva",
       description:
-        "Mesoscale WRF simulation at 333 m resolution " +
-        "over the Geneva metropolitan area.",
+        "Companion 333 m field over the Geneva metropolitan area. Running Geneva and Lausanne back to back lets _URBES_ compare two lake-side agglomerations with distinct densities, green-space distributions, and industrial layouts.",
+      // Reuses the same schema as d03, with the highlight moved to d04.
+      descriptionComponent: () => import("./descriptions/wrf_d04.vue"),
       coordinates: [6.149, 46.228],
       zoom: 11,
       renderer: "deckgl-cog",
@@ -283,10 +289,9 @@ export const wrfProject: ProjectConfig = {
     },
     {
       id: "palm",
-      title: "PALM — Lausanne Microscale",
+      title: "PALM - Lausanne Microscale",
       description:
-        "PALM large-eddy simulation at 0.5 m resolution over a " +
-        "50 m × 50 m urban domain in Lausanne. 93 timesteps at 10-minute intervals.",
+        "Large-eddy simulation at 0.5 m over a 50 m × 50 m urban domain in Lausanne, stepped at 10-minute intervals across 93 frames. At this scale PALM resolves turbulent eddies inside the street canyon itself, the scale at which a body actually experiences heat and wind.",
       coordinates: [6.63005, 46.51605],
       zoom: 20,
       renderer: "deckgl-cog",

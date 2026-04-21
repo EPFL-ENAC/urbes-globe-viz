@@ -6,7 +6,12 @@ export const buildingsProject: ProjectConfig = {
   coordinates: [6.6327, 46.5397], // Geneva
 
   title: "Buildings",
-  description: "Swiss building footprints with construction year data",
+  description: `
+Swiss building footprints tagged with construction year, drawn from [SwissTLM3D](https://www.swisstopo.admin.ch/en/landscape-model-swisstlm3d). At _URBES_ the dataset stands in for the morphological and thermal character of the built fabric: stock from different eras retains heat differently and shapes how each neighbourhood experiences the urban heat island.
+
+The height of each footprint encodes a representative floor count per construction period; the colour runs from red for pre-1950 stock through yellow for the post-war wave to green for contemporary buildings.
+`,
+  descriptionComponent: () => import("./descriptions/buildings.vue"),
   category: "Infrastructure",
   year: 2023,
   preview: "buildings_height.png",

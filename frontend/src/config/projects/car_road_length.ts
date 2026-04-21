@@ -5,8 +5,17 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
   coordinates: [6.58, 46.41], // Lausanne
 
   title: "Car road length",
-  description:
-    "Aggregated car road length processed from SwissTLM3D - input to DAVE for car capacities",
+  // Markdown example. Italics, links, and lists all work; inline HTML is
+  // passed through for edge cases.
+  description: `
+Aggregated car-accessible road length processed from [SwissTLM3D](https://www.swisstopo.admin.ch/en/landscape-model-swisstlm3d) and rasterised onto a 500 m² grid. Feeds _DAVE_ at [URBES](https://www.epfl.ch/labs/urbes/) as a capacity prior for private-car trips; autoroutes are excluded since they are counted separately in the national traffic statistics.
+
+Colour encodes how much driveable road sits in each tile:
+
+- light tones for quiet residential streets (0 to 4 000 m / 500 m²)
+- orange for mixed arterials (4 000 to 12 000)
+- dark red for dense urban cores (12 000+)
+`,
   category: "Transport",
   year: 2025,
   preview: "car_road_length.png",

@@ -24,7 +24,28 @@ export const myProjectConfig: ProjectConfig = {
 
   // ── Card metadata ────────────────────────────────────────────────────────────
   title: "My Project Title",
+  // `description` is rendered as Markdown with inline HTML allowed, so you can
+  // mix plain prose, markdown syntax, and raw HTML in the same field.
+  // Descriptions live in committed TS (PR-reviewed); no runtime sanitization.
   description: "One or two sentences describing what this dataset shows.",
+  //
+  // MARKDOWN variant (see car_road_length.ts for a worked example):
+  // description: `
+  // Aggregated car road length from [SwissTLM3D](https://www.swisstopo.admin.ch/).
+  //
+  // - Low density: light tones
+  // - High density: dark tones
+  // `,
+  //
+  // HTML variant (see roads_swiss_statistics.ts for a worked example):
+  // description: `
+  //   <p>Swiss building footprints with <em>construction year</em> data.</p>
+  //   <p>Source: <a href="https://www.swisstopo.admin.ch/" target="_blank" rel="noopener">Swisstopo</a>.</p>
+  // `,
+  //
+  // COMPONENT escape hatch (see descriptions/wrf_d02.vue for a worked example
+  // with an ECharts chart). When set, overrides `description` at render time.
+  // descriptionComponent: () => import("./descriptions/my_project_id.vue"),
   // Categories shown as filter chips: Infrastructure | Climate | Transport |
   //   Demographics | Mobility | … (add new ones freely)
   category: "Infrastructure",
@@ -89,6 +110,7 @@ export const myProjectConfig: ProjectConfig = {
   //   {
   //     id: "variant_a",
   //     title: "Variant A",
+  //     // Plain prose, HTML, and descriptionComponent all work here too.
   //     description: "Description of the first sub-visualization.",
   //     renderer: "deckgl-arcs",          // or omit for standard MapLibre
   //     dataUrl: "my_project_variant_a.geojson",
@@ -96,7 +118,11 @@ export const myProjectConfig: ProjectConfig = {
   //   {
   //     id: "variant_b",
   //     title: "Variant B",
-  //     description: "Description of the second sub-visualization.",
+  //     description: `
+  //       <p>Each arc represents a commuting flow between two municipalities.</p>
+  //       <p><em>Hover</em> an arc to highlight the corridor.</p>
+  //     `,
+  //     // descriptionComponent: () => import("./descriptions/my_project_variant_b.vue"),
   //     renderer: "deckgl-arcs",
   //     dataUrl: "my_project_variant_b.geojson",
   //   },

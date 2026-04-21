@@ -500,6 +500,11 @@ export const myDatasetNameProject: ProjectConfig = {
   // Attribution text shown in the project detail panel
 ```
 
+> **Richer descriptions:** `description` accepts plain text, Markdown, raw
+> HTML, or a custom Vue component (for charts and diagrams). See the
+> [descriptions tutorial](descriptions-tutorial.md) when a sentence isn't
+> enough.
+
 ### 3.4 Configure the map source and layer
 
 This tells the app where to find your data and how to draw it. There are two parts: **source** (where the data is) and **layer** (how to style it).
