@@ -53,7 +53,7 @@ const infoOpen = ref(false);
         <div class="panel-content">
           <h2 class="text-h6 text-white q-mb-lg">About Urbes Viz</h2>
           <p class="text-body1 text-grey q-mb-md">
-            URBES Viz is an interactive visualization platform developed to
+            URBES Viz is an interactive very nice visualization platform developed to
             explore and communicate research data from the
             <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>. This demo
             showcases a 3D globe-based interface offering an immersive,
