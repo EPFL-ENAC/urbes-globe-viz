@@ -15,14 +15,36 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: #ffffff;
-  background-color: #000000;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Dark is the default palette; [data-theme="light"] overrides below. */
+  color-scheme: dark;
+  --color-bg: #000000;
+  --color-surface: rgba(0, 0, 0, 0.6);
+  --color-surface-raised: #1a1a1a;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.6);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+  --color-map-bg: #030303;
+
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #ffffff;
+  --color-surface: rgba(255, 255, 255, 0.85);
+  --color-surface-raised: #f5f5f5;
+  --color-text: #111111;
+  --color-text-muted: rgba(0, 0, 0, 0.8);
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-border-strong: rgba(0, 0, 0, 0.2);
+  --color-map-bg: #fcfcfc;
 }
 
 body {
@@ -36,4 +58,16 @@ body {
 #app {
   width: 100%;
   height: 100vh;
+}
+
+/* GHSL basemap canvas container — the dark-paletted basemap sits behind an
+   overlay map. In light mode we invert the canvas so the basemap reads as
+   light-on-dark → dark-on-light without touching MapLibre paint. hue-rotate
+   keeps any tinted pixels (e.g. building outlines) looking natural. */
+.ghsl-basemap-canvas {
+  transition: filter 0.25s ease;
+}
+
+:root[data-theme="light"] .ghsl-basemap-canvas {
+  filter: invert(1) hue-rotate(180deg);
 }

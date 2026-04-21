@@ -22,19 +22,10 @@ function createCircularIcon(
   const cy = size / 2;
   const r = cx - borderWidth;
 
-  if (img) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(img, 0, 0, size, size);
-    ctx.restore();
-  } else {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#c8c8c8";
-    ctx.fill();
-  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#c8c8c8";
+  ctx.fill();
 
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);

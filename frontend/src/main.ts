@@ -7,6 +7,7 @@ import "quasar/dist/quasar.css";
 import App from "./App.vue";
 import router from "./router";
 import { prefetchGhsl } from "./lib/pmtilesClient";
+import { installTheme } from "./stores/theme";
 
 import "./style.css";
 
@@ -21,5 +22,8 @@ app.use(router);
 app.use(Quasar, {
   config: {},
 });
+
+// Must run after Pinia + Quasar so the store is usable and Quasar.Dark works.
+installTheme(app);
 
 app.mount("#app");
