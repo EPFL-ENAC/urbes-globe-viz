@@ -18,13 +18,15 @@ const preview = useMapPreview();
 
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
-let spinActive = true; // spin stops permanently on first user interaction
+let spinRunning = false;
+let spinKilled = false; // set on first explicit user gesture (pointerdown/wheel)
+let resettingToOverview = false; // true while the scroll-back restore flyTo is in flight
 let pmtilesRegistered = false;
 let markersSetupStarted = false;
 let flyingToProject = false; // true while a hover-triggered flyTo is in progress
 let unsubscribeBasemapSync: (() => void) | null = null;
 
-// Camera state saved before hover — restored on unhover
+// Camera state saved on first hover — restored when the user fully unhovers.
 let savedCamera: {
   center: [number, number];
   zoom: number;
@@ -32,49 +34,91 @@ let savedCamera: {
   bearing: number;
 } | null = null;
 
+// Initial zoom scales with viewport width so the globe reads correctly on
+// phones and fills large monitors: smaller screens need a tighter globe.
+function computeInitialZoom(): number {
+  const w = window.innerWidth;
+  if (w >= 2560) return 4; // extra-large monitor / 4K+
+  if (w >= 1280) return 3; // large monitor (FHD, QHD)
+  return 2; // laptop
+}
+
 const initialCamera = {
   center: [6.3, 46.2] as [number, number],
-  zoom: 2,
+  zoom: computeInitialZoom(),
+  // Captured from the live map on first load (see map.on("load")) so the
+  // restore-overview flyTo lands on the exact camera the user saw initially
+  // — globe projection may apply its own defaults we don't want to hardcode.
+  pitch: 0,
+  bearing: 0,
 };
 
-// --- Spin animation (speed decreases with zoom, stops at zoom ≥ 10) ---
+// Hover preview sits this many zoom levels below the project's full-view zoom
+// so users see context around the marker, not a tight deep-zoom.
+const PREVIEW_ZOOM_OFFSET = 2;
 
-function stopSpin() {
-  spinActive = false;
+// --- Idle spin (speed decreases with zoom, stops at zoom ≥ 10) ---
+// Pauses during hover preview, resumes after the restore flyTo completes.
+// Permanently killed on the first user drag/wheel gesture.
+
+function spinLoop() {
+  if (!spinRunning || spinKilled || !map) {
+    animationFrame = null;
+    return;
+  }
+  const zoom = map.getZoom();
+  if (zoom < 10) {
+    const speed = 0.05 * (1 - zoom / 10);
+    const c = map.getCenter();
+    map.setCenter([c.lng + speed, c.lat]);
+  }
+  animationFrame = requestAnimationFrame(spinLoop);
+}
+
+function resumeSpin() {
+  if (spinKilled || spinRunning || !map) return;
+  spinRunning = true;
+  animationFrame = requestAnimationFrame(spinLoop);
+}
+
+function pauseSpin() {
+  spinRunning = false;
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
 }
 
-function startSpin() {
-  let userInteracted = false;
+function killSpin() {
+  spinKilled = true;
+  pauseSpin();
+}
 
-  const onInteraction = () => {
-    userInteracted = true;
-    stopSpin();
-  };
+function armKillSpinListeners() {
+  if (!map) return;
+  const canvas = map.getCanvas();
+  canvas.addEventListener("pointerdown", killSpin, { once: true });
+  canvas.addEventListener("wheel", killSpin, { once: true });
+}
 
-  const spin = () => {
-    if (!spinActive || userInteracted) return;
-    if (map) {
-      const zoom = map.getZoom();
-      if (zoom < 10) {
-        const speed = 0.05 * (1 - zoom / 10);
-        const c = map.getCenter();
-        map.setCenter([c.lng + speed, c.lat]);
-      }
-    }
-    animationFrame = requestAnimationFrame(spin);
-  };
-
-  // Any user gesture permanently kills spin
-  map
-    ?.getCanvas()
-    .addEventListener("pointerdown", onInteraction, { once: true });
-  map?.getCanvas().addEventListener("wheel", onInteraction, { once: true });
-
-  animationFrame = requestAnimationFrame(spin);
+// When the user scrolls back out to the initial zoom after panning/zooming,
+// fly to the original overview and re-arm the idle spin.
+function restoreOverview() {
+  if (!map || resettingToOverview) return;
+  resettingToOverview = true;
+  map.flyTo({
+    center: initialCamera.center,
+    zoom: initialCamera.zoom,
+    pitch: initialCamera.pitch,
+    bearing: initialCamera.bearing,
+    duration: 1200,
+  });
+  map.once("moveend", () => {
+    resettingToOverview = false;
+    spinKilled = false;
+    armKillSpinListeners();
+    resumeSpin();
+  });
 }
 
 // --- Hover watcher: single source of truth ---
@@ -84,34 +128,40 @@ watch(
   (projectId) => {
     if (!map) return;
 
-    // First hover permanently kills the idle spin
-    if (spinActive) stopSpin();
-
     flyingToProject = false;
     map.stop();
     preview.remove(map);
     preview.filterCircles(map, projectId);
 
     if (projectId) {
-      // Save current camera before zooming in
-      const c = map.getCenter();
-      savedCamera = {
-        center: [c.lng, c.lat],
-        zoom: map.getZoom(),
-        pitch: map.getPitch(),
-        bearing: map.getBearing(),
-      };
+      pauseSpin();
+      // Save the pre-hover camera on the first hover only, so rapid
+      // project-to-project hovers don't overwrite it with hover-zoom views.
+      if (!savedCamera) {
+        const c = map.getCenter();
+        savedCamera = {
+          center: [c.lng, c.lat],
+          zoom: map.getZoom(),
+          pitch: map.getPitch(),
+          bearing: map.getBearing(),
+        };
+      }
 
       const feature = projectsGeoJSON.features.find(
         (f) => f.properties.id === projectId,
       );
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
-      if (lng && lat) {
+      if (lng != null && lat != null) {
         flyingToProject = true;
+        const featureZoom = feature.properties.zoom || 8;
+        const previewZoom = Math.max(
+          initialCamera.zoom,
+          featureZoom - PREVIEW_ZOOM_OFFSET,
+        );
         map.flyTo({
           center: [lng, lat],
-          zoom: feature.properties.zoom || 8,
+          zoom: previewZoom,
           pitch: feature.properties.pitch || 0,
           duration: 1200,
         });
@@ -121,12 +171,18 @@ watch(
       }
       preview.add(map, projectId);
     } else if (savedCamera) {
+      const restore = savedCamera;
       map.flyTo({
+        center: restore.center,
+        zoom: restore.zoom,
         pitch: 0,
         bearing: 0,
         duration: 1200,
       });
-      savedCamera = null;
+      map.once("moveend", () => {
+        savedCamera = null;
+        resumeSpin();
+      });
     }
   },
 );
@@ -140,6 +196,7 @@ onMounted(() => {
   savedCamera = null;
   projectStore.setHoveredProject(null);
   projectStore.setZoomLevel(initialCamera.zoom);
+  projectStore.setInitialZoom(initialCamera.zoom);
 
   if (!pmtilesRegistered) {
     try {
@@ -154,7 +211,7 @@ onMounted(() => {
     container: container.value,
     center: initialCamera.center,
     zoom: initialCamera.zoom,
-    minZoom: 1,
+    minZoom: initialCamera.zoom,
     maxZoom: 15,
     attributionControl: false,
     fadeDuration: 500,
@@ -171,6 +228,26 @@ onMounted(() => {
 
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
   projectStore.setZoomLevel(2);
+
+  // Any explicit user gesture (drag or wheel) permanently kills the idle spin
+  // until the user scrolls back out to the initial zoom (see zoomend handler).
+  armKillSpinListeners();
+
+  // Block scroll-out wheel events when already at the zoom floor. Otherwise
+  // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
+  // which shifts the center even when the zoom itself is clamped — giving
+  // the impression of panning the globe by scrolling at min zoom.
+  map.getCanvas().addEventListener(
+    "wheel",
+    (e) => {
+      if (!map) return;
+      if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    { capture: true, passive: false },
+  );
 
   // Sync camera from overlay → basemap. Attach once the basemap is created
   // (its `ready` ref flips after the instance mounts; `syncFrom` is safe
@@ -232,20 +309,48 @@ onMounted(() => {
     });
   };
 
+  let initialPoseCaptured = false;
+  const captureInitialPose = () => {
+    if (!map || initialPoseCaptured) return;
+    initialPoseCaptured = true;
+    initialCamera.pitch = map.getPitch();
+    initialCamera.bearing = map.getBearing();
+  };
+
   map.once("render", () => {
     isLoading.value = false;
+    captureInitialPose();
     setupMarkers();
   });
   map.on("load", () => {
     isLoading.value = false;
+    captureInitialPose();
     setupMarkers();
   });
 
-  startSpin();
-  // Track zoom level in store
+  resumeSpin();
+  // Track zoom level in store, and enforce minZoom manually — MapLibre's
+  // globe projection doesn't reliably clamp scroll-zoom at the configured
+  // minZoom, so we snap back here whenever zoom dips below the initial.
   map.on("zoom", () => {
-    if (map) {
-      projectStore.setZoomLevel(map.getZoom());
+    if (!map) return;
+    const z = map.getZoom();
+    if (z < initialCamera.zoom) {
+      map.setZoom(initialCamera.zoom);
+      return;
+    }
+    projectStore.setZoomLevel(z);
+  });
+  // Scrolling back out to the initial zoom snaps to the original overview
+  // and resumes the idle spin — "go back to where I started".
+  map.on("zoomend", () => {
+    if (
+      map &&
+      spinKilled &&
+      !resettingToOverview &&
+      map.getZoom() <= initialCamera.zoom
+    ) {
+      restoreOverview();
     }
   });
 });
@@ -261,7 +366,7 @@ watch(
 );
 
 onUnmounted(() => {
-  stopSpin();
+  pauseSpin();
   if (unsubscribeBasemapSync) {
     unsubscribeBasemapSync();
     unsubscribeBasemapSync = null;
@@ -281,7 +386,7 @@ onUnmounted(() => {
       ref="basemapRef"
       :center="initialCamera.center"
       :zoom="initialCamera.zoom"
-      :min-zoom="1"
+      :min-zoom="initialCamera.zoom"
       :max-zoom="15"
       projection="globe"
       :padding="{ top: 0, right: 0, bottom: 72, left: 0 }"

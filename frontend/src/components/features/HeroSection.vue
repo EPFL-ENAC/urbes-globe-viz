@@ -4,24 +4,30 @@ import { useProjectStore } from "@/stores/project";
 
 const projectStore = useProjectStore();
 const zoom = computed(() => projectStore.zoomLevel);
+const initialZoom = computed(() => projectStore.initialZoom);
 const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-const panel1Opacity = computed(() =>
-  isHoveringCard.value ? 0 : clamp01(1 - (zoom.value - 2) / 0.4),
-);
-const panel2Opacity = computed(() =>
-  isHoveringCard.value
-    ? 0
-    : Math.min(
-        clamp01((zoom.value - 2.4) / 0.4),
-        clamp01(1 - (zoom.value - 3.8)),
-      ),
-);
-const heroVisible = computed(() => zoom.value < 4.8);
-const activePanel = computed(() => (zoom.value < 2.4 ? 0 : 1));
+
+// Hero text splits into two sequential panels as the user zooms in.
+// Ranges are relative to initialZoom so behavior scales across screen sizes:
+//   [base,      base + 3) → panel 0
+//   [base + 3,  base + 6) → panel 1
+//   [base + 6, ∞)         → hidden
+const PART_SPAN = 2;
+
+const activePanel = computed(() => {
+  if (isHoveringCard.value) return -1;
+  const z = zoom.value;
+  const base = initialZoom.value;
+  if (z < base + PART_SPAN) return 0;
+  if (z < base + PART_SPAN * 2) return 1;
+  return -1;
+});
+
+const heroVisible = computed(() => activePanel.value !== -1);
 
 function goToPanel(index: number) {
-  projectStore.requestZoom(index === 0 ? 2 : 3.3);
+  const base = projectStore.initialZoom;
+  projectStore.requestZoom(index === 0 ? base : base + PART_SPAN);
 }
 </script>
 
@@ -45,8 +51,7 @@ function goToPanel(index: number) {
 
       <!-- Panels: stacked in same grid cell so only the visible one sets height -->
       <div class="panels-container">
-        <!-- Panel 1: Hero — always rendered to hold the reference height -->
-        <div class="hero-panel" :style="{ opacity: panel1Opacity }">
+        <div class="hero-panel" :class="{ 'is-visible': activePanel === 0 }">
           <h1 class="text-h2 text-weight-light q-mb-xs">
             DECODING THE<br />
             PHYSICS OF <br />
@@ -63,12 +68,7 @@ function goToPanel(index: number) {
           </p>
         </div>
 
-        <!-- Panel 2: Info Sections -->
-        <div
-          v-show="panel2Opacity > 0"
-          class="hero-panel"
-          :style="{ opacity: panel2Opacity }"
-        >
+        <div class="hero-panel" :class="{ 'is-visible': activePanel === 1 }">
           <h1 class="text-h2 text-weight-light q-mb-xs">
             COMPLEXITY <br />
             IN TIME AND<br />
@@ -134,6 +134,14 @@ function goToPanel(index: number) {
 .hero-panel {
   grid-area: 1 / 1;
   max-width: 550px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.hero-panel.is-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .btn-row {
