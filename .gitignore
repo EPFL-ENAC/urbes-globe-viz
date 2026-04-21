@@ -16,6 +16,6 @@ processing/**/*.xml
 .env
 .venv/
 CLAUDE.md
-
+.claude/
 # GDAL documentation files (local reference only)
 *.rst
