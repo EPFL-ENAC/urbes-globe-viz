@@ -22,10 +22,19 @@ function createCircularIcon(
   const cy = size / 2;
   const r = cx - borderWidth;
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#c8c8c8";
-  ctx.fill();
+  if (img) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, 0, 0, size, size);
+    ctx.restore();
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#c8c8c8";
+    ctx.fill();
+  }
 
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -52,17 +61,18 @@ export function useMapPreview() {
   async function setupIcons(map: maplibregl.Map) {
     const promises = projectsGeoJSON.features.map(async (feature) => {
       const { id, preview } = feature.properties;
-      let img: HTMLImageElement | null = null;
       if (preview) {
         try {
-          img = await loadImg(`/previews/${preview}`);
+          const img = await loadImg(`/previews/${preview}`);
           imageCache.set(id, img);
         } catch {
-          // fall back to plain grey circle
+          // no preview available — big circle will be skipped
         }
       }
-      const icon = createCircularIcon(img, 40, 3);
-      map.addImage(`${id}-marker`, icon, { pixelRatio: 2 });
+      const imageId = `${id}-marker`;
+      if (map.hasImage(imageId)) return;
+      const icon = createCircularIcon(null, 40, 3);
+      map.addImage(imageId, icon, { pixelRatio: 2 });
     });
     await Promise.all(promises);
   }

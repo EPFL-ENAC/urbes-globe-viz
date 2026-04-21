@@ -20,6 +20,7 @@ let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
 let spinActive = true; // spin stops permanently on first user interaction
 let pmtilesRegistered = false;
+let markersSetupStarted = false;
 let flyingToProject = false; // true while a hover-triggered flyTo is in progress
 let unsubscribeBasemapSync: (() => void) | null = null;
 
@@ -193,7 +194,8 @@ onMounted(() => {
 
   // Project markers
   const setupMarkers = async () => {
-    if (!map || map.getSource("projects")) return;
+    if (!map || markersSetupStarted) return;
+    markersSetupStarted = true;
 
     await preview.setupIcons(map);
 
@@ -269,6 +271,7 @@ onUnmounted(() => {
     map.remove();
     map = null;
   }
+  markersSetupStarted = false;
 });
 </script>
 
