@@ -34,6 +34,7 @@ export interface ProjectProperties {
   year: number;
   preview?: string;
   zoom?: number;
+  previewZoom?: number;
   pitch?: number;
   renderer?: string;
 }
@@ -56,6 +57,7 @@ export const projectsGeoJSON: ProjectCollection = {
       year: p.year,
       preview: p.preview,
       zoom: p.zoom,
+      previewZoom: p.previewZoom,
       pitch: p.pitch,
       renderer: p.renderer,
     },

@@ -11,7 +11,7 @@ export const buildingsProject: ProjectConfig = {
   year: 2023,
   preview: "buildings_height.png",
   zoom: 13,
-  pitch: 75,
+  pitch: 30,
 
   unit: "year",
   info: "Source: Swiss Federal Office of Topography",

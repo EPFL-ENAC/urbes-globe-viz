@@ -11,7 +11,8 @@ export const buildingHeightsChinaProject: ProjectConfig = {
   year: 1995,
   preview: "building_heights_china.png",
   zoom: 6,
-  pitch: 60,
+  previewZoom: 4.5,
+  pitch: 30,
 
   unit: "meters",
   info: "Source: URBES Research",

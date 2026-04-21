@@ -47,7 +47,7 @@ const initialCamera = {
 
 // Hover preview sits this many zoom levels below the project's full-view zoom
 // so users see context around the marker, not a tight deep-zoom.
-const PREVIEW_ZOOM_OFFSET = 2;
+const PREVIEW_ZOOM_OFFSET = 3;
 
 // --- Idle spin (speed decreases with zoom, stops at zoom ≥ 10) ---
 // Pauses during hover preview, resumes after the restore flyTo completes.
@@ -138,7 +138,7 @@ watch(
         const featureZoom = feature.properties.zoom || 8;
         const previewZoom = Math.max(
           initialCamera.zoom,
-          featureZoom - PREVIEW_ZOOM_OFFSET,
+          feature.properties.previewZoom ?? featureZoom - PREVIEW_ZOOM_OFFSET,
         );
         flying = true;
         map.flyTo({

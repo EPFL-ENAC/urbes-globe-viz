@@ -11,7 +11,8 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
   year: 2025,
   preview: "car_road_length.png",
   zoom: 9,
-  pitch: 70,
+  previewZoom: 7,
+  pitch: 30,
 
   unit: "meters/500m²",
   info: "Source: SwissTLM3D, STATPOP",

@@ -55,6 +55,8 @@ Key fields:
 
 - `id`: unique slug, matches GeoJSON/image filenames on CDN
 - `coordinates`: `[lng, lat]` — globe camera target
+- `zoom?` + `pitch?`: full-view camera when the project is opened in detail view
+- `previewZoom?`: zoom used for the globe hover preview. Leave undefined to fall back to `zoom - PREVIEW_ZOOM_OFFSET` (defined in `Globe3D.vue`). Set a per-project value when the offset default zooms in too far or not far enough (e.g. very low base `zoom`)
 - `source?` + `layer?`: MapLibre source/layer spec (omit for custom renderers)
 - `renderer?`: `"deckgl-arcs"` → uses `DaveFlowsMap`; undefined → uses `ProjectMap`
 - `subViz?: SubViz[]`: optional array for carousel/scrollytelling multi-dataset projects

@@ -11,7 +11,8 @@ export const hourlyAdultPopulationProject: ProjectConfig = {
   year: 2020,
   preview: "hourly_population.png",
   zoom: 9,
-  pitch: 70,
+  previewZoom: 7,
+  pitch: 30,
 
   unit: "adults/500m²",
   info: "Source: DAVE Simulations, URBES",

@@ -151,7 +151,7 @@ function addImageCircle(map: maplibregl.Map, projectId: string) {
     });
   }
 
-  const icon = createCircularIcon(cachedImg, 800, 4);
+  const icon = createCircularIcon(cachedImg, 350, 4);
   if (!map.hasImage(imageId)) {
     map.addImage(imageId, icon, { pixelRatio: 2 });
   }

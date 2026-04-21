@@ -75,6 +75,9 @@ export interface ProjectConfig {
   year: number;
   preview?: string;
   zoom?: number;
+  // Zoom used by the globe hover preview. Leave undefined to fall back to
+  // `zoom - PREVIEW_ZOOM_OFFSET` in Globe3D.vue.
+  previewZoom?: number;
   pitch?: number;
 
   // Display labels (shown in UI)
