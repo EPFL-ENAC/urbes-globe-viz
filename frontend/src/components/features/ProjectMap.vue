@@ -3,8 +3,8 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
-import { basemapSources, basemapLayers } from "@/config/basemap";
 import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import GhslBasemap from "@/components/features/GhslBasemap.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -12,13 +12,25 @@ const props = defineProps<{
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
+const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
+let unsubscribeBasemapSync: (() => void) | null = null;
 
 let pmtilesRegistered = false;
 
 const getLayerConfig = () =>
   mapLayers.find((layer) => layer.id === props.projectId);
+
+const project = projectsGeoJSON.features.find(
+  (f) => f.properties.id === props.projectId,
+);
+const basemapCenter: [number, number] = (project?.geometry.coordinates as [
+  number,
+  number,
+]) || [8.2, 46.8];
+const basemapZoom = project?.properties.zoom || 8;
+const basemapPitch = project?.properties.pitch || 0;
 
 const buildTemporalField = (
   template: string,
@@ -111,7 +123,11 @@ const applyLayerTime = (timeValue: number) => {
 
 const ensureProtocol = () => {
   if (!pmtilesRegistered) {
-    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    try {
+      maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    } catch {
+      // Already registered by another mount (e.g. GhslBasemap).
+    }
     pmtilesRegistered = true;
   }
 };
@@ -130,55 +146,57 @@ const initializeMap = () => {
     return;
   }
 
-  // Get project coordinates from GeoJSON
-  const project = projectsGeoJSON.features.find(
-    (f) => f.properties.id === props.projectId,
-  );
-  const center: [number, number] = (project?.geometry.coordinates as [
-    number,
-    number,
-  ]) || [8.2, 46.8];
-
-  // Initialize map with optimized settings
   map = new maplibregl.Map({
     container: mapContainer.value,
     attributionControl: false,
+    canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
       sources: {
-        ...basemapSources,
         [layerConfig.id]: layerConfig.source,
       },
       layers: [
-        ...basemapLayers,
         getLayerForTime(
           props.activeTime ?? layerConfig.timeControl?.initial ?? 0,
         ) ?? layerConfig.layer,
       ],
     },
-    center: center,
-    zoom: project?.properties.zoom || 8,
-    pitch: project?.properties.pitch || 0,
-    // Performance optimizations
+    center: basemapCenter,
+    zoom: basemapZoom,
+    pitch: basemapPitch,
     refreshExpiredTiles: false,
     fadeDuration: 500,
     renderWorldCopies: false,
-    maxTileCacheSize: 50, // Limit tile cache size
+    maxTileCacheSize: 50,
   });
 
-  // Add navigation controls
   map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-  // Handle loading state
   map.on("load", () => {
     isLoading.value = false;
   });
 
-  // Handle errors
   map.on("error", (e) => {
     console.error("Map error:", e);
     isLoading.value = false;
   });
+
+  const attachSync = () => {
+    if (unsubscribeBasemapSync || !map || !basemapRef.value?.map) return;
+    unsubscribeBasemapSync = basemapRef.value.syncFrom(map);
+  };
+  attachSync();
+  if (!unsubscribeBasemapSync) {
+    const stopWatch = watch(
+      () => basemapRef.value?.map,
+      (bm) => {
+        if (bm) {
+          attachSync();
+          stopWatch();
+        }
+      },
+    );
+  }
 };
 
 onMounted(() => {
@@ -188,6 +206,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (unsubscribeBasemapSync) {
+    unsubscribeBasemapSync();
+    unsubscribeBasemapSync = null;
+  }
   if (map) {
     map.remove();
     map = null;
@@ -205,6 +227,12 @@ watch(
 
 <template>
   <div class="project-map-wrapper">
+    <GhslBasemap
+      ref="basemapRef"
+      :center="basemapCenter"
+      :zoom="basemapZoom"
+      :pitch="basemapPitch"
+    />
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
@@ -222,6 +250,8 @@ watch(
 .project-map {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-overlay {
@@ -230,7 +260,7 @@ watch(
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgb(20, 20, 20);
+  background: var(--color-map-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,8 +270,8 @@ watch(
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-text-muted);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

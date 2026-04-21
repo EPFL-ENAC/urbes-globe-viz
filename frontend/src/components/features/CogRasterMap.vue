@@ -5,8 +5,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
-import { basemapSources, basemapLayers } from "@/config/basemap";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
+import GhslBasemap from "@/components/features/GhslBasemap.vue";
 import type { CogRasterConfig } from "@/config/projects/types";
 
 const props = defineProps<{
@@ -18,9 +18,14 @@ const props = defineProps<{
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
+const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 let deckOverlay: MapboxOverlay | null = null;
+let unsubscribeBasemapSync: (() => void) | null = null;
+
+const initialCenter: [number, number] = props.center ?? [6.5, 46.5];
+const initialZoom = props.zoom ?? 8;
 
 const cogUrl = computed(() => {
   const url = props.cogRaster.url;
@@ -77,13 +82,14 @@ onMounted(() => {
 
   map = new maplibregl.Map({
     container: mapContainer.value,
+    canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
-      sources: { ...basemapSources },
-      layers: [...basemapLayers],
+      sources: {},
+      layers: [],
     },
-    center: props.center ?? [6.5, 46.5],
-    zoom: props.zoom ?? 8,
+    center: initialCenter,
+    zoom: initialZoom,
     refreshExpiredTiles: false,
     fadeDuration: 500,
     renderWorldCopies: false,
@@ -100,9 +106,30 @@ onMounted(() => {
     });
     map!.addControl(deckOverlay as unknown as maplibregl.IControl);
   });
+
+  const attachSync = () => {
+    if (unsubscribeBasemapSync || !map || !basemapRef.value?.map) return;
+    unsubscribeBasemapSync = basemapRef.value.syncFrom(map);
+  };
+  attachSync();
+  if (!unsubscribeBasemapSync) {
+    const stopWatch = watch(
+      () => basemapRef.value?.map,
+      (bm) => {
+        if (bm) {
+          attachSync();
+          stopWatch();
+        }
+      },
+    );
+  }
 });
 
 onUnmounted(() => {
+  if (unsubscribeBasemapSync) {
+    unsubscribeBasemapSync();
+    unsubscribeBasemapSync = null;
+  }
   if (deckOverlay && map) {
     map.removeControl(deckOverlay as unknown as maplibregl.IControl);
   }
@@ -115,6 +142,7 @@ onUnmounted(() => {
 
 <template>
   <div class="project-map-wrapper">
+    <GhslBasemap ref="basemapRef" :center="initialCenter" :zoom="initialZoom" />
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
@@ -132,6 +160,8 @@ onUnmounted(() => {
 .project-map {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-overlay {
@@ -140,7 +170,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #000;
+  background: var(--color-map-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -150,8 +180,8 @@ onUnmounted(() => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-text-muted);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

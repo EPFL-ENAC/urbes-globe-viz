@@ -6,8 +6,8 @@ import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
-import { basemapSources, basemapLayers } from "@/config/basemap";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
+import GhslBasemap from "@/components/features/GhslBasemap.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -22,9 +22,21 @@ const flowUrl = computed(() =>
 const BRUSH_RADIUS_M = 8000;
 
 const mapContainer = ref<HTMLDivElement | null>(null);
+const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 let deckOverlay: MapboxOverlay | null = null;
+let unsubscribeBasemapSync: (() => void) | null = null;
+
+const project = projectsGeoJSON.features.find(
+  (f) => f.properties.id === props.projectId,
+);
+const basemapCenter: [number, number] = (project?.geometry.coordinates as [
+  number,
+  number,
+]) || [6.5, 46.5];
+const basemapZoom = project?.properties.zoom || 8;
+const basemapPitch = project?.properties.pitch || 0;
 
 // Arc data — set once after fetch
 let arcs: FlowFeature[] = [];
@@ -126,25 +138,18 @@ onMounted(() => {
     // Already registered from Globe3D / another map mount
   }
 
-  const project = projectsGeoJSON.features.find(
-    (f) => f.properties.id === props.projectId,
-  );
-  const center: [number, number] = (project?.geometry.coordinates as [
-    number,
-    number,
-  ]) || [6.5, 46.5];
-
   map = new maplibregl.Map({
     container: mapContainer.value,
     attributionControl: false,
+    canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
-      sources: { ...basemapSources },
-      layers: [...basemapLayers],
+      sources: {},
+      layers: [],
     },
-    center,
-    zoom: project?.properties.zoom || 8,
-    pitch: project?.properties.pitch || 0,
+    center: basemapCenter,
+    zoom: basemapZoom,
+    pitch: basemapPitch,
     refreshExpiredTiles: false,
     fadeDuration: 500,
     renderWorldCopies: false,
@@ -174,9 +179,30 @@ onMounted(() => {
     brushActive = false;
     scheduleRedraw();
   });
+
+  const attachSync = () => {
+    if (unsubscribeBasemapSync || !map || !basemapRef.value?.map) return;
+    unsubscribeBasemapSync = basemapRef.value.syncFrom(map);
+  };
+  attachSync();
+  if (!unsubscribeBasemapSync) {
+    const stopWatch = watch(
+      () => basemapRef.value?.map,
+      (bm) => {
+        if (bm) {
+          attachSync();
+          stopWatch();
+        }
+      },
+    );
+  }
 });
 
 onUnmounted(() => {
+  if (unsubscribeBasemapSync) {
+    unsubscribeBasemapSync();
+    unsubscribeBasemapSync = null;
+  }
   if (deckOverlay && map) {
     map.removeControl(deckOverlay as unknown as maplibregl.IControl);
   }
@@ -189,6 +215,12 @@ onUnmounted(() => {
 
 <template>
   <div class="project-map-wrapper">
+    <GhslBasemap
+      ref="basemapRef"
+      :center="basemapCenter"
+      :zoom="basemapZoom"
+      :pitch="basemapPitch"
+    />
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
@@ -206,6 +238,8 @@ onUnmounted(() => {
 .project-map {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-overlay {
@@ -214,7 +248,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #000;
+  background: var(--color-map-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -224,8 +258,8 @@ onUnmounted(() => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-text-muted);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

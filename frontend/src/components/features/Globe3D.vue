@@ -4,12 +4,13 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import { projectsGeoJSON } from "@/config/projects";
-import { basemapSources, basemapLayers } from "@/config/basemap";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useMapPreview } from "@/composables/useMapPreview";
+import GhslBasemap from "@/components/features/GhslBasemap.vue";
 
 const container = ref<HTMLDivElement | null>(null);
+const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
 const isLoading = ref(true);
 const projectStore = useProjectStore();
 const router = useRouter();
@@ -20,6 +21,7 @@ let animationFrame: number | null = null;
 let spinActive = true; // spin stops permanently on first user interaction
 let pmtilesRegistered = false;
 let flyingToProject = false; // true while a hover-triggered flyTo is in progress
+let unsubscribeBasemapSync: (() => void) | null = null;
 
 // Camera state saved before hover — restored on unhover
 let savedCamera: {
@@ -33,8 +35,6 @@ const initialCamera = {
   center: [6.3, 46.2] as [number, number],
   zoom: 2,
 };
-
-// --- Preview layer management (delegated to useMapPreview) ---
 
 // --- Spin animation (speed decreases with zoom, stops at zoom ≥ 10) ---
 
@@ -120,8 +120,6 @@ watch(
       }
       preview.add(map, projectId);
     } else if (savedCamera) {
-      // Restore previous camera instantly
-      console.log(savedCamera);
       map.flyTo({
         pitch: 0,
         bearing: 0,
@@ -143,7 +141,11 @@ onMounted(() => {
   projectStore.setZoomLevel(initialCamera.zoom);
 
   if (!pmtilesRegistered) {
-    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    try {
+      maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    } catch {
+      // GhslBasemap registered it first — fine.
+    }
     pmtilesRegistered = true;
   }
 
@@ -155,16 +157,39 @@ onMounted(() => {
     maxZoom: 15,
     attributionControl: false,
     fadeDuration: 500,
+    // Transparent overlay — no background layer, relies on the GhslBasemap
+    // sibling beneath us for visible pixels outside the project markers.
+    canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
       projection: { type: "globe" },
-      sources: { ...basemapSources },
-      layers: [...basemapLayers],
+      sources: {},
+      layers: [],
     },
   });
 
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
   projectStore.setZoomLevel(2);
+
+  // Sync camera from overlay → basemap. Attach once the basemap is created
+  // (its `ready` ref flips after the instance mounts; `syncFrom` is safe
+  // to call immediately because it only registers event listeners).
+  const attachSync = () => {
+    if (unsubscribeBasemapSync || !map || !basemapRef.value?.map) return;
+    unsubscribeBasemapSync = basemapRef.value.syncFrom(map);
+  };
+  attachSync();
+  if (!unsubscribeBasemapSync) {
+    const stopWatch = watch(
+      () => basemapRef.value?.map,
+      (bm) => {
+        if (bm) {
+          attachSync();
+          stopWatch();
+        }
+      },
+    );
+  }
 
   // Project markers
   const setupMarkers = async () => {
@@ -235,6 +260,10 @@ watch(
 
 onUnmounted(() => {
   stopSpin();
+  if (unsubscribeBasemapSync) {
+    unsubscribeBasemapSync();
+    unsubscribeBasemapSync = null;
+  }
   if (map) preview.remove(map);
   if (map) {
     map.remove();
@@ -245,6 +274,15 @@ onUnmounted(() => {
 
 <template>
   <div class="globe-wrapper">
+    <GhslBasemap
+      ref="basemapRef"
+      :center="initialCamera.center"
+      :zoom="initialCamera.zoom"
+      :min-zoom="1"
+      :max-zoom="15"
+      projection="globe"
+      :padding="{ top: 0, right: 0, bottom: 72, left: 0 }"
+    />
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
@@ -259,12 +297,14 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   left: 0;
-  background: #000000;
+  background: var(--color-map-bg);
 }
 
 .globe-container {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-overlay {
@@ -273,7 +313,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #000;
+  background: var(--color-map-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -283,8 +323,8 @@ onUnmounted(() => {
 .loading-spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-text-muted);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
