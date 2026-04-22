@@ -2,6 +2,13 @@
 import { computed } from "vue";
 import { useProjectStore } from "@/stores/project";
 
+// On mobile the two hero paragraphs sit either side of the project list.
+// `outro` instances skip the desktop zoom-driven overlay so only `intro`
+// renders it.
+const props = withDefaults(defineProps<{ part?: "intro" | "outro" }>(), {
+  part: "intro",
+});
+
 const projectStore = useProjectStore();
 const zoom = computed(() => projectStore.zoomLevel);
 const initialZoom = computed(() => projectStore.initialZoom);
@@ -32,7 +39,47 @@ function goToPanel(index: number) {
 </script>
 
 <template>
-  <div v-show="heroVisible" class="hero-overlay" style="z-index: 100">
+  <section v-if="props.part === 'intro'" class="hero-mobile">
+    <h1 class="text-h3 text-weight-light q-mb-md hero-mobile-title">
+      DECODING THE<br />PHYSICS OF <br />CITIES
+    </h1>
+    <p class="text-body1 hero-body">
+      From the heartbeat of daily mobility to the temperature of their skin,
+      cities are complex adaptive systems made of multiple interconnected
+      components (e.g., demography, transport, energy). At URBES, a
+      multidisciplinary research group at EPFL, we explore their dynamics across
+      scales, quantify their interactions with the biosphere, and seek to
+      uncover the fundamental laws that govern their behaviour.
+    </p>
+  </section>
+
+  <section v-else class="hero-mobile">
+    <h1 class="text-h3 text-weight-light q-mb-md hero-mobile-title">
+      COMPLEXITY <br />IN TIME AND<br />SPACE
+    </h1>
+    <p class="text-body1 hero-body q-mb-lg">
+      URBES Globe brings our research to life through visualizations, open data,
+      and model simulations - start exploring!
+    </p>
+    <div class="btn-row">
+      <q-btn
+        class="btn"
+        href="https://www.epfl.ch/labs/urbes/"
+        target="_blank"
+        rel="noopener"
+        unelevated
+      >
+        Visit Urbes Lab
+      </q-btn>
+    </div>
+  </section>
+
+  <div
+    v-if="props.part === 'intro'"
+    v-show="heroVisible"
+    class="hero-overlay"
+    style="z-index: 100"
+  >
     <!-- Panel zone -->
     <div class="scroll-zone">
       <!-- Dot indicators — above the panels -->
@@ -161,5 +208,26 @@ function goToPanel(index: number) {
 
 .hero-body {
   color: var(--color-text-muted);
+}
+
+.hero-mobile {
+  display: none;
+}
+
+.hero-mobile-title {
+  color: var(--color-text);
+  line-height: 1.05;
+}
+
+@media (max-width: 767px) {
+  .hero-overlay {
+    display: none;
+  }
+
+  .hero-mobile {
+    display: block;
+    padding: 20px 20px 28px;
+    color: var(--color-text);
+  }
 }
 </style>

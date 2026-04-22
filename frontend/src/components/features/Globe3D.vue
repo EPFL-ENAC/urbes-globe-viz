@@ -7,7 +7,14 @@ import { projectsGeoJSON } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useMapPreview } from "@/composables/useMapPreview";
+import { useIsMobile } from "@/composables/useIsMobile";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+
+const props = defineProps<{
+  // Renders as ambient background: no hover preview, no drag/wheel, no
+  // marker clicks. The idle spin still runs.
+  backgroundMode?: boolean;
+}>();
 
 const container = ref<HTMLDivElement | null>(null);
 const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
@@ -15,6 +22,8 @@ const isLoading = ref(true);
 const projectStore = useProjectStore();
 const router = useRouter();
 const preview = useMapPreview();
+const isMobile = useIsMobile();
+const passive = () => props.backgroundMode || isMobile.value;
 
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
@@ -32,6 +41,7 @@ function computeInitialZoom(): number {
   const w = window.innerWidth;
   if (w >= 2560) return 4; // extra-large monitor / 4K+
   if (w >= 1280) return 3; // large monitor (FHD, QHD)
+  if (w <= 768) return 3;
   return 2; // laptop
 }
 
@@ -120,7 +130,7 @@ function restoreOverview() {
 watch(
   () => projectStore.hoveredProjectId,
   (projectId) => {
-    if (!map) return;
+    if (!map || passive()) return;
 
     map.stop();
     preview.remove(map);
@@ -213,25 +223,35 @@ onMounted(() => {
   map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
   projectStore.setZoomLevel(2);
 
-  // Any explicit user gesture (drag or wheel) permanently kills the idle spin
-  // until the user scrolls back out to the initial zoom (see zoomend handler).
-  armKillSpinListeners();
+  if (passive()) {
+    map.dragPan.disable();
+    map.dragRotate.disable();
+    map.scrollZoom.disable();
+    map.doubleClickZoom.disable();
+    map.touchZoomRotate.disable();
+    map.keyboard.disable();
+    map.boxZoom.disable();
+  } else {
+    // Any explicit user gesture (drag or wheel) permanently kills the idle spin
+    // until the user scrolls back out to the initial zoom (see zoomend handler).
+    armKillSpinListeners();
 
-  // Block scroll-out wheel events when already at the zoom floor. Otherwise
-  // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
-  // which shifts the center even when the zoom itself is clamped — giving
-  // the impression of panning the globe by scrolling at min zoom.
-  map.getCanvas().addEventListener(
-    "wheel",
-    (e) => {
-      if (!map) return;
-      if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    },
-    { capture: true, passive: false },
-  );
+    // Block scroll-out wheel events when already at the zoom floor. Otherwise
+    // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
+    // which shifts the center even when the zoom itself is clamped — giving
+    // the impression of panning the globe by scrolling at min zoom.
+    map.getCanvas().addEventListener(
+      "wheel",
+      (e) => {
+        if (!map) return;
+        if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      },
+      { capture: true, passive: false },
+    );
+  }
 
   // Sync camera from overlay → basemap. Attach once the basemap is created
   // (its `ready` ref flips after the instance mounts; `syncFrom` is safe
@@ -272,16 +292,18 @@ onMounted(() => {
       },
     });
 
-    map.on("mouseenter", "project-circles", () => {
-      map!.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "project-circles", () => {
-      map!.getCanvas().style.cursor = "grab";
-    });
-    map.on("click", "project-circles", (e) => {
-      const id = e.features?.[0]?.properties?.id;
-      if (id) router.push(`/project/${id}`);
-    });
+    if (!passive()) {
+      map.on("mouseenter", "project-circles", () => {
+        map!.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "project-circles", () => {
+        map!.getCanvas().style.cursor = "grab";
+      });
+      map.on("click", "project-circles", (e) => {
+        const id = e.features?.[0]?.properties?.id;
+        if (id) router.push(`/project/${id}`);
+      });
+    }
   };
 
   let initialPoseCaptured = false;
@@ -358,7 +380,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="globe-wrapper">
+  <div
+    class="globe-wrapper"
+    :class="{ 'globe-passive': props.backgroundMode || isMobile }"
+  >
     <GhslBasemap
       ref="basemapRef"
       :center="initialCamera.center"
@@ -383,6 +408,10 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   background: var(--color-map-bg);
+}
+
+.globe-passive {
+  pointer-events: none;
 }
 
 .globe-container {
