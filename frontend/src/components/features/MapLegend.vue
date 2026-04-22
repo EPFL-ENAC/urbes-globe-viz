@@ -141,4 +141,34 @@ defineProps<{ legend: ProjectLegend }>();
   opacity: 0.55;
   font-size: 10px;
 }
+
+@media (max-width: 1023px) {
+  .map-legend {
+    padding: 6px 8px;
+    font-size: 10px;
+    min-width: 110px;
+    max-width: 170px;
+  }
+
+  .legend-title {
+    font-size: 10px;
+    margin-bottom: 3px;
+    letter-spacing: 0.3px;
+  }
+
+  .legend-items {
+    gap: 2px;
+  }
+
+  .gradient-bar {
+    width: 10px;
+    min-height: 48px;
+  }
+
+  .gradient-unit {
+    bottom: 4px;
+    right: 6px;
+    font-size: 9px;
+  }
+}
 </style>

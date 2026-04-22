@@ -9,6 +9,7 @@ import VariableSelector from "@/components/common/VariableSelector.vue";
 import { allProjects, projectsGeoJSON } from "@/config/projects";
 import { renderDescription } from "@/utils/markdown";
 import { DEFAULT_TITLE } from "@/router";
+import { useIsCompactProject } from "@/composables/useIsMobile";
 import {
   computed,
   defineAsyncComponent,
@@ -23,6 +24,8 @@ const route = useRoute();
 const router = useRouter();
 const projectId = route.params.id as string;
 const drawerOpen = ref(true);
+const isMobile = useIsCompactProject();
+const sheetOpen = ref(true);
 
 const project = computed(() => {
   const feature = projectsGeoJSON.features.find(
@@ -203,6 +206,8 @@ let suspendTimer: ReturnType<typeof setTimeout> | null = null;
 function rebuildObserver() {
   observer?.disconnect();
   observer = null;
+  // Compact layout uses chip-based subViz switching, no scrollytelling.
+  if (isMobile.value) return;
   if (!scrollRoot.value || !subVizList.value?.length) return;
 
   observer = new IntersectionObserver(
@@ -276,12 +281,40 @@ const toggleDrawer = () => {
 const goBack = () => {
   router.push("/");
 };
+
+const toggleSheet = () => {
+  sheetOpen.value = !sheetOpen.value;
+};
+
+const pickSubViz = (i: number) => {
+  activeSubVizIndex.value = i;
+};
+
+const activeSubVizDescriptionComponent = computed(() => {
+  const list = subVizList.value;
+  if (!list) return undefined;
+  const viz = list[activeSubVizIndex.value];
+  return viz ? subVizDescriptionComponents.value.get(viz.id) : undefined;
+});
+
+const activeSubVizDescription = computed(() => {
+  const list = subVizList.value;
+  if (!list) return "";
+  return list[activeSubVizIndex.value]?.description ?? "";
+});
+
+const activeSubVizTitle = computed(() => {
+  const list = subVizList.value;
+  if (!list) return "";
+  return list[activeSubVizIndex.value]?.title ?? "";
+});
 </script>
 
 <template>
   <div class="fit relative detail-bg">
-    <!-- Project Drawer -->
+    <!-- Project Drawer (desktop only) -->
     <div
+      v-if="!isMobile"
       class="project-drawer absolute-left detail-bg"
       :class="{ 'drawer-open': drawerOpen, 'drawer-closed': !drawerOpen }"
     >
@@ -422,7 +455,10 @@ const goBack = () => {
     <!-- Map Container -->
     <div
       class="map-container absolute"
-      :class="{ 'map-with-drawer': drawerOpen, 'map-full': !drawerOpen }"
+      :class="{
+        'map-with-drawer': drawerOpen,
+        'map-full': !drawerOpen,
+      }"
     >
       <DaveFlowsMap
         v-if="activeRenderer === 'deckgl-arcs'"
@@ -444,19 +480,23 @@ const goBack = () => {
       />
       <div
         v-if="
-          (subVizList && subVizList.length > 1) ||
+          (!isMobile && subVizList && subVizList.length > 1) ||
           activeCogVariables ||
           activeLegend ||
           (activeTimeControl && activeTimeValue !== undefined)
         "
         class="map-bottom-bar"
+        :class="{ 'map-bottom-bar-mobile': isMobile }"
       >
         <div
-          v-if="(subVizList && subVizList.length > 1) || activeCogVariables"
+          v-if="
+            (!isMobile && subVizList && subVizList.length > 1) ||
+            activeCogVariables
+          "
           class="selectors-group"
         >
           <div
-            v-if="subVizList && subVizList.length > 1"
+            v-if="!isMobile && subVizList && subVizList.length > 1"
             class="subviz-selector"
             role="tablist"
           >
@@ -498,6 +538,86 @@ const goBack = () => {
             :autoplay-interval-ms="activeTimeControl.autoplayIntervalMs"
           />
         </div>
+      </div>
+    </div>
+
+    <!-- Mobile bottom sheet -->
+    <div
+      v-if="isMobile && project"
+      class="project-sheet"
+      :class="{ 'sheet-open': sheetOpen, 'sheet-closed': !sheetOpen }"
+    >
+      <button
+        type="button"
+        class="sheet-header"
+        :aria-expanded="sheetOpen"
+        aria-label="Toggle project details"
+        @click="toggleSheet"
+      >
+        <div class="sheet-grip" />
+        <div class="sheet-header-row">
+          <div class="sheet-header-text">
+            <div class="text-h6 sheet-title">{{ project.title }}</div>
+            <div class="text-caption sheet-year">{{ project.year }}</div>
+          </div>
+          <q-icon
+            name="keyboard_arrow_up"
+            size="24px"
+            class="sheet-chevron"
+            :class="{ flipped: sheetOpen }"
+          />
+        </div>
+        <div
+          v-if="subVizList && subVizList.length > 1"
+          class="sheet-chips"
+          role="tablist"
+          @click.stop
+        >
+          <button
+            v-for="(viz, i) in subVizList"
+            :key="viz.id"
+            type="button"
+            role="tab"
+            class="subviz-chip sheet-chip"
+            :class="{ active: i === activeSubVizIndex }"
+            :aria-selected="i === activeSubVizIndex"
+            @click="pickSubViz(i)"
+          >
+            {{ viz.title }}
+          </button>
+        </div>
+      </button>
+
+      <div class="sheet-content">
+        <template v-if="subVizList">
+          <h2 class="text-h5 text-weight-light q-mb-sm">
+            {{ activeSubVizTitle }}
+          </h2>
+          <component
+            v-if="activeSubVizDescriptionComponent"
+            :is="activeSubVizDescriptionComponent"
+            class="text-body1"
+            style="line-height: 1.8"
+          />
+          <div
+            v-else
+            class="text-body1 description-body"
+            v-html="renderDescription(activeSubVizDescription)"
+          />
+        </template>
+        <template v-else>
+          <component
+            v-if="singleDescriptionComponent"
+            :is="singleDescriptionComponent"
+            class="text-body1"
+            style="line-height: 1.8"
+          />
+          <div
+            v-else
+            class="text-body1 description-body"
+            v-html="renderDescription(project.description)"
+          />
+        </template>
       </div>
     </div>
   </div>
@@ -775,6 +895,14 @@ const goBack = () => {
   left: 70px;
 }
 
+/* Compact layouts hide the drawer, so the map fills the viewport. */
+@media (max-width: 1023px) {
+  .map-with-drawer,
+  .map-full {
+    left: 0;
+  }
+}
+
 .map-bottom-bar {
   position: absolute;
   left: 20px;
@@ -812,5 +940,149 @@ const goBack = () => {
   min-width: 0;
   display: flex;
   justify-content: stretch;
+}
+
+.map-bottom-bar-mobile {
+  left: 12px;
+  right: 12px;
+  /* Sits above the 96px collapsed sheet peek plus a 12px gap. */
+  bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.map-bottom-bar-mobile .selectors-group {
+  min-width: 0;
+  max-width: 180px;
+  align-self: flex-end;
+}
+
+.map-bottom-bar-mobile .legend-wrap {
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+
+/* Slider takes its own row; a shared one would leave too little track. */
+.map-bottom-bar-mobile .time-slider-wrap {
+  flex: 1 1 100%;
+  align-self: stretch;
+}
+
+.project-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-top: 1px solid var(--color-border);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  color: var(--color-text);
+  transition: height 0.32s cubic-bezier(0.22, 0.8, 0.28, 1);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.sheet-closed {
+  height: 96px;
+}
+
+.sheet-open {
+  height: 82vh;
+}
+
+.sheet-header {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  padding: 10px 18px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sheet-grip {
+  width: 42px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--color-border-strong);
+  margin: 0 auto 4px;
+  opacity: 0.9;
+}
+
+.sheet-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sheet-header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-title {
+  color: var(--color-text);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet-year {
+  color: var(--color-text-muted);
+}
+
+.sheet-chevron {
+  color: var(--color-text-muted);
+  transition: transform 0.3s ease;
+}
+
+.sheet-chevron.flipped {
+  transform: rotate(180deg);
+}
+
+.sheet-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.sheet-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.sheet-chip {
+  flex-shrink: 0;
+}
+
+.sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 20px 32px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.sheet-content::-webkit-scrollbar {
+  display: none;
 }
 </style>
