@@ -26,10 +26,13 @@
   --color-surface: rgba(0, 0, 0, 0.6);
   --color-surface-raised: #1a1a1a;
   --color-text: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.6);
+  --color-text-muted: rgba(255, 255, 255, 0.8);
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.2);
   --color-map-bg: #030303;
+  /* Brightness applied to the mobile landing background globe. Dark theme
+     brightens to make features visible; light theme dims it below. */
+  --globe-bg-brightness: 1.4;
 
   color: var(--color-text);
   background-color: var(--color-bg);
@@ -45,6 +48,29 @@
   --color-border: rgba(0, 0, 0, 0.1);
   --color-border-strong: rgba(0, 0, 0, 0.2);
   --color-map-bg: #fcfcfc;
+  --globe-bg-brightness: 0.85;
+}
+
+/* Foreground text on the mobile landing sits over the blurred globe, so
+   the muted colour gets bumped and a letter-shadow is added for legibility.
+   Scoped to .globe-view-root so the bottom sheet and info panel (solid
+   backgrounds) keep the standard muted treatment. */
+@media (max-width: 767px) {
+  .globe-view-root {
+    --color-text-muted: rgba(255, 255, 255, 0.92);
+  }
+
+  .globe-view-root .foreground {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  :root[data-theme="light"] .globe-view-root {
+    --color-text-muted: rgba(0, 0, 0, 0.95);
+  }
+
+  :root[data-theme="light"] .globe-view-root .foreground {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  }
 }
 
 body {
@@ -100,4 +126,13 @@ body {
 /* Icons ship as dark SVGs — invert them for the dark palette. */
 :root[data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(1);
+}
+
+/* Hide NavigationControl on touch viewports. Selector targets only the
+   button group: MapboxOverlay also sits in top-left by default, so hiding
+   the whole slot blanks every deck.gl layer. */
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-top-left .maplibregl-ctrl-group {
+    display: none;
+  }
 }

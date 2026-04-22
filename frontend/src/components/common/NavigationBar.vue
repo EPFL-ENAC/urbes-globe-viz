@@ -2,9 +2,15 @@
 import { computed, ref } from "vue";
 import epflLogo from "@/assets/EPFL_Logo.svg";
 import { useThemeStore } from "@/stores/theme";
+import { useIsMobile, useIsCompactProject } from "@/composables/useIsMobile";
+import { useRoute, useRouter } from "vue-router";
 
 const infoOpen = ref(false);
 const themeStore = useThemeStore();
+const isMobile = useIsMobile();
+const isCompactProject = useIsCompactProject();
+const route = useRoute();
+const router = useRouter();
 
 const themeIcon = computed(() =>
   themeStore.mode === "dark" ? "light_mode" : "dark_mode",
@@ -12,15 +18,46 @@ const themeIcon = computed(() =>
 const themeLabel = computed(() =>
   themeStore.mode === "dark" ? "Switch to light mode" : "Switch to dark mode",
 );
+
+const isProjectDetail = computed(() => route.path.startsWith("/project/"));
+// On compact project detail the sheet header already shows the project
+// title, so the bar drops logo/title for a back button instead.
+const showBackButton = computed(
+  () => isCompactProject.value && isProjectDetail.value,
+);
+
+const useGlass = computed(
+  () => isMobile.value || (isCompactProject.value && isProjectDetail.value),
+);
+
+const goBack = () => {
+  router.push("/");
+};
 </script>
 
 <template>
-  <div class="fixed-top nav-bar" style="height: 60px; z-index: 1000">
-    <div class="row items-center justify-between q-px-lg" style="height: 100%">
+  <div
+    class="fixed-top nav-bar"
+    :class="{ 'nav-bar-glass': useGlass }"
+    style="height: 60px; z-index: 1000"
+  >
+    <div class="row items-center justify-between q-px-md" style="height: 100%">
       <div class="row items-center q-gutter-sm">
-        <img :src="epflLogo" alt="EPFL" style="height: 16px" />
-        <q-separator vertical size="1px" class="nav-separator" />
-        <span class="text-h6 text-weight-bold nav-title">URBES</span>
+        <q-btn
+          v-if="showBackButton"
+          flat
+          round
+          icon="arrow_back"
+          size="md"
+          class="nav-btn"
+          aria-label="Back to globe"
+          @click="goBack"
+        />
+        <template v-else>
+          <img :src="epflLogo" alt="EPFL" style="height: 16px" />
+          <q-separator vertical size="1px" class="nav-separator" />
+          <span class="text-h6 text-weight-bold nav-title">URBES</span>
+        </template>
       </div>
 
       <div class="row items-center q-gutter-sm">
@@ -133,6 +170,14 @@ const themeLabel = computed(() =>
 }
 
 .nav-bar > .row > * {
+  pointer-events: auto;
+}
+
+.nav-bar-glass {
+  background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--color-border);
   pointer-events: auto;
 }
 
