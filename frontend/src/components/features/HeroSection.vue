@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useProjectStore } from "@/stores/project";
 
 // On mobile the two hero paragraphs sit either side of the project list.
@@ -14,27 +14,55 @@ const zoom = computed(() => projectStore.zoomLevel);
 const initialZoom = computed(() => projectStore.initialZoom);
 const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
 
-// Hero text splits into two sequential panels as the user zooms in.
-// Ranges are relative to initialZoom so behavior scales across screen sizes:
-//   [base,      base + 3) → panel 0
-//   [base + 3,  base + 6) → panel 1
-//   [base + 6, ∞)         → hidden
-const PART_SPAN = 2;
+// Hero text splits into two sequential panels. Two inputs advance through
+// them independently:
+//   (a) zooming the globe — can transition panel 0 → 1 → hidden
+//   (b) wheeling over the hero text — toggles 0 ↔ 1 only; never dismisses
+//
+// The active panel is the max of both inputs' "progress", so the globe can
+// still dismiss the hero even after a hero-scroll, but hero-scroll alone
+// only pages between the two visible panels.
+const PANEL_0_END = 0.25;
+const PANEL_1_END = 1.25;
+
+// Hero-scroll state: 0 (first panel) or 1 (second panel). Contributes
+// PANEL_0_END of progress when set to 1, just enough to enter panel 1's
+// range without pushing toward dismissal.
+const heroPanelIndex = ref<0 | 1>(0);
 
 const activePanel = computed(() => {
   if (isHoveringCard.value) return -1;
-  const z = zoom.value;
-  const base = initialZoom.value;
-  if (z < base + PART_SPAN) return 0;
-  if (z < base + PART_SPAN * 2) return 1;
+  const zoomProgress = zoom.value - initialZoom.value;
+  const heroProgress = heroPanelIndex.value === 1 ? PANEL_0_END : 0;
+  const p = Math.max(zoomProgress, heroProgress);
+  if (p < PANEL_0_END) return 0;
+  if (p < PANEL_1_END) return 1;
   return -1;
 });
 
 const heroVisible = computed(() => activePanel.value !== -1);
 
+// When the globe returns to its overview zoom (e.g. via Globe3D's
+// restoreOverview flyTo), also reset the hero pager so "scroll back out"
+// cleanly re-shows the intro.
+watch(zoom, (z) => {
+  if (z <= initialZoom.value + 0.001) heroPanelIndex.value = 0;
+});
+
+function onHeroWheel(e: WheelEvent) {
+  // Swallow the event: no zooming the globe, no dismissing the hero.
+  // Wheeling only toggles between the two panels.
+  e.preventDefault();
+  e.stopPropagation();
+  heroPanelIndex.value = e.deltaY > 0 ? 1 : 0;
+}
+
 function goToPanel(index: number) {
+  // Dots are explicit navigation — update both inputs so the result is
+  // unambiguous regardless of where the globe's current zoom sits.
+  heroPanelIndex.value = index === 1 ? 1 : 0;
   const base = projectStore.initialZoom;
-  projectStore.requestZoom(index === 0 ? base : base + PART_SPAN);
+  projectStore.requestZoom(index === 0 ? base : base + PANEL_0_END);
 }
 </script>
 
@@ -98,7 +126,11 @@ function goToPanel(index: number) {
 
       <!-- Panels: stacked in same grid cell so only the visible one sets height -->
       <div class="panels-container">
-        <div class="hero-panel" :class="{ 'is-visible': activePanel === 0 }">
+        <div
+          class="hero-panel"
+          :class="{ 'is-visible': activePanel === 0 }"
+          @wheel="onHeroWheel"
+        >
           <h1 class="text-h2 text-weight-light q-mb-xs">
             DECODING THE<br />
             PHYSICS OF <br />
@@ -115,7 +147,11 @@ function goToPanel(index: number) {
           </p>
         </div>
 
-        <div class="hero-panel" :class="{ 'is-visible': activePanel === 1 }">
+        <div
+          class="hero-panel"
+          :class="{ 'is-visible': activePanel === 1 }"
+          @wheel="onHeroWheel"
+        >
           <h1 class="text-h2 text-weight-light q-mb-xs">
             COMPLEXITY <br />
             IN TIME AND<br />
@@ -188,6 +224,9 @@ function goToPanel(index: number) {
 
 .hero-panel.is-visible {
   opacity: 1;
+  /* Catch wheel/click events on the visible panel so scrolling over the
+     hero text advances panels (via @wheel) without also zooming the globe
+     beneath it. */
   pointer-events: auto;
 }
 
