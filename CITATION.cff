@@ -1,14 +1,18 @@
-cff-version: 1.2.0
+cff-version: 1.0.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: "Lisa"
-    given-names: "Mona"
-    orcid: "https://orcid.org/0000-0000-0000-0000"
-  - family-names: "Bot"
-    given-names: "Hew"
-    orcid: "https://orcid.org/0000-0000-0000-0000"
-title: "My Research Software"
-version: 2.0.4
-doi: 10.5281/zenodo.1234
-date-released: 2017-12-18
-url: "https://github.com/github/linguist"
+* family-names: Manoli
+  given-names: Gabriele
+  orcid: "https://orcid.org/0000-0002-9245-2877"
+
+* family-names: Weil
+  given-names: Charlotte
+  orcid: "https://orcid.org/0000-0002-5423-1440"
+
+* family-names: Ripoll
+  given-names: Pierre
+  orcid: "https://orcid.org/0009-0005-1041-747X"
+
+Title: URBES Globe Visualization
+version: v0.1.5
+date-released: 2026-06-04
