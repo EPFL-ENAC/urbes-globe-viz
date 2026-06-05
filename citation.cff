@@ -1,0 +1,25 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+* family-names: Manoli
+  given-names: Gabriele
+  orcid: "https://orcid.org/0000-0002-9245-2877"
+
+* family-names: Weil
+  given-names: Charlotte
+  orcid: "https://orcid.org/0000-0002-5423-1440"
+
+* family-names: Ripoll
+  given-names: Pierre
+  orcid: "https://orcid.org/0009-0005-1041-747X"
+
+Title: URBES Globe Visualization
+version: v0.1.5
+date-released: 2026-06-04
+
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+
+title: "URBES Globe Visualization"
+version: "v0.1.5"
+date-released: 2026-06-04
