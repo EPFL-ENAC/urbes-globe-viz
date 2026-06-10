@@ -18,8 +18,8 @@ Use the year slider to explore the simulated evolution through time. Both bar he
   year: 2020,
   preview: "she_sim.png",
 
-  zoom: 6,
-  previewZoom: 5,
+  zoom: 4,
+  previewZoom: 4,
   pitch: 58,
 
   unit: "height [m]",
@@ -35,7 +35,8 @@ Use the year slider to explore the simulated evolution through time. Both bar he
     type: "fill-extrusion",
     source: "she_sim_temporal",
     "source-layer": "she_sim_temporal",
-    minzoom: 5,
+    minzoom: 4,
+    filter: [">=", ["to-number", ["get", "height_2020"], 0], 1],
 
     paint: {
       "fill-extrusion-height": [
