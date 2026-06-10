@@ -7,6 +7,7 @@ import { hourlyAdultPopulationProject } from "./hourly_adult_population";
 import { daveFlowsProject } from "./dave_flows";
 import { buildingHeightsChinaProject } from "./building_heights_china";
 import { lenOtherCarRoadsProject } from "./car_road_length";
+import { sheSimTemporalProject } from "./she_sim_temporal";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
@@ -17,6 +18,7 @@ const allProjects: ProjectConfig[] = [
   daveFlowsProject,
   buildingHeightsChinaProject,
   lenOtherCarRoadsProject,
+  sheSimTemporalProject,
 ];
 
 // ─── Re-export for consumers that need the raw config ────────────────────────
