@@ -16,7 +16,7 @@ Use the year slider to explore the simulated evolution through time. Both bar he
 
   category: "Climate",
   year: 2020,
-  preview: "she_sim.png",
+  preview: "she_sim_temporal.png",
 
   zoom: 4,
   previewZoom: 4,
