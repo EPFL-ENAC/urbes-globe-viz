@@ -5,7 +5,6 @@ import { wrfProject } from "./wrf";
 import { roadsSwissStatisticsProject } from "./roads_swiss_statistics";
 import { hourlyAdultPopulationProject } from "./hourly_adult_population";
 import { daveFlowsProject } from "./dave_flows";
-import { buildingHeightsChinaProject } from "./building_heights_china";
 import { lenOtherCarRoadsProject } from "./car_road_length";
 import { sheSimTemporalProject } from "./she_sim_temporal";
 
@@ -16,7 +15,6 @@ const allProjects: ProjectConfig[] = [
   roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
   daveFlowsProject,
-  buildingHeightsChinaProject,
   lenOtherCarRoadsProject,
   sheSimTemporalProject,
 ];
