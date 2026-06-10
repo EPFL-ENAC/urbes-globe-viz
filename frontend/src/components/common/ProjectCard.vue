@@ -76,6 +76,7 @@ const handleClick = () => {
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 0.2s ease;
+  white-space: pre-line;
 }
 
 .project-card:hover,
@@ -104,6 +105,7 @@ const handleClick = () => {
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.3;
+  white-space: pre-line;
 }
 
 .card-year {
