@@ -4,7 +4,7 @@ export const lenOtherCarRoadsProject: ProjectConfig = {
   id: "len_other_car_roads",
   coordinates: [6.58, 46.41], // Lausanne
 
-  title: "Car road length",
+  title: "Car road length\nDataset",
   // Markdown example. Italics, links, and lists all work; inline HTML is
   // passed through for edge cases.
   description: `

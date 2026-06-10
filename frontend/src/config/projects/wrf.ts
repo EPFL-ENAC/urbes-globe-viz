@@ -217,12 +217,12 @@ export const wrfProject: ProjectConfig = {
   id: "wrf",
   coordinates: [6.63, 46.52], // Lausanne area
 
-  title: "Urban Climate",
+  title: "Urban Climate\nWind Energy",
   description: `
 Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban heat islands, linking regional circulation patterns to the street canyons where heat exposure actually plays out.
 `,
   category: "Climate",
-  year: 2022,
+  year: 2025,
   zoom: 9,
   pitch: 0,
   preview: "urban_climate.png",

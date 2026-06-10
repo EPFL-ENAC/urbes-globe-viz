@@ -5,7 +5,7 @@ export const buildingsProject: ProjectConfig = {
   id: "buildings",
   coordinates: [6.6327, 46.5397], // Geneva
 
-  title: "Buildings",
+  title: "Buildings\nDataset",
   description: `
 Swiss building footprints tagged with construction year, drawn from [SwissTLM3D](https://www.swisstopo.admin.ch/en/landscape-model-swisstlm3d). At _URBES_ the dataset stands in for the morphological and thermal character of the built fabric: stock from different eras retains heat differently and shapes how each neighbourhood experiences the urban heat island.
 

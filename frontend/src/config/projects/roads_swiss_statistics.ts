@@ -5,7 +5,7 @@ export const roadsSwissStatisticsProject: ProjectConfig = {
   id: "roads_swiss_statistics",
   coordinates: [6.58, 46.51], // Lausanne
 
-  title: "Traffic",
+  title: "Traffic\nDataset",
   // HTML example. Raw HTML is valid markdown, so authoring the description as
   // HTML gives full control over elements, classes, and attributes.
   description: `

@@ -7,12 +7,12 @@ export const daveFlowsProject: ProjectConfig = {
   id: "dave_flows",
   coordinates: [6.5, 46.55], // Vaud-Geneva region
 
-  title: "DAVE Flows",
+  title: "DAVE Flows\n Journal...",
   description: `
 Origin-destination mobility flows from the _DAVE_ activity-based simulation across the Vaud-Geneva region, resolved on a 500 m grid. Synthetic agents are drawn from census, travel-survey, and land-use data, then routed through the day as they commute, shop, and move between leisure destinations. Each sub-view below isolates one slice of those daily trajectories.
 `,
   category: "Mobility",
-  year: 2024,
+  year: 2026,
   preview: "dave_flows_work.png",
   zoom: 9,
   pitch: 0,

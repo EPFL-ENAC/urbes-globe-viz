@@ -10,13 +10,13 @@ import { sheSimTemporalProject } from "./she_sim_temporal";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
-  buildingsProject,
+  daveFlowsProject,
+  sheSimTemporalProject,
   wrfProject,
+  buildingsProject,
   roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
-  daveFlowsProject,
   lenOtherCarRoadsProject,
-  sheSimTemporalProject,
 ];
 
 // ─── Re-export for consumers that need the raw config ────────────────────────

@@ -5,7 +5,7 @@ export const sheSimTemporalProject: ProjectConfig = {
   id: "she_sim_temporal",
   coordinates: [104.225, 35.875],
 
-  title: "Simulated urban height dynamics in East Asia",
+  title: "3D city growth\nNat. Commun.",
   description: `
 This layer shows a temporal simulation of urban height dynamics across East Asia, initialized from 1993 conditions.
 
@@ -15,7 +15,7 @@ Use the year slider to explore the simulated evolution through time. Both bar he
   `,
 
   category: "Climate",
-  year: 2020,
+  year: 2026,
   preview: "she_sim_temporal.png",
 
   zoom: 4,
