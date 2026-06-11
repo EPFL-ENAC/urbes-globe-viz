@@ -2,21 +2,21 @@ import type { ProjectConfig } from "./types";
 import { geodataBaseUrl as baseUrl } from "../geodata";
 
 export const NatCities2026Project: ProjectConfig = {
-  id: "...",
-  coordinates: [-3.6032, 40.3976],
+  id: "natcities_2026",
+  coordinates: [10, 25],
 
-  title: "Scaling climate\n fluctuations, Nat. Cities.",
+  title: "Scaling climate\nfluctuations\nNat. Cities",
   description: `
-**Urban climate does not vary randomly across cities.**
+**Urban climate does not vary randomly across cities.**  
 Across 142 cities worldwide, intra-urban temperature and air-pollution fields follow general statistical patterns once rescaled by simple measures of urban form.
 
-This project visualizes the spatial structure behind these fluctuations, linking **urban heat**, **air quality**, **population**, and **street networks** through a scaling framework inspired by statistical physics.
+This project maps the study cities used to investigate the spatial structure of **urban heat**, **air quality**, **population**, and **street networks** through a scaling framework inspired by statistical physics.
 
 Rather than describing cities only through average values or administrative boundaries, the analysis focuses on the full intra-urban variability of climate fields. The results show that average street-network properties can characterize much of the observed variability in temperature and pollution within and across cities.
 
-**Reference**
-Duran-Sala, M., Hendrick, M. & Manoli, G.
-[Scaling intra-urban climate fluctuations](https://www.nature.com/articles/s44284-026-00441-z).
+**Reference**  
+Duran-Sala, M., Hendrick, M. & Manoli, G.  
+[Scaling intra-urban climate fluctuations](https://www.nature.com/articles/s44284-026-00441-z).  
 *Nature Cities* (2026).
 `,
 
@@ -24,88 +24,62 @@ Duran-Sala, M., Hendrick, M. & Manoli, G.
   year: 2026,
   preview: "natcities_2026.png",
 
-  zoom: 4,
-  previewZoom: 4,
-  pitch: 58,
+  zoom: 1,
+  previewZoom: 0.9,
+  pitch: 0,
 
-  unit: "height [m]",
-  info: "Simulated height dynamics, 1993–2020",
+  unit: "study cities",
+  info: "Study cities from Duran-Sala, Hendrick & Manoli, Nature Cities (2026)",
 
   source: {
     type: "vector",
-    url: `pmtiles://${baseUrl}/TOFILL`,
+    url: `pmtiles://${baseUrl}/natcities_2026_cities.pmtiles`,
   },
 
   layer: {
-    id: "she_sim_temporal-layer",
-    type: "fill-extrusion",
-    source: "she_sim_temporal",
-    "source-layer": "she_sim_temporal",
-    minzoom: 4,
-    filter: [">=", ["to-number", ["get", "height_2020"], 0], 1],
+    id: "natcities_2026_cities-layer",
+    type: "symbol",
+    source: "natcities_2026",
+    "source-layer": "natcities_2026_cities",
+    minzoom: 0,
 
-    paint: {
-      "fill-extrusion-height": [
-        "*",
-        ["to-number", ["get", "height_2020"], 0],
-        25000,
+    layout: {
+      "text-field": [
+        "concat",
+        "📍 ",
+        ["coalesce", ["get", "city"], ["get", "City"], "City"],
       ],
 
-      "fill-extrusion-base": 0,
-
-      "fill-extrusion-opacity": 0.85,
-
-      "fill-extrusion-vertical-gradient": true,
-
-      "fill-extrusion-color": [
+      "text-size": [
         "interpolate",
         ["linear"],
-        ["to-number", ["get", "height_2020"], 0],
-        0.0,
-        "#1f2d86",
-        0.5,
-        "#2c7bb6",
-        0.75,
-        "#00a6ca",
-        1.0,
-        "#00ccbc",
-        1.5,
-        "#90eb9d",
-        3.0,
-        "#f9d057",
-        6.0,
-        "#f29e2e",
-        13.0,
-        "#d7191c",
+        ["zoom"],
+        0,
+        18,
+        1,
+        21,
+        3,
+        26,
+        5,
+        32,
       ],
-    },
-  },
 
-  legend: {
-    title: "Simulated height",
-    gradient: {
-      stops: [
-        { value: "0.5", color: "#2c7bb6" },
-        { value: "0.75", color: "#00a6ca" },
-        { value: "1.0", color: "#00ccbc" },
-        { value: "1.5", color: "#90eb9d" },
-        { value: "3.0", color: "#f9d057" },
-        { value: "6.0", color: "#f29e2e" },
-        { value: "13.0", color: "#d7191c" },
-      ],
-      unit: "height [m]",
-    },
-  },
+      "text-anchor": "center",
+      "text-offset": [0, 0],
+      "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
 
-  timeControl: {
-    min: 1993,
-    max: 2020,
-    step: 1,
-    initial: 2020,
-    fieldTemplate: "height_{value}",
-    placeholderField: "height_2020",
-    label: "Year",
-    displayFormat: "number",
-    autoplayIntervalMs: 700,
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+      "text-optional": false,
+    },
+
+    paint: {
+      "text-color": "#f9d057",
+      "text-halo-color": "#111111",
+      "text-halo-width": 2.2,
+      "text-halo-blur": 0.7,
+
+      "text-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.9, 2, 1],
+    },
   },
 };
