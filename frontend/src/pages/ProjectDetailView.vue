@@ -128,23 +128,20 @@ const activeCogRaster = computed(() => {
   return projectConfig.value?.cogRaster;
 });
 
+// Legend and time control do NOT fall back to the project level when subViz
+// is present - a top-level config (kept there for ProjectMap/mapLayers) would
+// otherwise leak onto sibling sub-vizzes that use a different renderer.
 const activeLegend = computed(() => {
   if (activeCogVariable.value?.legend) return activeCogVariable.value.legend;
   if (subVizList.value) {
-    return (
-      subVizList.value[activeSubVizIndex.value]?.legend ??
-      projectConfig.value?.legend
-    );
+    return subVizList.value[activeSubVizIndex.value]?.legend;
   }
   return projectConfig.value?.legend;
 });
 
 const activeTimeControl = computed(() => {
   if (subVizList.value) {
-    return (
-      subVizList.value[activeSubVizIndex.value]?.timeControl ??
-      projectConfig.value?.timeControl
-    );
+    return subVizList.value[activeSubVizIndex.value]?.timeControl;
   }
   return projectConfig.value?.timeControl;
 });

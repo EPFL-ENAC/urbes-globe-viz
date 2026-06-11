@@ -420,14 +420,13 @@ Now you tell the app about your dataset by creating a configuration file.
 
 Look at the existing project configs and pick the one most similar to your data. This will be your starting point.
 
-| File                         | What it shows                                | Layer type            | Good starting point for…            |
-| ---------------------------- | -------------------------------------------- | --------------------- | ----------------------------------- |
-| `buildings.ts`               | Swiss buildings colored by construction year | `fill-extrusion` (3D) | 3D polygon data                     |
-| `roads_swiss_statistics.ts`  | Swiss roads colored by traffic volume        | `line`                | Line data (roads, rivers, …)        |
-| `building_heights_china.ts`  | Building heights as colored dots             | `circle`              | Point data                          |
-| `hourly_adult_population.ts` | Population density grid                      | `fill`                | Area/polygon data (flat)            |
-| `dave_flows.ts`              | Mobility flow arcs (Deck.gl)                 | custom renderer       | Origin-destination flows            |
-| `wrf.ts`                     | Urban climate (WRF/PALM COG rasters)         | COG + subViz          | Multi-variable COG with time slider |
+| File                         | What it shows                                | Layer type                         | Good starting point for…            |
+| ---------------------------- | -------------------------------------------- | ---------------------------------- | ----------------------------------- |
+| `buildings.ts`               | Swiss buildings colored by construction year | `fill-extrusion` (3D)              | 3D polygon data                     |
+| `roads_swiss_statistics.ts`  | Swiss roads colored by traffic volume        | `line`                             | Line data (roads, rivers, …)        |
+| `building_heights_china.ts`  | Building heights as colored dots             | `circle`                           | Point data                          |
+| `hourly_adult_population.ts` | Population dynamics grid + flow arcs         | `fill-extrusion` + custom renderer | Area data, origin-destination flows |
+| `wrf.ts`                     | Urban climate (WRF/PALM COG rasters)         | COG + subViz                       | Multi-variable COG with time slider |
 
 All files are in `frontend/src/config/projects/`.
 
@@ -580,7 +579,7 @@ For **multiple selectable variables** (e.g. temperature, wind, humidity), use `c
 
 See the [NetCDF → COG recipe](../processing/cookbook/netcdf_to_cog.md#frontend-configuration) for full configuration examples including variable selectors, time sliders, and multi-domain sub-visualizations.
 
-> **Advanced:** For custom visualizations, see `dave_flows.ts` (Deck.gl flow arcs) or `wrf.ts` (COG rasters with multiple domains, variable selector, and time slider) for examples using the `renderer`, `subViz`, `cogVariables`, and `timeControl` fields.
+> **Advanced:** For custom visualizations, see `hourly_adult_population.ts` (Deck.gl flow arcs as sub-visualizations) or `wrf.ts` (COG rasters with multiple domains, variable selector, and time slider) for examples using the `renderer`, `subViz`, `cogVariables`, and `timeControl` fields.
 
 ### 3.5 Register your project
 

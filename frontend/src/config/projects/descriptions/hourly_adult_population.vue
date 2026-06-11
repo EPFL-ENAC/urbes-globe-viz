@@ -1,7 +1,7 @@
 <!--
   Description component for `hourly_adult_population`.
-  Fake diurnal population curve showing how a DAVE-simulated tile shifts
-  between night (low) and midday (peak) presence.
+  DAVE-simulated diurnal population curve for Lausanne central areas,
+  expressed as a share of the midday peak.
 -->
 <script setup lang="ts">
 import { computed } from "vue";
@@ -32,11 +32,10 @@ const hours = Array.from(
   (_, i) => `${i.toString().padStart(2, "0")}h`,
 );
 
-// Fake weekday diurnal curve: residents leave, workers arrive, lunch bump,
-// afternoon plateau, evening decay.
+// DAVE-simulated weekday curve for Lausanne central areas, % of midday peak.
 const presence = [
-  32, 28, 24, 22, 22, 28, 45, 70, 92, 100, 98, 94, 90, 94, 95, 90, 82, 70, 55,
-  46, 40, 38, 35, 33,
+  42.0, 39.0, 37.9, 37.4, 37.5, 37.8, 42.1, 57.7, 75.9, 88.1, 93.6, 95.4, 100.0,
+  97.9, 97.4, 97.0, 92.7, 83.0, 74.6, 67.3, 62.5, 56.9, 49.4, 41.5,
 ];
 
 // Pulled from the hourly-population map palette (mid-high stop on the
@@ -85,25 +84,20 @@ const option = computed(() => {
 <template>
   <div>
     <p>
-      Hourly adult population on a 500 m² grid, produced by the <em>DAVE</em>
-      activity-based simulation developed at
+      A census tells you where people live - but cities are actually alive.
+      Mobility constantly reshapes population distribution. Exposure to heat and
+      air pollution depends on where people actually are at different times. We
+      use the <em>DAVE</em> activity-based model developed at
       <a href="https://www.epfl.ch/labs/urbes/" target="_blank" rel="noopener"
         >URBES</a
-      >. Unlike a static census, the tiles shift through the day as synthetic
-      agents move between home, workplace, school, and leisure.
+      >
+      to simulate how population shifts continuously across the city as people
+      commute, work, shop, and spend leisure time.
     </p>
     <figure class="chart-figure">
       <v-chart :option="option" autoresize class="chart" />
-      <figcaption>
-        Reference weekday diurnal curve (demo data), expressed as a share of the
-        midday peak.
-      </figcaption>
+      <figcaption>Population dynamics in Lausanne central areas</figcaption>
     </figure>
-    <p>
-      Because the underlying model tracks who is where at each hour, the dataset
-      feeds directly into heat-exposure and air-quality analyses that need to
-      know the population actually present, not just where they sleep.
-    </p>
   </div>
 </template>
 
