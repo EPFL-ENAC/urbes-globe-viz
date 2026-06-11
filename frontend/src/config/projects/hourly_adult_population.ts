@@ -41,7 +41,7 @@ export const hourlyAdultPopulationProject: ProjectConfig = {
   id: "hourly_adult_population",
   coordinates: [6.58, 46.41], // Lausanne
 
-  title: "Population dynamics & Mobility Flows",
+  title: "Population dynamics\n& Mobility Flows",
   description: `
 A census tells you where people live - but cities are actually alive. Mobility constantly reshapes population distribution. Exposure to heat and air pollution depends on where people actually are at different times. We use the _DAVE_ activity-based model to simulate how population shifts continuously across the city as people commute, work, shop, and spend leisure time.
 `,
