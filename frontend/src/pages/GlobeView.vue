@@ -50,9 +50,8 @@ const isMobile = useIsMobile();
   position: absolute;
   inset: 0;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-rows: 1fr auto;
   pointer-events: none;
 }
 
@@ -62,7 +61,7 @@ const isMobile = useIsMobile();
 
 .projects-wrap {
   width: 100%;
-  padding: 16px;
+  padding: 1rem 2rem;
   pointer-events: auto;
 }
 
@@ -72,7 +71,7 @@ const isMobile = useIsMobile();
   gap: 16px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  justify-content: safe center;
+  justify-content: flex-start;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -110,7 +109,7 @@ const isMobile = useIsMobile();
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
+    display: block;
     pointer-events: auto;
     /* Clear the fixed 60px NavigationBar so the hero title isn't cropped. */
     padding-top: 60px;

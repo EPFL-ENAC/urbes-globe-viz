@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useProjectStore } from "@/stores/project";
+import { useIsMobile } from "@/composables/useIsMobile";
 
-// On mobile the two hero paragraphs sit either side of the project list.
-// `outro` instances skip the desktop zoom-driven overlay so only `intro`
-// renders it.
+// Each HeroSection renders its own text block. On desktop, CSS absolute-
+// positions both parts into the same overlay slot and cross-fades them via
+// the `is-active` class. On mobile the same markup flows inline so the
+// intro sits above the project list and the outro below it.
 const props = withDefaults(defineProps<{ part?: "intro" | "outro" }>(), {
   part: "intro",
 });
 
 const projectStore = useProjectStore();
+const isMobile = useIsMobile();
 const zoom = computed(() => projectStore.zoomLevel);
 const initialZoom = computed(() => projectStore.initialZoom);
 const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
@@ -25,9 +28,6 @@ const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
 const PANEL_0_END = 0.25;
 const PANEL_1_END = 1.25;
 
-// Hero-scroll state: 0 (first panel) or 1 (second panel). Contributes
-// PANEL_0_END of progress when set to 1, just enough to enter panel 1's
-// range without pushing toward dismissal.
 const heroPanelIndex = ref<0 | 1>(0);
 
 const activePanel = computed(() => {
@@ -41,25 +41,23 @@ const activePanel = computed(() => {
 });
 
 const heroVisible = computed(() => activePanel.value !== -1);
+const isActive = computed(() =>
+  props.part === "intro" ? activePanel.value === 0 : activePanel.value === 1,
+);
 
-// When the globe returns to its overview zoom (e.g. via Globe3D's
-// restoreOverview flyTo), also reset the hero pager so "scroll back out"
-// cleanly re-shows the intro.
 watch(zoom, (z) => {
   if (z <= initialZoom.value + 0.001) heroPanelIndex.value = 0;
 });
 
 function onHeroWheel(e: WheelEvent) {
-  // Swallow the event: no zooming the globe, no dismissing the hero.
-  // Wheeling only toggles between the two panels.
+  // Mobile scrolls the page; desktop swallows the wheel and pages the hero.
+  if (isMobile.value) return;
   e.preventDefault();
   e.stopPropagation();
   heroPanelIndex.value = e.deltaY > 0 ? 1 : 0;
 }
 
 function goToPanel(index: number) {
-  // Dots are explicit navigation — update both inputs so the result is
-  // unambiguous regardless of where the globe's current zoom sits.
   heroPanelIndex.value = index === 1 ? 1 : 0;
   const base = projectStore.initialZoom;
   projectStore.requestZoom(index === 0 ? base : base + PANEL_0_END);
@@ -67,206 +65,144 @@ function goToPanel(index: number) {
 </script>
 
 <template>
-  <section v-if="props.part === 'intro'" class="hero-mobile">
-    <h1 class="text-h3 text-weight-light q-mb-md hero-mobile-title">
-      DECODING THE<br />PHYSICS OF <br />CITIES
-    </h1>
-    <p class="text-body1 hero-body">
-      From the heartbeat of daily mobility to the temperature of their skin,
-      cities are complex adaptive systems made of multiple interconnected
-      components (e.g., demography, transport, energy). At URBES, a
-      multidisciplinary research group at EPFL, we explore their dynamics across
-      scales, quantify their interactions with the biosphere, and seek to
-      uncover the fundamental laws that govern their behaviour.
-    </p>
-  </section>
-
-  <section v-else class="hero-mobile">
-    <h1 class="text-h3 text-weight-light q-mb-md hero-mobile-title">
-      COMPLEXITY <br />IN TIME AND<br />SPACE
-    </h1>
-    <p class="text-body1 hero-body q-mb-lg">
-      URBES Globe brings our research to life through visualizations, open data,
-      and model simulations - start exploring!
-    </p>
-    <div class="btn-row">
-      <q-btn
-        class="btn"
-        href="https://www.epfl.ch/labs/urbes/"
-        target="_blank"
-        rel="noopener"
-        unelevated
-      >
-        Visit Urbes Lab
-      </q-btn>
+  <section class="hero-part" :class="`hero-part-${part}`">
+    <div v-if="part === 'intro'" v-show="heroVisible" class="hero-dots">
+      <div
+        class="dot"
+        :class="{ active: activePanel === 0 }"
+        @click="goToPanel(0)"
+      ></div>
+      <div
+        class="dot"
+        :class="{ active: activePanel === 1 }"
+        @click="goToPanel(1)"
+      ></div>
     </div>
-  </section>
 
-  <div
-    v-if="props.part === 'intro'"
-    v-show="heroVisible"
-    class="hero-overlay"
-    style="z-index: 100"
-  >
-    <!-- Panel zone -->
-    <div class="scroll-zone">
-      <!-- Dot indicators — above the panels -->
-      <div class="dot-indicators">
-        <div
-          class="dot"
-          :class="{ active: activePanel === 0 }"
-          @click="goToPanel(0)"
-        ></div>
-        <div
-          class="dot"
-          :class="{ active: activePanel === 1 }"
-          @click="goToPanel(1)"
-        ></div>
-      </div>
+    <div
+      class="hero-content"
+      :class="{ 'is-active': isActive }"
+      @wheel="onHeroWheel"
+    >
+      <h1 v-if="part === 'intro'" class="hero-title">
+        Decoding the<br />physics of<br />cities
+      </h1>
+      <h1 v-else class="hero-title">Complexity<br />in time and<br />space</h1>
 
-      <!-- Panels: stacked in same grid cell so only the visible one sets height -->
-      <div class="panels-container">
-        <div
-          class="hero-panel"
-          :class="{ 'is-visible': activePanel === 0 }"
-          @wheel="onHeroWheel"
+      <p v-if="part === 'intro'" class="hero-body">
+        From the heartbeat of daily mobility to the temperature of their skin,
+        cities are complex adaptive systems made of multiple interconnected
+        components (e.g., demography, transport, energy). At URBES, a
+        multidisciplinary research group at EPFL, we explore their dynamics
+        across scales, quantify their interactions with the biosphere, and seek
+        to uncover the fundamental laws that govern their behaviour.
+      </p>
+      <p v-else class="hero-body">
+        URBES Globe brings our research to life through visualizations, open
+        data, and model simulations - start exploring!
+      </p>
+
+      <div v-if="part === 'outro'" class="btn-row">
+        <q-btn
+          class="btn"
+          href="https://www.epfl.ch/labs/urbes/"
+          target="_blank"
+          rel="noopener"
+          unelevated
         >
-          <h1 class="text-h2 text-weight-light q-mb-xs">
-            DECODING THE<br />
-            PHYSICS OF <br />
-            CITIES
-          </h1>
-          <p class="text-body1 hero-body q-mt-lg">
-            From the heartbeat of daily mobility to the temperature of their
-            skin, cities are complex adaptive systems made of multiple
-            interconnected components (e.g., demography, transport, energy). At
-            URBES, a multidisciplinary research group at EPFL, we explore their
-            dynamics across scales, quantify their interactions with the
-            biosphere, and seek to uncover the fundamental laws that govern
-            their behaviour.
-          </p>
-        </div>
-
-        <div
-          class="hero-panel"
-          :class="{ 'is-visible': activePanel === 1 }"
-          @wheel="onHeroWheel"
-        >
-          <h1 class="text-h2 text-weight-light q-mb-xs">
-            COMPLEXITY <br />
-            IN TIME AND<br />
-            SPACE
-          </h1>
-          <p class="text-body1 hero-body q-mt-lg">
-            URBES Globe brings our research to life through visualizations, open
-            data, and model simulations - start exploring!
-          </p>
-          <div class="btn-row q-pt-md">
-            <q-btn
-              class="btn"
-              href="https://www.epfl.ch/labs/urbes/"
-              target="_blank"
-              rel="noopener"
-            >
-              Visit Urbes Lab
-            </q-btn>
-          </div>
-        </div>
+          Visit Urbes Lab
+        </q-btn>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.hero-overlay {
-  width: 100%;
-  pointer-events: none;
+.hero-part {
+  padding: 20px 20px 28px;
+  color: var(--color-text);
 }
 
-.scroll-zone {
-  width: 750px;
-  padding: 1rem 2rem;
-  pointer-events: none;
+.hero-title {
+  font-weight: 300;
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
 }
 
-.dot-indicators {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-border-strong);
-  transition: background 0.3s ease;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.dot.active {
-  background: #e30613; /* EPFL brand red — intentional across themes */
-}
-
-.panels-container {
-  display: grid;
-}
-
-.hero-panel {
-  grid-area: 1 / 1;
-  max-width: 550px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.hero-panel.is-visible {
-  opacity: 1;
-  /* Catch wheel/click events on the visible panel so scrolling over the
-     hero text advances panels (via @wheel) without also zooming the globe
-     beneath it. */
-  pointer-events: auto;
+.hero-body {
+  font-family: "Nunito", sans-serif;
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .btn-row {
   display: flex;
   gap: 0.75rem;
+  padding-top: 1rem;
 }
 
 .btn {
   padding: 0.65rem 1rem;
   background: #e30613;
   color: #ffffff;
+  font-family: "Nunito", sans-serif;
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
-  pointer-events: auto;
 }
 
-.hero-body {
-  color: var(--color-text-muted);
-}
-
-.hero-mobile {
+.hero-dots {
   display: none;
 }
 
-.hero-mobile-title {
-  color: var(--color-text);
-  line-height: 1.05;
-}
-
-@media (max-width: 767px) {
-  .hero-overlay {
-    display: none;
+@media (min-width: 768px) {
+  .hero-part {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: end;
+    justify-self: start;
+    width: 750px;
+    max-width: 100%;
+    padding: 1rem 2rem;
+    pointer-events: none;
   }
 
-  .hero-mobile {
-    display: block;
-    padding: 20px 20px 28px;
-    color: var(--color-text);
+  .hero-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    pointer-events: auto;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border-strong);
+    transition: background 0.3s ease;
+    cursor: pointer;
+  }
+
+  .dot.active {
+    background: #e30613;
+  }
+
+  .hero-content {
+    max-width: 550px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .hero-content.is-active {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 </style>
