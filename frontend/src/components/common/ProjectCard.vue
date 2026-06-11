@@ -76,7 +76,6 @@ const handleClick = () => {
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 0.2s ease;
-  white-space: pre-line;
 }
 
 .project-card:hover,
