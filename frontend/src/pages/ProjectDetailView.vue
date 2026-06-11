@@ -1044,6 +1044,9 @@ const activeSubVizTitle = computed(() => {
   line-height: 1.2;
   overflow: hidden;
   white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .sheet-year {
