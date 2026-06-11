@@ -8,6 +8,7 @@ import { daveFlowsProject } from "./dave_flows";
 import { lenOtherCarRoadsProject } from "./car_road_length";
 import { sheSimTemporalProject } from "./she_sim_temporal";
 import { NatCities2026Project } from "./natcities_2026";
+import { POne_2025Project } from "./pone_2025";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
@@ -15,6 +16,7 @@ const allProjects: ProjectConfig[] = [
   NatCities2026Project,
   sheSimTemporalProject,
   wrfProject,
+  POne_2025Project,
   buildingsProject,
   roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,

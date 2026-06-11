@@ -7,12 +7,18 @@ export const sheSimTemporalProject: ProjectConfig = {
 
   title: "3D city growth\nNat. Commun.",
   description: `
-This layer shows a temporal simulation of urban height dynamics across East Asia, initialized from 1993 conditions.
+**Urban height growth can be described as a dynamic roughening process.**
+This layer shows a temporal simulation of urban height dynamics across East Asia, initialized from 1993 conditions and evolved through 2020.
 
-The simulation follows the modelling approach developed in the preprint [Dynamic roughening of cities driven by multiplicative noise](https://arxiv.org/abs/2510.02904) by Hendrick and Manoli. The approach represents urban height growth as a stochastic surface-growth process: local height changes evolve with multiplicative noise, while spatial coupling between neighbouring locations shapes the emerging urban morphology.
+The simulation follows the modelling framework developed by Hendrick and Manoli, where urban growth is represented as a stochastic surface-growth process driven by **multiplicative noise** and spatial interactions between neighbouring locations. In this view, the evolving urban fabric behaves like a roughening surface, producing emergent height patterns across cities and regions.
 
 Use the year slider to explore the simulated evolution through time. Both bar height and colour are proportional to the simulated height field.
-  `,
+
+**Reference**
+Hendrick, M. & Manoli, G.
+[Dynamic roughening of cities driven by multiplicative noise](https://arxiv.org/abs/2510.02904).
+Accepted in *Nature Communications*.
+`,
 
   category: "Climate",
   year: 2026,

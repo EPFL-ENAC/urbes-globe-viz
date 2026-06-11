@@ -1,29 +1,28 @@
 import type { ProjectConfig } from "./types";
 import { geodataBaseUrl as baseUrl } from "../geodata";
 
-export const NatCities2026Project: ProjectConfig = {
-  id: "...",
-  coordinates: [-3.6032, 40.3976],
+export const POne_2025Project: ProjectConfig = {
+  id: "TOFILL",
+  coordinates: [4.3572, 50.8476],
 
-  title: "Scaling climate\n fluctuations, Nat. Cities.",
+  title: "Mobility & temperature\n exposure, PLoS One",
   description: `
-**Urban climate does not vary randomly across cities.**
-Across 142 cities worldwide, intra-urban temperature and air-pollution fields follow general statistical patterns once rescaled by simple measures of urban form.
+**Human mobility reshapes urban temperature exposure.**
+Extreme heat and cold risks are usually estimated from where people live, but daily commuting and seasonal travel can substantially change where people are actually exposed to hazardous temperatures.
 
-This project visualizes the spatial structure behind these fluctuations, linking **urban heat**, **air quality**, **population**, and **street networks** through a scaling framework inspired by statistical physics.
+This project combines **1-km daytime and nighttime population estimates** with high-resolution urban climate simulations for **80 European cities** to assess how mobility modulates exposure to heat and cold.
 
-Rather than describing cities only through average values or administrative boundaries, the analysis focuses on the full intra-urban variability of climate fields. The results show that average street-network properties can characterize much of the observed variability in temperature and pollution within and across cities.
+The results show that commuting toward city centres increases summer heat exposure on daily timescales, while seasonal population changes often reduce heat exposure in most European cities, except in touristic destinations where warm-season exposure can increase.
 
 **Reference**
-Duran-Sala, M., Hendrick, M. & Manoli, G.
-[Scaling intra-urban climate fluctuations](https://www.nature.com/articles/s44284-026-00441-z).
-*Nature Cities* (2026).
+Lin, G.-S., Llaguno-Munitxa, M. & Manoli, G.
+[Daily and seasonal human mobility modulates temperature exposure in European cities](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0330912).
+*PLOS ONE* **20**(9): e0330912 (2025).
 `,
 
   category: "Climate",
-  year: 2026,
-  preview: "natcities_2026.png",
-
+  year: 2025,
+  preview: "pone_2025.PNG",
   zoom: 4,
   previewZoom: 4,
   pitch: 58,
