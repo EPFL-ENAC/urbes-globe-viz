@@ -23,7 +23,7 @@ Use the year slider to explore the simulated evolution through time. Both bar he
   pitch: 58,
 
   unit: "height [m]",
-  info: "Simulated height dynamics, 1993–2020",
+  info: "Simulated height dynamics, 1993-2020",
 
   source: {
     type: "vector",
