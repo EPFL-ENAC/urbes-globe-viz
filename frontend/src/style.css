@@ -1,17 +1,12 @@
 :root {
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
+  --font-body:
+    "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+
+  --font-display:
+    "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
 
@@ -30,15 +25,16 @@
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.2);
   --color-map-bg: #030303;
+
   /* Brightness applied to the mobile landing background globe. Dark theme
-     brightens to make features visible; light theme dims it below. */
+brightens to make features visible; light theme dims it below. */
   --globe-bg-brightness: 1.4;
 
   color: var(--color-text);
   background-color: var(--color-bg);
 }
 
-:root[data-theme="light"] {
+:root {
   color-scheme: light;
   --color-bg: #ffffff;
   --color-surface: rgba(255, 255, 255, 0.85);
@@ -51,10 +47,91 @@
   --globe-bg-brightness: 0.85;
 }
 
+html,
+body,
+#app {
+  font-family: var(--font-body);
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Display typography: titles, project cards, navigation, labels. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.text-h1,
+.text-h2,
+.text-h3,
+.text-h4,
+.text-h5,
+.text-h6,
+.hero-title,
+.project-title,
+.sheet-title,
+.card-title,
+.nav-title,
+.section-title,
+.legend-title,
+.category-label,
+.year-label,
+.unit-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+/* Project titles may contain manual line breaks from config strings. */
+.project-title,
+.sheet-title,
+.card-title {
+  white-space: pre-line;
+}
+
+/* Body text remains softer and more readable. */
+p,
+li,
+button,
+input,
+textarea,
+.text-body1,
+.text-body2,
+.project-description,
+.description,
+.markdown-body {
+  font-family: var(--font-body);
+}
+
+/* Metadata / small UI labels get the portfolio-style monospace treatment. */
+.project-meta,
+.legend-label,
+.q-tab,
+.q-btn,
+.q-chip {
+  font-family: var(--font-display);
+  letter-spacing: 0.025em;
+}
+
 /* Foreground text on the mobile landing sits over the blurred globe, so
-   the muted colour gets bumped and a letter-shadow is added for legibility.
-   Scoped to .globe-view-root so the bottom sheet and info panel (solid
-   backgrounds) keep the standard muted treatment. */
+the muted colour gets bumped and a letter-shadow is added for legibility.
+Scoped to .globe-view-root so the bottom sheet and info panel (solid
+backgrounds) keep the standard muted treatment. */
 @media (max-width: 767px) {
   .globe-view-root {
     --color-text-muted: rgba(255, 255, 255, 0.92);
@@ -64,48 +141,35 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
-  :root[data-theme="light"] .globe-view-root {
+  :root .globe-view-root {
     --color-text-muted: rgba(0, 0, 0, 0.95);
   }
 
-  :root[data-theme="light"] .globe-view-root .foreground {
+  :root .globe-view-root .foreground {
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
   }
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-#app {
-  width: 100%;
-  height: 100vh;
-}
-
 /* GHSL basemap canvas container — the dark-paletted basemap sits behind an
-   overlay map. In light mode we invert the canvas so the basemap reads as
-   light-on-dark → dark-on-light without touching MapLibre paint. hue-rotate
-   keeps any tinted pixels (e.g. building outlines) looking natural. */
+overlay map. In light mode we invert the canvas so the basemap reads as
+light-on-dark → dark-on-light without touching MapLibre paint. hue-rotate
+keeps any tinted pixels looking natural. */
 .ghsl-basemap-canvas {
   transition: filter 0.25s ease;
 }
 
-:root[data-theme="light"] .ghsl-basemap-canvas {
+:root .ghsl-basemap-canvas {
   filter: invert(1) hue-rotate(180deg);
 }
 
-/* Lift MapLibre controls above sibling canvases (e.g. deck.gl non-interleaved
-   overlay) that would otherwise cover the zoom buttons. */
+/* Lift MapLibre controls above sibling canvases that would otherwise cover
+the zoom buttons. */
 .maplibregl-ctrl {
   position: absolute;
   z-index: 10;
 }
 
-/* MapLibre controls (zoom +/- and attribution "i") themed via CSS vars. */
+/* MapLibre controls themed via CSS vars. */
 .maplibregl-ctrl-group {
   background-color: var(--color-surface-raised);
   box-shadow: 0 0 0 1px var(--color-border);
@@ -124,13 +188,13 @@ body {
 }
 
 /* Icons ship as dark SVGs — invert them for the dark palette. */
-:root[data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+:root .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(1);
 }
 
 /* Hide NavigationControl on touch viewports. Selector targets only the
-   button group: MapboxOverlay also sits in top-left by default, so hiding
-   the whole slot blanks every deck.gl layer. */
+button group: MapboxOverlay also sits in top-left by default, so hiding
+the whole slot blanks every deck.gl layer. */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-top-left .maplibregl-ctrl-group {
     display: none;
