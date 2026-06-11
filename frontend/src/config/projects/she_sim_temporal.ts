@@ -5,7 +5,7 @@ export const sheSimTemporalProject: ProjectConfig = {
   id: "she_sim_temporal",
   coordinates: [104.225, 35.875],
 
-  title: "Simulated urban height dynamics in East Asia",
+  title: "Simulated urban height\ndynamics in East Asia",
   description: `
 This layer shows a temporal simulation of urban height dynamics across East Asia, initialized from 1993 conditions.
 
