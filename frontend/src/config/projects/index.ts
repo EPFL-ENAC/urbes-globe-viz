@@ -7,10 +7,12 @@ import { hourlyAdultPopulationProject } from "./hourly_adult_population";
 import { daveFlowsProject } from "./dave_flows";
 import { lenOtherCarRoadsProject } from "./car_road_length";
 import { sheSimTemporalProject } from "./she_sim_temporal";
+import { NatCities2026Project } from "./natcities_2026";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
   daveFlowsProject,
+  NatCities2026Project,
   sheSimTemporalProject,
   wrfProject,
   buildingsProject,
