@@ -364,7 +364,7 @@ const activeSubVizTitle = computed(() => {
         <!-- Sub-viz scrollytelling layout -->
         <div v-if="subVizList && project" class="subviz-layout detail-text">
           <div class="project-header">
-            <h1 class="text-h2 text-weight-light q-mb-xs">
+            <h1 class="text-h2 text-weight-light q-mb-xs project-title">
               {{ project.title }}
             </h1>
             <div class="text-body1 detail-muted">
@@ -409,7 +409,7 @@ const activeSubVizTitle = computed(() => {
           class="detail-text drawer-inner-content"
           @scroll.passive="updateScrollHint"
         >
-          <h1 class="text-h2 text-weight-light q-mb-xs">
+          <h1 class="text-h2 text-weight-light q-mb-xs project-title">
             {{ project.title }}
           </h1>
           <div class="text-body1 detail-muted q-mb-xl">
@@ -823,6 +823,10 @@ const activeSubVizTitle = computed(() => {
   color: var(--color-text);
 }
 
+.project-title {
+  white-space: pre-line;
+}
+
 .detail-muted {
   color: var(--color-text-muted);
 }
@@ -1039,8 +1043,10 @@ const activeSubVizTitle = computed(() => {
   color: var(--color-text);
   line-height: 1.2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .sheet-year {
