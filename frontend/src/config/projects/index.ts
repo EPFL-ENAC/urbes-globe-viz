@@ -5,8 +5,8 @@ import { wrfProject } from "./wrf";
 import { roadsSwissStatisticsProject } from "./roads_swiss_statistics";
 import { hourlyAdultPopulationProject } from "./hourly_adult_population";
 import { daveFlowsProject } from "./dave_flows";
-import { buildingHeightsChinaProject } from "./building_heights_china";
 import { lenOtherCarRoadsProject } from "./car_road_length";
+import { sheSimTemporalProject } from "./she_sim_temporal";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
@@ -15,8 +15,8 @@ const allProjects: ProjectConfig[] = [
   roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
   daveFlowsProject,
-  buildingHeightsChinaProject,
   lenOtherCarRoadsProject,
+  sheSimTemporalProject,
 ];
 
 // ─── Re-export for consumers that need the raw config ────────────────────────
