@@ -5,7 +5,7 @@ export const POne_2025Project: ProjectConfig = {
   id: "pone_2025",
   coordinates: [10, 52],
 
-  title: "Mobility & temperature\nexposure\nPLOS ONE",
+  title: "Mobility &\ntemperature exposure\nPLOS ONE",
   description: `
 **Human mobility reshapes urban temperature exposure.**  
 Extreme heat and cold risks are usually estimated from where people live, but daily commuting and seasonal travel can substantially change where people are actually exposed to hazardous temperatures.
