@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v0.1.8...v0.2.0) (2026-06-15)
+
+
+### Features
+
+* **wrf:** update project description texts, allow string year ([#21](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/21)) ([c4173b0](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/c4173b037abf7ee1e73ba1f43f14867885d4ae48))
+
 ## [0.1.8](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v0.1.7...v0.1.8) (2026-06-15)
 
 
