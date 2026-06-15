@@ -100,7 +100,9 @@ export interface ProjectConfig {
   // e.g. `() => import("./descriptions/my_project.vue")`.
   descriptionComponent?: DescriptionComponentLoader;
   category: string;
-  year: number;
+  // Usually a single year. Can be a string when a project spans multiple years
+  // (e.g. WRF runs for 2022 + PALM for 2025 -> "2022 & 2025").
+  year: number | string;
   preview?: string;
   zoom?: number;
   // Zoom used by the globe hover preview. Leave undefined to fall back to
