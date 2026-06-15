@@ -115,3 +115,16 @@ Files for production are served from the shared EPFL NAS via nginx.
 3. It will be automatically served at `https://urbes-viz.epfl.ch/geodata/your_file.pmtiles`
 
 See [Step 4.6 of the guide](../../docs/guide.md#46-upload-your-data-file-for-production) for detailed instructions.
+
+### Updating a file that already exists
+
+**Do not re-upload over the same filename.** nginx tells browsers to cache geodata for
+30 days, so users who already loaded the old file keep the stale copy until then (only a
+hard refresh fixes it sooner). Instead, **add a version suffix to the new filename** and
+bump the URL in the project config:
+
+1. Upload as a new name, e.g. `she_sim_temporal_v2.pmtiles`
+2. Update `url:` in `frontend/src/config/projects/<id>.ts` to match
+3. Submit the one-line change as a PR
+
+A new filename is a new URL, so every visitor gets the update immediately.

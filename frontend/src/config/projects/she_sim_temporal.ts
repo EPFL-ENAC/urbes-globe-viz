@@ -27,7 +27,7 @@ Use the year slider to explore the simulated evolution through time. Both bar he
 
   source: {
     type: "vector",
-    url: `pmtiles://${baseUrl}/she_sim_temporal.pmtiles`,
+    url: `pmtiles://${baseUrl}/she_sim_temporal_v2.pmtiles`,
   },
 
   layer: {

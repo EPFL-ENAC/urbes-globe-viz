@@ -87,6 +87,19 @@ For charts or other interactive per-project content, set `descriptionComponent: 
 2. Export a `ProjectConfig` — see `_example.ts.example` for the template
 3. Register in `index.ts` `allProjects` array
 
+### Updating a geodata file (cache busting)
+
+**Do not overwrite a geodata file in place under the same name.** nginx serves the new
+bytes immediately, but it stamps non-GHSL files with `Cache-Control: max-age=2592000`
+(30 days, see `configmap-nginx-geodata.yaml`), so anyone who already loaded the old file
+keeps the stale copy for up to 30 days unless they hard-refresh.
+
+To publish a new version, **bump the version suffix in the filename** and update the URL
+in the project config — e.g. `she_sim_temporal.pmtiles` → `she_sim_temporal_v2.pmtiles`,
+then change `url:` in `frontend/src/config/projects/<id>.ts`. The new filename is a fresh
+URL, so every client refetches it instantly. (This is the same scheme GHSL uses; GHSL
+files additionally get `immutable` because their name always carries a version.)
+
 ## Renderer System
 
 | `renderer`      | Component          | Use case                        |
