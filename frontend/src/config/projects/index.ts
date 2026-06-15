@@ -29,7 +29,7 @@ export interface ProjectProperties {
   unit: string;
   info: string;
   category: string;
-  year: number;
+  year: number | string;
   preview?: string;
   zoom?: number;
   previewZoom?: number;

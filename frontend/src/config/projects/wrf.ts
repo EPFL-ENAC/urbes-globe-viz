@@ -219,10 +219,10 @@ export const wrfProject: ProjectConfig = {
 
   title: "Urban Climate",
   description: `
-Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban heat islands, linking regional circulation patterns to the street canyons where heat exposure actually plays out.
+One-way nested numerical weather simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban climate in complex terrain, ranging from regional circulation patterns [PTRSA](https://royalsocietypublishing.org/rsta/article-abstract/383/2308/20240576/234202/Urbanization-effects-on-lake-land-circulations-in?redirectedFrom=fulltext) to wind energy harvesting potential [Wind Energy](https://onlinelibrary.wiley.com/doi/10.1002/we.70043), to microscale heat adaptation strategies.
 `,
   category: "Climate",
-  year: 2022,
+  year: "2022 & 2025",
   zoom: 9,
   pitch: 0,
   preview: "urban_climate.png",
@@ -250,11 +250,11 @@ Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF
   subViz: [
     {
       id: "wrf-d02",
-      title: "WRF d02 - Leman Region",
+      title: "WRF d02 - Lake Geneva Region",
       // Fallback text if the component fails to load; also what appears in any
       // consumer that renders plain-text descriptions (e.g. globe tooltip).
       description:
-        "Regional mesoscale field at 1 km over the Leman basin, resolving lake breezes, valley circulations, and the combined urban footprint of Lausanne and Geneva.",
+        "Regional mesoscale WRF simulation output at 1 km over the Leman basin, resolving lake breezes, valley circulations, and the combined urban footprint of Lausanne and Geneva.",
       // Component override: renders a chart + prose. See the SFC for the pattern.
       descriptionComponent: () => import("./descriptions/wrf_d02.vue"),
       coordinates: [6.555, 46.46],
@@ -266,7 +266,7 @@ Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF
       id: "wrf-d03",
       title: "WRF d03 - Lausanne",
       description:
-        "One-way nested field at 333 m over the Lausanne metropolitan area. The finer grid separates individual neighbourhoods from their surrounding countryside, giving the spatial detail needed to relate near-surface temperatures to urban form.",
+        "WRF simulation output at 333 m over the Lausanne metropolitan area. The finer grid separates individual neighbourhoods from their surrounding countryside, giving the spatial detail needed to relate near-surface temperatures to urban form.",
       // SVG-based description: shows that `descriptionComponent` isn't
       // ECharts-specific, any Vue template works.
       descriptionComponent: () => import("./descriptions/wrf_d03.vue"),
@@ -279,7 +279,7 @@ Nested climate simulations over Swiss urban areas, cascading from mesoscale [WRF
       id: "wrf-d04",
       title: "WRF d04 - Geneva",
       description:
-        "Companion 333 m field over the Geneva metropolitan area. Running Geneva and Lausanne back to back lets _URBES_ compare two lake-side agglomerations with distinct densities, green-space distributions, and industrial layouts.",
+        "WRF simulation output at 333 m over the Geneva metropolitan area. Running Geneva and Lausanne back to back lets _URBES_ compare two lake-side agglomerations with distinct densities, green-space distributions, and industrial layouts.",
       // Reuses the same schema as d03, with the highlight moved to d04.
       descriptionComponent: () => import("./descriptions/wrf_d04.vue"),
       coordinates: [6.149, 46.228],
