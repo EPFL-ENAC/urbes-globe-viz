@@ -10,8 +10,8 @@ import WrfDomainsSchema from "./wrf_domains_schema.vue";
 <template>
   <div>
     <p>
-      Companion 333 m field over the Geneva metropolitan area. Running Geneva
-      and Lausanne back to back lets <em>URBES</em> compare two lake-side
+      WRF simulation output at 333 m over the Geneva metropolitan area. Running
+      Geneva and Lausanne back to back lets <em>URBES</em> compare two lake-side
       agglomerations with distinct densities, green-space distributions, and
       industrial layouts.
     </p>
