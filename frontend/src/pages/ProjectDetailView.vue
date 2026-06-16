@@ -374,6 +374,13 @@ const activeSubVizTitle = computed(() => {
             class="subviz-scroll"
             @scroll.passive="updateScrollHint"
           >
+            <!-- Project-level intro: subViz layout has no single-viz panel, so
+                 the project description scrolls here above the sections. -->
+            <div
+              v-if="!singleDescriptionComponent && project.description"
+              class="text-body1 description-body subviz-intro"
+              v-html="renderDescription(project.description)"
+            />
             <section
               v-for="(viz, i) in subVizList"
               :key="viz.id"
@@ -868,6 +875,11 @@ const activeSubVizTitle = computed(() => {
 
 .subviz-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.subviz-intro {
+  padding-top: 1vh;
+  padding-bottom: 6vh;
 }
 
 .subviz-section {

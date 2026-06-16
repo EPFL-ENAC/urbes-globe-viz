@@ -92,8 +92,8 @@ const option = computed(() => {
 <template>
   <div>
     <p>
-      Mesoscale WRF simulation at 1 km across the Leman basin. At this grid lake
-      breezes and valley circulations are resolved alongside the broader urban
+      Regional mesoscale WRF simulation output at 1 km over the Leman basin,
+      resolving lake breezes, valley circulations, and the combined urban
       footprint of Lausanne and Geneva.
     </p>
     <figure class="chart-figure">

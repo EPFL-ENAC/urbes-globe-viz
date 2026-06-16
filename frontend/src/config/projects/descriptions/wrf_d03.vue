@@ -10,7 +10,7 @@ import WrfDomainsSchema from "./wrf_domains_schema.vue";
 <template>
   <div>
     <p>
-      One-way nested field at 333 m over the Lausanne metropolitan area. The
+      WRF simulation output at 333 m over the Lausanne metropolitan area. The
       finer grid separates individual neighbourhoods from their surrounding
       countryside, giving the spatial detail needed to relate near-surface
       temperatures to urban form.
