@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v0.2.1...v0.2.2) (2026-06-17)
+
+
+### Bug Fixes
+
+* **wrf:** update wrf.ts ([#35](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/35)) ([000d808](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/000d808bb230e642b83fd429afc0a7f997344f7b))
+
 ## [0.2.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v0.2.0...v0.2.1) (2026-06-16)
 
 
