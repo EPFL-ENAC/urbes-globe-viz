@@ -107,10 +107,14 @@ const goBack = () => {
           <p class="text-body1 panel-body q-mb-md">
             URBES Viz is an interactive visualization platform developed to
             explore and communicate research data from the
-            <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>. This demo
-            showcases a 3D globe-based interface offering an immersive,
-            multi-scale view of urban building energy research across geographic
-            contexts worldwide.
+            <a
+              href="https://www.epfl.ch/labs/urbes/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >URBES lab</a
+            >. This demo showcases a 3D globe-based interface offering an
+            immersive, multi-scale view of urban building energy research across
+            geographic contexts worldwide.
           </p>
           <p class="text-body1 panel-body">
             Built on the design principles, data structures, and user experience
@@ -133,10 +137,16 @@ const goBack = () => {
           <p class="text-h6 q-mb-xs panel-heading">Contributors</p>
           <p class="text-body1 panel-body">
             URBES Viz is developed at EPFL by
-            <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>, with
-            technical implementation by
+            <a
+              href="https://www.epfl.ch/labs/urbes/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >URBES lab</a
+            >, with technical implementation by
             <a
               href="https://www.epfl.ch/schools/enac/about/data-at-enac/enac-it4research/"
+              target="_blank"
+              rel="noopener noreferrer"
               >ENAC-IT4Research</a
             >'s research software engineers. Contact point: ... ?
           </p>
@@ -153,7 +163,10 @@ const goBack = () => {
           <p class="text-h6 q-mb-xs panel-heading">Basemap data</p>
           <p class="text-body1 panel-body">
             GHSL layer data provided by the
-            <a href="https://emergency.copernicus.eu/"
+            <a
+              href="https://emergency.copernicus.eu/"
+              target="_blank"
+              rel="noopener noreferrer"
               >Copernicus Emergency Management Service</a
             >.
           </p>

@@ -11,6 +11,19 @@ const md = new MarkdownIt({
   typographer: false,
 });
 
+// Force every generated link (markdown syntax + autolinked URLs) to open in a
+// new tab. Raw inline-HTML <a> tags in descriptions are passed through verbatim,
+// so those carry their own target attribute.
+const defaultLinkOpen =
+  md.renderer.rules.link_open ||
+  ((tokens, idx, options, _env, self) =>
+    self.renderToken(tokens, idx, options));
+md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  tokens[idx].attrSet("target", "_blank");
+  tokens[idx].attrSet("rel", "noopener noreferrer");
+  return defaultLinkOpen(tokens, idx, options, env, self);
+};
+
 // Descriptions live in committed TS files reviewed via PR, so no runtime
 // sanitization is applied. If descriptions ever come from user input, pipe
 // the output through a sanitizer (e.g. DOMPurify) before returning.
