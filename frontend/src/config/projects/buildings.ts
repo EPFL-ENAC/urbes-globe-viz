@@ -14,7 +14,7 @@ The height of each footprint encodes a representative floor count per constructi
   descriptionComponent: () => import("./descriptions/buildings.vue"),
   category: "Infrastructure",
   year: 2023,
-  preview: "buildings_height.png",
+  cardImage: "buildings.webp",
   zoom: 13,
   pitch: 30,
 

@@ -103,7 +103,9 @@ export interface ProjectConfig {
   // Usually a single year. Can be a string when a project spans multiple years
   // (e.g. WRF runs for 2022 + PALM for 2025 -> "2022 & 2025").
   year: number | string;
-  preview?: string;
+  // Curated thumbnail shown on the project card, e.g. "wrf.webp".
+  // Hand-picked (not auto-generated); file lives in public/previews/cards/.
+  cardImage?: string;
   zoom?: number;
   // Zoom used by the globe hover preview. Leave undefined to fall back to
   // `zoom - PREVIEW_ZOOM_OFFSET` in Globe3D.vue.

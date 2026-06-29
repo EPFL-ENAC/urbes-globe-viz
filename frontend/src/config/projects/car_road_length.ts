@@ -18,7 +18,7 @@ Colour encodes how much driveable road sits in each tile:
 `,
   category: "Transport",
   year: 2025,
-  preview: "car_road_length.png",
+  cardImage: "len_other_car_roads.webp",
   zoom: 9,
   previewZoom: 7,
   pitch: 30,

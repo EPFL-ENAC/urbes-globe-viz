@@ -47,7 +47,7 @@ A census tells you where people live - but cities are actually alive. Mobility c
 `,
   category: "Demographics",
   year: 2024,
-  preview: "hourly_population.png",
+  cardImage: "hourly_adult_population.webp",
   zoom: 9,
   previewZoom: 7,
   pitch: 30,

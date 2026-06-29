@@ -225,7 +225,7 @@ One-way nested numerical weather simulations over Swiss urban areas, cascading f
   year: "2022 & 2025",
   zoom: 9,
   pitch: 0,
-  preview: "urban_climate.png",
+  cardImage: "wrf.webp",
 
   unit: "K",
   info: "Source: Aldo Brandi, URBES",

@@ -23,6 +23,12 @@ const isHovered = computed(
   () => projectStore.hoveredProjectId === props.project.id,
 );
 
+// Curated, hand-picked thumbnail (theme-independent). Distinct from the
+// auto-generated globe overlay image.
+const previewSrc = computed(() =>
+  props.project.cardImage ? `/previews/cards/${props.project.cardImage}` : null,
+);
+
 const handleHover = () => {
   // On mobile the globe is a passive background, so hover-preview has no
   // visual effect and shouldn't churn the shared store.
@@ -57,8 +63,8 @@ const handleClick = () => {
   >
     <div class="card-image overflow-hidden">
       <img
-        v-if="project.preview"
-        :src="`/previews/${project.preview}`"
+        v-if="previewSrc"
+        :src="previewSrc"
         :alt="project.title"
         class="card-img"
       />
@@ -87,12 +93,21 @@ const handleClick = () => {
   width: 120px;
   height: 120px;
   background: var(--color-surface-raised);
+  /* Border keeps previews legible when their colors sync to the globe
+     background and would otherwise blend in. outline draws a crisp edge
+     without nudging layout. */
+  outline: 1px solid var(--color-border-strong);
+  outline-offset: -1px;
 }
 
 .card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Duotone purple: flatten to greyscale, re-tint via sepia, then rotate
+     that warm hue around to purple. Same idea as a sepia effect, but in
+     shades of purple instead of brown. */
+  filter: grayscale(1) sepia(1) hue-rotate(220deg) saturate(2.2) brightness(0.8);
 }
 
 .card-text {

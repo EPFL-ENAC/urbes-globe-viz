@@ -27,7 +27,7 @@ export const roadsSwissStatisticsProject: ProjectConfig = {
 `,
   category: "Transport",
   year: 2017,
-  preview: "traffic.png",
+  cardImage: "roads_swiss_statistics.webp",
   zoom: 10,
   pitch: 0,
 
