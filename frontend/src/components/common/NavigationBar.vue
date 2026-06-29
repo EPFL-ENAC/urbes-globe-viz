@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import epflLogo from "@/assets/EPFL_Logo.svg";
 import { useThemeStore } from "@/stores/theme";
 import { useIsMobile, useIsCompactProject } from "@/composables/useIsMobile";
 import { useRoute, useRouter } from "vue-router";
@@ -54,7 +53,24 @@ const goBack = () => {
           @click="goBack"
         />
         <template v-else>
-          <img :src="epflLogo" alt="EPFL" style="height: 16px" />
+          <svg
+            class="epfl-logo"
+            viewBox="0 0 182.4 53"
+            fill="currentColor"
+            role="img"
+            aria-label="EPFL"
+          >
+            <path d="M0,21.6H11.4V9.8H38.3V0H0Z" />
+            <path d="M0,53H38.3V43.2H11.4V31.4H0Z" />
+            <path d="M11.4,21.6H36V31.4H11.4Z" />
+            <path
+              d="M86,4.9c-1.5-1.5-3.4-2.6-5.7-3.5C78,0.4,75.1,0,71.8,0H48.1v53h11.4V31.4h12.2c3.3,0,6.1-0.4,8.5-1.3 c2.3-0.9,4.2-2.1,5.7-3.5c1.5-1.5,2.5-3.1,3.2-5s1-3.8,1-5.8s-0.3-4-1-5.8C88.5,8,87.4,6.3,86,4.9z M78,18.7 c-0.6,0.8-1.3,1.4-2.3,1.8c-0.9,0.4-2,0.7-3.3,0.9c-1.2,0.1-2.5,0.2-3.9,0.2h-9.1V9.8h9.1c1.3,0,2.6,0.1,3.9,0.2 c1.2,0.1,2.3,0.4,3.3,0.9c0.9,0.4,1.7,1,2.3,1.8c0.6,0.8,0.9,1.8,0.9,3S78.6,18,78,18.7z"
+            />
+            <path d="M155.5,43.2V0H144V53H182.4V43.2Z" />
+            <path d="M97.4,21.6H108.9V9.8H135.8V0H97.4Z" />
+            <path d="M97.4,31.4H108.8V53H97.4Z" />
+            <path d="M108.9,21.6H133.5V31.4H108.9Z" />
+          </svg>
           <q-separator vertical size="1px" class="nav-separator" />
           <span class="text-h6 text-weight-bold nav-title">URBES</span>
         </template>
@@ -194,8 +210,17 @@ const goBack = () => {
   pointer-events: auto;
 }
 
-.nav-title {
+/* Inlined as real SVG so the fills (currentColor) follow the theme:
+   black on light, white on dark. */
+.epfl-logo {
+  height: 16px;
+  width: auto;
+  display: block;
   color: var(--color-text);
+}
+
+.nav-title {
+  color: var(--color-accent);
 }
 
 .nav-separator {

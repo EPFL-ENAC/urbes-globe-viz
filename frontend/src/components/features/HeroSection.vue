@@ -148,8 +148,8 @@ function goToPanel(index: number) {
 
 .btn {
   padding: 0.65rem 1rem;
-  background: #e30613;
-  color: #ffffff;
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
   font-family: "Nunito", sans-serif;
   font-size: 0.9rem;
   font-weight: 600;
@@ -190,7 +190,7 @@ function goToPanel(index: number) {
   }
 
   .dot.active {
-    background: #e30613;
+    background: var(--color-accent);
   }
 
   .hero-content {

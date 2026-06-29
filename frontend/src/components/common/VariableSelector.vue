@@ -60,8 +60,8 @@ const emit = defineEmits<{
 }
 
 .var-chip.active {
-  background: var(--color-border-strong);
-  border-color: var(--color-text);
-  color: var(--color-text);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 </style>

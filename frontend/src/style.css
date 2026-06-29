@@ -29,6 +29,13 @@
   --color-text-muted: rgba(255, 255, 255, 0.8);
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.2);
+  /* Violet brand accent (matches architecturehub.epfl.ch). Used for links,
+     active states, and call-to-action buttons over the neutral base.
+     `-strong` is the deeper hover/fill variant; `-on` is text on a fill. */
+  --color-accent: #a078f0;
+  --color-accent-strong: #8a5cf0;
+  --color-accent-soft: rgba(160, 120, 240, 0.18);
+  --color-on-accent: #ffffff;
   --color-map-bg: #030303;
   /* Brightness applied to the mobile landing background globe. Dark theme
      brightens to make features visible; light theme dims it below. */
@@ -47,6 +54,11 @@
   --color-text-muted: rgba(0, 0, 0, 0.8);
   --color-border: rgba(0, 0, 0, 0.1);
   --color-border-strong: rgba(0, 0, 0, 0.2);
+  /* Deepened slightly so the violet keeps contrast against white surfaces. */
+  --color-accent: #7c5cf0;
+  --color-accent-strong: #6a44e0;
+  --color-accent-soft: rgba(124, 92, 240, 0.14);
+  --color-on-accent: #ffffff;
   --color-map-bg: #fcfcfc;
   --globe-bg-brightness: 0.85;
 }
@@ -84,6 +96,19 @@ body {
 #app {
   width: 100%;
   height: 100vh;
+}
+
+/* Links default to the violet accent (e.g. markdown description links).
+   Components that need a neutral link (nav, cards) set `color` explicitly,
+   which overrides this. */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
 }
 
 /* GHSL basemap canvas container — the dark-paletted basemap sits behind an
