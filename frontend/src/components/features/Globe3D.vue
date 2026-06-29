@@ -374,16 +374,6 @@ onMounted(() => {
   });
 });
 
-// React to zoom requests from other components (e.g. HeroSection dot nav)
-watch(
-  () => projectStore.targetZoom,
-  (zoom) => {
-    if (zoom == null || !map) return;
-    map.easeTo({ zoom, duration: 600 });
-    projectStore.targetZoom = null;
-  },
-);
-
 onUnmounted(() => {
   pauseSpin();
   if (unsubscribeBasemapSync) {

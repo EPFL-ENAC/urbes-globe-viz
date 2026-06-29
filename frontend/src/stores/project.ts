@@ -8,7 +8,6 @@ export const useProjectStore = defineStore("project", () => {
   // Globe3D sets this on mount based on viewport width; other components
   // (e.g. HeroSection) scale their zoom-dependent logic against it.
   const initialZoom = ref(2);
-  const targetZoom = ref<number | null>(null);
 
   function selectProject(id: string) {
     selectedProject.value = id;
@@ -26,20 +25,14 @@ export const useProjectStore = defineStore("project", () => {
     initialZoom.value = zoom;
   }
 
-  function requestZoom(zoom: number) {
-    targetZoom.value = zoom;
-  }
-
   return {
     selectedProject,
     hoveredProjectId,
     zoomLevel,
     initialZoom,
-    targetZoom,
     selectProject,
     setHoveredProject,
     setZoomLevel,
     setInitialZoom,
-    requestZoom,
   };
 });

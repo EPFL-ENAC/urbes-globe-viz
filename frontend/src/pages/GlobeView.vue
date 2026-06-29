@@ -26,7 +26,6 @@ const isMobile = useIsMobile();
           />
         </div>
       </div>
-      <HeroSection part="outro" />
     </div>
   </div>
 </template>
