@@ -69,6 +69,7 @@ export interface SubViz {
   descriptionComponent?: DescriptionComponentLoader;
   coordinates?: [number, number];
   zoom?: number;
+  pitch?: number;
   source?: SourceSpecification;
   layer?: LayerSpecification;
   renderer?: string;

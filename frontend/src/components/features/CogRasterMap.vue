@@ -7,6 +7,7 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+import { isPreviewMode } from "@/utils/previewMode";
 import type { CogRasterConfig } from "@/config/projects/types";
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const props = defineProps<{
   activeTime?: number;
   center?: [number, number];
   zoom?: number;
+  pitch?: number;
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
@@ -26,6 +28,7 @@ let unsubscribeBasemapSync: (() => void) | null = null;
 
 const initialCenter: [number, number] = props.center ?? [6.5, 46.5];
 const initialZoom = props.zoom ?? 8;
+const initialPitch = props.pitch ?? 0;
 
 const cogUrl = computed(() => {
   const url = props.cogRaster.url;
@@ -85,18 +88,24 @@ onMounted(() => {
     canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
+      // Kept on mercator even for previews: the deck.gl COG overlay doesn't
+      // sync reliably with globe projection, and COG projects sit at high
+      // enough zoom that globe vs mercator is visually negligible.
       sources: {},
       layers: [],
     },
     center: initialCenter,
     zoom: initialZoom,
+    pitch: initialPitch,
     refreshExpiredTiles: false,
     fadeDuration: 500,
     renderWorldCopies: false,
     attributionControl: false,
   });
 
-  map.addControl(new maplibregl.NavigationControl(), "top-left");
+  if (!isPreviewMode) {
+    map.addControl(new maplibregl.NavigationControl(), "top-left");
+  }
 
   map.on("load", () => {
     isLoading.value = false;
@@ -106,6 +115,21 @@ onMounted(() => {
       layers: makeLayers(),
     });
     map!.addControl(deckOverlay as unknown as maplibregl.IControl);
+
+    // Build-time screenshot: signal once maplibre has settled. The deck.gl COG
+    // tiles load via HTTP range requests afterwards; the capture script waits
+    // for network idle on top of this to let those finish painting.
+    if (isPreviewMode) {
+      map!.once("idle", () => {
+        window.__previewCamera = {
+          center: map!.getCenter().toArray() as [number, number],
+          zoom: map!.getZoom(),
+          pitch: map!.getPitch(),
+          bearing: map!.getBearing(),
+        };
+        window.__previewReady = true;
+      });
+    }
   });
 
   const attachSync = () => {
@@ -143,7 +167,12 @@ onUnmounted(() => {
 
 <template>
   <div class="project-map-wrapper">
-    <GhslBasemap ref="basemapRef" :center="initialCenter" :zoom="initialZoom" />
+    <GhslBasemap
+      v-if="!isPreviewMode"
+      ref="basemapRef"
+      :center="initialCenter"
+      :zoom="initialZoom"
+    />
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>

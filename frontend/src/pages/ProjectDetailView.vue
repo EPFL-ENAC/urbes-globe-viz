@@ -10,6 +10,7 @@ import { allProjects, projectsGeoJSON } from "@/config/projects";
 import { renderDescription } from "@/utils/markdown";
 import { DEFAULT_TITLE } from "@/router";
 import { useIsCompactProject } from "@/composables/useIsMobile";
+import { isPreviewMode } from "@/utils/previewMode";
 import {
   computed,
   defineAsyncComponent,
@@ -82,6 +83,16 @@ const activeZoom = computed(() => {
     );
   }
   return projectConfig.value?.zoom;
+});
+
+const activePitch = computed(() => {
+  if (subVizList.value) {
+    return (
+      subVizList.value[activeSubVizIndex.value]?.pitch ??
+      projectConfig.value?.pitch
+    );
+  }
+  return projectConfig.value?.pitch;
 });
 
 // COG variable selector — cascades subViz → project-level
@@ -308,7 +319,10 @@ const activeSubVizTitle = computed(() => {
 </script>
 
 <template>
-  <div class="fit relative detail-bg">
+  <div
+    class="fit relative detail-bg"
+    :class="{ 'preview-mode': isPreviewMode }"
+  >
     <!-- Project Drawer (desktop only) -->
     <div
       v-if="!isMobile"
@@ -476,6 +490,7 @@ const activeSubVizTitle = computed(() => {
         :active-time="activeTimeValue"
         :center="activeCenter"
         :zoom="activeZoom"
+        :pitch="activePitch"
       />
       <ProjectMap
         v-else-if="project"
@@ -898,6 +913,24 @@ const activeSubVizTitle = computed(() => {
   bottom: 0;
   right: 0;
   transition: all 0.3s ease-out;
+}
+
+/* Build-time screenshot mode: drop all chrome and let the map fill the
+   viewport so the capture is a clean, full-bleed square. */
+.preview-mode .project-drawer,
+.preview-mode .map-bottom-bar,
+.preview-mode .project-sheet {
+  display: none !important;
+}
+
+.preview-mode .map-container {
+  left: 0 !important;
+}
+
+/* Data-only capture: strip the page background so the screenshot is transparent
+   (basemap is hidden in preview mode; the map canvas is already alpha). */
+.preview-mode.detail-bg {
+  background: transparent !important;
 }
 
 .map-with-drawer {
