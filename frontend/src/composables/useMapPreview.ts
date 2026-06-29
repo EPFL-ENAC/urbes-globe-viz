@@ -44,10 +44,12 @@ function createDotIcon(size: number, borderWidth: number): ImageData {
 
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#c8c8c8";
+  // Violet brand accent — the only colour on the map. Near-white ring keeps the
+  // dot legible on both the paper ground and the dark theme.
+  ctx.fillStyle = "#a078f0";
   ctx.fill();
   ctx.lineWidth = borderWidth;
-  ctx.strokeStyle = "#ffffff";
+  ctx.strokeStyle = "#fdfdfd";
   ctx.stroke();
 
   return ctx.getImageData(0, 0, size, size);

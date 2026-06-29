@@ -85,9 +85,11 @@ function goToPanel(index: number) {
       @wheel="onHeroWheel"
     >
       <h1 v-if="part === 'intro'" class="hero-title">
-        Decoding the<br />physics of<br />cities
+        Decoding the<br />physics of<br /><em>cities</em>
       </h1>
-      <h1 v-else class="hero-title">Complexity<br />in time and<br />space</h1>
+      <h1 v-else class="hero-title">
+        Complexity<br />in time and<br /><em>space</em>
+      </h1>
 
       <p v-if="part === 'intro'" class="hero-body">
         From the heartbeat of daily mobility to the temperature of their skin,
@@ -104,14 +106,16 @@ function goToPanel(index: number) {
 
       <div v-if="part === 'outro'" class="btn-row">
         <q-btn
-          class="btn"
+          class="atlas-link"
+          flat
+          no-caps
+          :ripple="false"
           href="https://www.epfl.ch/labs/urbes/"
           target="_blank"
           rel="noopener"
-          unelevated
-        >
-          Visit Urbes Lab
-        </q-btn>
+          label="Visit Urbes Lab"
+          icon-right="arrow_forward"
+        />
       </div>
     </div>
   </section>
@@ -124,18 +128,25 @@ function goToPanel(index: number) {
 }
 
 .hero-title {
+  font-family: var(--font-sans);
   font-weight: 300;
-  font-size: clamp(2.5rem, 6vw, 3.75rem);
-  line-height: 1.05;
-  text-transform: uppercase;
+  font-size: clamp(2.875rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
   margin: 0 0 1rem;
 }
 
+/* The single emphasised word carries the only colour in the headline. */
+.hero-title em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
 .hero-body {
-  font-family: "Nunito", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -146,14 +157,32 @@ function goToPanel(index: number) {
   padding-top: 1rem;
 }
 
-.btn {
-  padding: 0.65rem 1rem;
-  background: var(--color-accent-strong);
-  color: var(--color-on-accent);
-  font-family: "Nunito", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
+/* Primary CTA is a violet text link, not a filled button. The only motion is
+   the arrow nudging 4px on hover; the label deepens to the strong accent. */
+.atlas-link {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--color-accent);
+  padding: 0;
+  transition: color 0.15s ease-in-out;
+}
+
+.atlas-link:hover {
+  color: var(--color-accent-strong);
+}
+
+.atlas-link :deep(.q-icon) {
+  transition: transform 0.15s ease-in-out;
+}
+
+.atlas-link:hover :deep(.q-icon) {
+  transform: translateX(4px);
+}
+
+/* Strip the Quasar button's hover backdrop so it reads as plain text. */
+.atlas-link :deep(.q-focus-helper) {
+  display: none;
 }
 
 .hero-dots {

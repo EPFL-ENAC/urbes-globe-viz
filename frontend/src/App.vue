@@ -27,6 +27,6 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 </style>

@@ -20,7 +20,10 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(Quasar, {
-  config: {},
+  config: {
+    // Paper feel: no ripple. Hovers change colour only, never lift or splash.
+    ripple: false,
+  },
 });
 
 // Must run after Pinia + Quasar so the store is usable and Quasar.Dark works.

@@ -29,6 +29,18 @@
 - File naming: components = PascalCase, config/utils = camelCase
 - Commit messages follow Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, etc.
 
+## Theme & Typography ("Paper" design system)
+
+The app follows a calm, editorial "ink on near-white paper" feel (EPFL Architecture Hub).
+
+- **Light is the default.** `src/style.css` bare `:root` holds the paper palette (`--color-bg: #fdfdfd`, solid `#ffffff` surfaces, `#141414` ink text, `#8e8e8e` muted, `#ececec` hairline borders). Dark lives under `:root[data-theme="dark"]`. `installTheme` (`stores/theme.ts`, `DEFAULT_MODE = "light"`) always sets `<html data-theme>` explicitly, so theme-scoped CSS keys off `[data-theme="light|dark"]`.
+- **Accent is rationed.** Violet `--color-accent: #a078f0` only on links, active states, the one emphasised headline word, and the globe markers (`useMapPreview.ts createDotIcon` fill). Never a large fill or chrome.
+- **Font is Suisse Int'l**, self-hosted from `public/fonts/SuisseIntl-*.ttf` (`@font-face` in `style.css`), exposed as `--font-sans`. `--font-mono` drives the signature uppercase-tracked micro-labels (eyebrows, card meta). No Inter/Nunito.
+- **Square + hairline, no shadow.** Quasar radius/shadow zeroed in `quasar-variables.sass`; ripple off in `main.ts`. Structure comes from 1px borders, not elevation.
+- **Colour-only motion.** Hovers change colour (or nudge a link arrow 4px); never `scale()`/lift/drop-shadow. Headlines are sentence case (uppercase reserved for mono labels).
+- The GHSL basemap is a dark MapLibre style inverted to paper via CSS (`.ghsl-basemap-canvas { filter: invert(1) hue-rotate(180deg) }` under `[data-theme="light"]`); markers ride a separate, non-inverted overlay canvas.
+- Source of intent: `design_handoff_paper_globe/README.md`. The "panel breaking the globe edge" landing re-layout from §5 is **not yet implemented** (deferred).
+
 ## Project Structure
 
 ```

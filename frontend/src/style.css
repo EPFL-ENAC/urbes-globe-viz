@@ -1,17 +1,62 @@
+/* Suisse Int'l — self-hosted, the single primary face (replaces Inter/Nunito).
+   Files live in /public/fonts and are served at the site root by Vite. */
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Int'l";
+  src: url("/fonts/SuisseIntl-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
+  /* Suisse Int'l everywhere; Arial is the brand-sanctioned fallback while the
+     face loads. --font-mono drives the uppercase tracked micro-labels. */
+  --font-sans: "Suisse Int'l", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
 
@@ -20,7 +65,34 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Dark is the default palette; [data-theme="light"] overrides below. */
+  /* "Paper" is the default palette; [data-theme="dark"] overrides below.
+     Ink on near-white paper: #FDFDFD ground (never pure white — that is
+     reserved for the panels/cards that sit on the ground). */
+  color-scheme: light;
+  --color-bg: #fdfdfd;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-text: #141414;
+  --color-text-muted: #8e8e8e;
+  --color-border: #ececec;
+  --color-border-strong: #b6b6b6;
+  /* Violet brand accent (matches architecturehub.epfl.ch). Rationed: links,
+     active states, the emphasised headline word, and globe markers.
+     `-strong` is the deeper hover/fill variant; `-on` is text on a fill. */
+  --color-accent: #a078f0;
+  --color-accent-strong: #8a5cf0;
+  --color-accent-soft: #ece3fd;
+  --color-on-accent: #ffffff;
+  --color-map-bg: #f1f1f1;
+  /* Brightness applied to the mobile landing background globe. Paper dims it;
+     dark theme brightens it below to keep features visible. */
+  --globe-bg-brightness: 0.85;
+
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
   --color-bg: #000000;
   --color-surface: rgba(0, 0, 0, 0.6);
@@ -29,38 +101,12 @@
   --color-text-muted: rgba(255, 255, 255, 0.8);
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.2);
-  /* Violet brand accent (matches architecturehub.epfl.ch). Used for links,
-     active states, and call-to-action buttons over the neutral base.
-     `-strong` is the deeper hover/fill variant; `-on` is text on a fill. */
   --color-accent: #a078f0;
   --color-accent-strong: #8a5cf0;
   --color-accent-soft: rgba(160, 120, 240, 0.18);
   --color-on-accent: #ffffff;
   --color-map-bg: #030303;
-  /* Brightness applied to the mobile landing background globe. Dark theme
-     brightens to make features visible; light theme dims it below. */
   --globe-bg-brightness: 1.4;
-
-  color: var(--color-text);
-  background-color: var(--color-bg);
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-  --color-bg: #ffffff;
-  --color-surface: rgba(255, 255, 255, 0.85);
-  --color-surface-raised: #f5f5f5;
-  --color-text: #111111;
-  --color-text-muted: rgba(0, 0, 0, 0.8);
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-border-strong: rgba(0, 0, 0, 0.2);
-  /* Deepened slightly so the violet keeps contrast against white surfaces. */
-  --color-accent: #7c5cf0;
-  --color-accent-strong: #6a44e0;
-  --color-accent-soft: rgba(124, 92, 240, 0.14);
-  --color-on-accent: #ffffff;
-  --color-map-bg: #fcfcfc;
-  --globe-bg-brightness: 0.85;
 }
 
 /* Foreground text on the mobile landing sits over the blurred globe, so
@@ -69,19 +115,19 @@
    backgrounds) keep the standard muted treatment. */
 @media (max-width: 767px) {
   .globe-view-root {
-    --color-text-muted: rgba(255, 255, 255, 0.92);
-  }
-
-  .globe-view-root .foreground {
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  :root[data-theme="light"] .globe-view-root {
     --color-text-muted: rgba(0, 0, 0, 0.95);
   }
 
-  :root[data-theme="light"] .globe-view-root .foreground {
+  .globe-view-root .foreground {
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  }
+
+  :root[data-theme="dark"] .globe-view-root {
+    --color-text-muted: rgba(255, 255, 255, 0.92);
+  }
+
+  :root[data-theme="dark"] .globe-view-root .foreground {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 }
 

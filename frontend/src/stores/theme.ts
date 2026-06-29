@@ -6,9 +6,9 @@ export type ThemeMode = "light" | "dark";
 export type ThemeOverride = ThemeMode | null;
 
 const STORAGE_KEY = "urbes:theme";
-// Dark is the app's identity — we ignore `prefers-color-scheme` and only
-// switch to light when the user explicitly toggles.
-const DEFAULT_MODE: ThemeMode = "dark";
+// Light "paper" is the app's identity — we ignore `prefers-color-scheme` and
+// only switch to dark when the user explicitly toggles.
+const DEFAULT_MODE: ThemeMode = "light";
 
 function readOverride(): ThemeOverride {
   try {
