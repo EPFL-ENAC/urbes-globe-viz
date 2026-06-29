@@ -45,7 +45,7 @@ const goBack = () => {
         <q-btn
           v-if="showBackButton"
           flat
-          round
+          square
           icon="arrow_back"
           size="md"
           class="nav-btn"
@@ -79,7 +79,7 @@ const goBack = () => {
       <div class="row items-center q-gutter-sm">
         <q-btn
           flat
-          round
+          square
           :icon="themeIcon"
           :aria-label="themeLabel"
           size="md"
@@ -89,7 +89,7 @@ const goBack = () => {
 
         <q-btn
           flat
-          round
+          square
           icon="info"
           size="md"
           class="nav-btn"
@@ -111,7 +111,7 @@ const goBack = () => {
       <div v-if="infoOpen" class="info-panel">
         <q-btn
           flat
-          round
+          square
           dense
           icon="close"
           class="close-btn nav-btn"
