@@ -58,6 +58,7 @@ Key fields:
 - `zoom?` + `pitch?`: full-view camera when the project is opened in detail view
 - `previewZoom?`: zoom used for the globe hover preview. Leave undefined to fall back to `zoom - PREVIEW_ZOOM_OFFSET` (defined in `Globe3D.vue`). Set a per-project value when the offset default zooms in too far or not far enough (e.g. very low base `zoom`)
 - `source?` + `layer?`: MapLibre source/layer spec (omit for custom renderers)
+- `cardImage?`: curated, hand-picked thumbnail for the **project card** only. File lives at `public/previews/cards/<cardImage>` (theme-independent). Distinct from the auto-generated globe overlay. See **Project Previews**
 - `renderer?`: `"deckgl-arcs"` → uses `DaveFlowsMap`; undefined → uses `ProjectMap`
 - `subViz?: SubViz[]`: optional array for carousel/scrollytelling multi-dataset projects
 
@@ -86,6 +87,16 @@ For charts or other interactive per-project content, set `descriptionComponent: 
 1. Create `frontend/src/config/projects/<id>.ts`
 2. Export a `ProjectConfig` — see `_example.ts.example` for the template
 3. Register in `index.ts` `allProjects` array
+
+### Project Previews
+
+Two separate, independent things:
+
+1. **Card thumbnails** (`ProjectCard.vue`) - curated, hand-picked images you choose. Drop a source image (any size/format) at `frontend/card-images/<id>.<ext>`, then `npm run card-images` (sharp; `scripts/process-card-images.mjs`) square-crops it and writes `public/previews/cards/<id>.webp` (512px). Set `cardImage: "<id>.webp"` on the config; `ProjectCard.vue` serves `public/previews/cards/<cardImage>`. Sources stay in `card-images/` (committed, not shipped) so only the lean webp lands in `public/`. The card applies a duotone-purple CSS filter at display time, so source colour doesn't matter. Theme-independent. Omit `cardImage` to render an empty styled box.
+
+2. **Globe hover overlays** (`useMapPreview.ts`) - auto-generated, lightweight, transparent **data-only** PNGs shown over the globe basemap on hover, so the globe never loads the heavy PMTiles/COG dataset just to preview. Files: `public/previews/<id>.png` plus `public/previews/manifest.json` (`{ <id>: { camera: { center, zoom, pitch, bearing }, size } }`). The image is captured at the project's **real camera pose** (its detail-view pitch/zoom), so the 3D perspective is baked into the pixels. On hover, `Globe3D.vue` flies the live globe to that exact `camera`, and `useMapPreview.add()` mounts the PNG as a screen-space DOM `<img>` **billboard** (not a MapLibre source): it is pinned to `map.project(camera.center)` and scaled by `2^(liveZoom - camera.zoom)`, recomputed on every `move`, so it tracks the globe like it's painted on it. `size` is the logical-px side of the square capture viewport - what lets the runtime rescale the image to any live zoom. The billboard is revealed (fade-in) only on `moveend` once the flight has settled at the capture pose (`isSettledAtCapture`: zoom match + a `project`→`unproject` round-trip on the center to reject points behind the globe), so it only ever shows perfectly aligned, never mid-flight or over the wrong hemisphere. Because the basemap is excluded and layer colours are theme-independent hex, **one PNG serves both themes** - the live globe basemap shows through the transparent areas.
+
+Regenerate overlays with `npm run previews` (in `frontend/`), a Playwright + sharp script (`scripts/generate-previews.mjs`) that screenshots each project's map view at its real pose and writes a 1024px transparent PNG. Pass project ids to limit the run: `npm run previews -- wrf buildings` (merges into the existing manifest). It needs a running app server with geodata access - dev server (default `http://localhost:5173`) or a `vite preview` build via `PREVIEW_BASE_URL`. The app cooperates through `?preview=1` (`src/utils/previewMode.ts`): chrome **and basemap** are hidden, page backgrounds are dropped (App.vue clears html+body; ProjectDetailView clears the root) so Playwright's `omitBackground` yields true alpha, and on idle the map sets `window.__previewReady` + `window.__previewCamera = { center, zoom, pitch, bearing }`. Both `ProjectMap.vue` (globe projection, real pitch) and `CogRasterMap.vue` (deck.gl COG, e.g. `wrf`; kept on mercator - the overlay doesn't sync to globe and its projects sit at high enough zoom that it's negligible) emit these hooks; the DAVE flows renderer still needs its own and is not captured.
 
 ### Updating a geodata file (cache busting)
 
