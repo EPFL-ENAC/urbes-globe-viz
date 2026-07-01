@@ -130,10 +130,10 @@ const handleClick = () => {
   transition: color 0.15s ease;
 }
 
-/* Mono micro-label: the signature uppercase tracked tag used for every small
-   structural label across the system. */
+/* Uppercase tracked micro-label used for every small structural label
+   across the system. */
 .card-year {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;

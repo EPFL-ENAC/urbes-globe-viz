@@ -4,12 +4,12 @@
  * light theme is produced by applying `filter: invert(1)` to the basemap
  * canvas container (see `style.css` and the `.ghsl-basemap-canvas` class).
  *
- * Layers (rendered bottom → top):
- * 1. Dark background
- * 2. GHSL built-surface raster (live PMTiles).
- * 3. OpenStreetMap buildings vector — appears at zoom 10+.
+ * App background is pure white (light) / pure black (dark).
+ * Water is near-black (#050505) → inverts to very light grey #fafafa for light mode.
+ * Land keeps the desaturated purple-grey.
  */
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
+import { geodataBaseUrl } from "./geodata";
 
 // Always use the deployed URL — ghsl.pmtiles is too large (~14 GB) for local dev
 const ghslUrl = "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles";
@@ -24,6 +24,14 @@ export const basemapSources: Record<string, SourceSpecification> = {
     type: "vector",
     url: "https://tiles.openfreemap.org/planet",
     minzoom: 10,
+  },
+  "ne-land": {
+    type: "vector",
+    url: `pmtiles://${geodataBaseUrl}/ne_10m_land.pmtiles`,
+  },
+  "ne-graticules": {
+    type: "vector",
+    url: `pmtiles://${geodataBaseUrl}/ne_10m_graticules_20.pmtiles`,
   },
 };
 
@@ -41,7 +49,17 @@ export const basemapLayers: LayerSpecification[] = [
   {
     id: "background",
     type: "background",
-    paint: { "background-color": "#111111" },
+    paint: { "background-color": "#010101" },
+  },
+  {
+    id: "land-fill",
+    type: "fill",
+    source: "ne-land",
+    "source-layer": "land",
+    paint: {
+      "fill-color": "#1c1822",
+      "fill-outline-color": "transparent",
+    },
   },
   {
     id: "ghsl-layer",
@@ -79,6 +97,16 @@ export const basemapLayers: LayerSpecification[] = [
         15,
         "#222222",
       ],
+    },
+  },
+  {
+    id: "graticules",
+    type: "line",
+    source: "ne-graticules",
+    "source-layer": "graticules",
+    paint: {
+      "line-color": "#8c8c8c",
+      "line-width": 1,
     },
   },
 ];
