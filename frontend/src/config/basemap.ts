@@ -52,6 +52,17 @@ export const basemapLayers: LayerSpecification[] = [
     paint: { "background-color": "#010101" },
   },
   {
+    id: "graticules",
+    type: "line",
+    source: "ne-graticules",
+    "source-layer": "graticules",
+    paint: {
+      "line-color": "#8c8c8c",
+      "line-width": 1,
+      "line-opacity": 0.3,
+    },
+  },
+  {
     id: "land-fill",
     type: "fill",
     source: "ne-land",
@@ -97,16 +108,6 @@ export const basemapLayers: LayerSpecification[] = [
         15,
         "#222222",
       ],
-    },
-  },
-  {
-    id: "graticules",
-    type: "line",
-    source: "ne-graticules",
-    "source-layer": "graticules",
-    paint: {
-      "line-color": "#8c8c8c",
-      "line-width": 1,
     },
   },
 ];

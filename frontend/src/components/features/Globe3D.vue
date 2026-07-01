@@ -309,6 +309,12 @@ onMounted(() => {
         "icon-image": ["concat", ["get", "id"], "-marker"],
         "icon-size": 1,
         "icon-allow-overlap": true,
+        // Conform icons to the sphere's surface instead of the default
+        // camera-facing billboard, so they foreshorten and tilt with the
+        // globe's curvature (e.g. near the limb) like real terrain would,
+        // instead of feeling detached from its rotation.
+        "icon-pitch-alignment": "map",
+        "icon-rotation-alignment": "map",
       },
     });
 
