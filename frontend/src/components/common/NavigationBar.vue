@@ -53,6 +53,21 @@ const goBack = () => {
           @click="goBack"
         />
         <template v-else>
+          <button
+            v-if="isProjectDetail"
+            type="button"
+            class="back-link"
+            aria-label="Back to globe"
+            @click="goBack"
+          >
+            <span class="back-arrow">←</span>Back
+          </button>
+          <q-separator
+            v-if="isProjectDetail"
+            vertical
+            size="1px"
+            class="nav-separator"
+          />
           <svg
             class="epfl-logo"
             viewBox="0 0 182.4 53"
@@ -221,6 +236,38 @@ const goBack = () => {
 
 .nav-title {
   color: var(--color-accent);
+}
+
+/* Tracked-uppercase micro-label back link (desktop project detail), mirroring
+   the design mockup's "← Atlas" header affordance. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--color-text);
+}
+
+.back-arrow {
+  display: inline-block;
+  font-size: 14px;
+  transition: transform 0.15s ease;
+}
+
+.back-link:hover .back-arrow {
+  transform: translateX(-3px);
 }
 
 .nav-separator {

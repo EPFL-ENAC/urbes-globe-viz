@@ -132,6 +132,21 @@ files additionally get `immutable` because their name always carries a version.)
 
 `DaveFlowsMap` accepts a `dataUrl` prop. When it changes, it hot-swaps the arc data via `deckOverlay.setProps()` — no map recreation, no camera reset.
 
+## Hub Scroll (ProjectDetailView desktop, projects with `subViz`)
+
+The project drawer is one native scroll flow ("hub scroll") in `ProjectDetailView.vue` — no scroll-driven JS animation. Key mechanics, all CSS-sticky:
+
+- Direct children of `.hub-scroll` interleave sticky `.hub-title` buttons and flow `.hub-content` sections. Each title has BOTH sticky insets (inline, per index): `top` docks it in the top stack once passed; `bottom` pins it parked in the bottom stack before reached. Opaque bg + ascending z-index give the ~20% peek overlap.
+- `.hub-content-inner` is sticky inside its section: short text pins below its docked title (no blank void) while the section's `min-height` remainder scrolls beneath; long text fills its parent (zero sticky slack) so it scrolls 1:1. The parent-clamping of CSS sticky does the short/long discrimination for free.
+- The only scroll JS: compare `scrollTop` against cached `.hub-content` `offsetTop`s to set `hubActiveIndex` (drives map/legend via `activeSubVizIndex = hubIndex - 1`; hub index 0 is the project overview). Offsets re-measured on resize + a `ResizeObserver` (async chart SFCs grow after mount).
+
+Gotchas learned the hard way:
+
+- **Never put `padding-top` on the sticky scroller**: Chrome measures sticky `top` insets from the content edge, double-offsetting every docked title. Use a flow spacer (`.hub-topspacer`) instead.
+- Measure flow positions from the non-sticky `.hub-content` elements — sticky elements report displaced `offsetTop`.
+- The navbar-clearance band above the docked stack is open scrollport; an opaque `::before` strip on `.subviz-layout` stops passed content from sliding up behind the transparent navbar.
+- Do NOT drive per-frame animation from a Vue ref updated in a scroll handler (whole-template re-render per frame) or animate `top`/`bottom` (relayout of text/charts per frame) — that was the v1 lag.
+
 ## Reusable Time Slider Pattern
 
 - `ProjectConfig` and `SubViz` now support optional `timeControl` metadata (see `frontend/src/config/projects/types.ts`).
