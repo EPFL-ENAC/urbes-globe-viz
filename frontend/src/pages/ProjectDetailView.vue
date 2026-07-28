@@ -259,8 +259,11 @@ function hubContentStickyTop(i: number) {
   return hubTitleTop(i) + HUB_STRIP_H + 16;
 }
 
-// Short sections still occupy one full "stop": the stage height between a
-// docked title and the parked stack below it.
+// Tail stop, applied to the LAST section only: the stage height between a
+// docked title and the parked stack below it. Earlier sections flow at their
+// natural height (so short ones read together instead of each dragging a
+// viewport of blank column), and this tail is exactly the scroll range the
+// last title needs to reach its own top dock.
 const hubContentMinH = computed(() =>
   Math.max(
     0,
@@ -288,8 +291,13 @@ function measureHub() {
 }
 
 // Watches the content blocks for size changes (async description SFCs — charts
-// — grow after mount), which shift every offset below them.
-const hubResizeObserver = new ResizeObserver(() => measureHub());
+// — grow after mount), which shift every offset below them. With natural
+// section heights that growth also moves the docking thresholds, so re-derive
+// the active section from the current scrollTop.
+const hubResizeObserver = new ResizeObserver(() => {
+  measureHub();
+  onHubScroll();
+});
 
 function observeHubContents() {
   hubResizeObserver.disconnect();
@@ -441,14 +449,19 @@ const activeSubVizTitle = computed(() => {
                 }}</span>
               </button>
 
+              <!-- Natural height, so short sections read together on open.
+                   Only the last one is stretched to a full stop, which is the
+                   scroll range every title needs to reach its top dock. -->
               <div
                 class="hub-content"
-                :style="{ minHeight: hubContentMinH + 'px' }"
+                :style="
+                  i === hubN - 1 ? { minHeight: hubContentMinH + 'px' } : {}
+                "
               >
-                <!-- Sticky within its section only: short text pins below its
-                     docked title while the section's empty remainder scrolls
-                     beneath; long text fills its parent (no slack) so sticky
-                     never engages and it scrolls 1:1. -->
+                <!-- Sticky within its section only: on the stretched last
+                     section short text pins below its docked title while the
+                     empty remainder scrolls beneath; elsewhere there is no
+                     slack, so sticky never engages and it scrolls 1:1. -->
                 <div
                   class="hub-content-inner"
                   :style="{ top: hubContentStickyTop(i) + 'px' }"
@@ -904,14 +917,15 @@ const activeSubVizTitle = computed(() => {
 }
 
 /* Plain flow content: scrolls 1:1 and slides under both opaque title stacks.
-   min-height (bound inline) keeps short sections filling one full "stop". */
+   Height is natural; only the last section carries an inline min-height. */
 .hub-content {
   padding: 16px 48px 32px;
 }
 
 /* The section's text block; sticky top inset bound inline per section. Its
    containing block is .hub-content, so the pin only has slack when the section
-   is taller than its text (short content) — see the template comment. */
+   is taller than its text — i.e. on the stretched last section, or on any
+   section whose content is shorter than a component that grew inside it. */
 .hub-content-inner {
   position: sticky;
 }
