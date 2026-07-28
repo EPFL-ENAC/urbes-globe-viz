@@ -225,7 +225,7 @@ const hubSections = computed<HubSection[]>(() => {
   const rest: HubSection[] = list.map((viz) => {
     const [first, ...others] = viz.title.split(" - ");
     return others.length
-      ? { key: viz.id, tag: first, title: others.join(" - "), viz }
+      ? { key: viz.id, tag: first ?? "", title: others.join(" - "), viz }
       : { key: viz.id, tag: "", title: viz.title, viz };
   });
   return [overview, ...rest];
