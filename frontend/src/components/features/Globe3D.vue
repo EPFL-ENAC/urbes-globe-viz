@@ -138,6 +138,8 @@ watch(
 
     if (projectId) {
       pauseSpin();
+      // Pin the hero open for the whole preview, including the return flight.
+      projectStore.setPreviewFlightActive(true);
 
       const feature = projectsGeoJSON.features.find(
         (f) => f.properties.id === projectId,
@@ -196,6 +198,8 @@ watch(
       });
       map.once("moveend", () => {
         flying = false;
+        // Back at the initial pose: the hero returns to plain zoom-based rules.
+        projectStore.setPreviewFlightActive(false);
         resumeSpin();
       });
     }
@@ -209,6 +213,7 @@ onMounted(() => {
 
   // Pinia survives route changes; stale hover/zoom hid the hero.
   projectStore.setHoveredProject(null);
+  projectStore.setPreviewFlightActive(false);
   projectStore.setZoomLevel(initialCamera.zoom);
   projectStore.setInitialZoom(initialCamera.zoom);
 
@@ -382,6 +387,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   pauseSpin();
+  projectStore.setPreviewFlightActive(false);
   if (unsubscribeBasemapSync) {
     unsubscribeBasemapSync();
     unsubscribeBasemapSync = null;

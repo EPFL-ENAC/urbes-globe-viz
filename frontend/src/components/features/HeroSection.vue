@@ -6,15 +6,19 @@ const projectStore = useProjectStore();
 const zoom = computed(() => projectStore.zoomLevel);
 const initialZoom = computed(() => projectStore.initialZoom);
 const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
+const isPreviewing = computed(() => projectStore.previewFlightActive);
 
-// Single hero panel. On desktop it cross-fades out once the globe zooms in
-// past this delta from the initial zoom, or while a project card is hovered.
+// Single hero panel. On desktop it cross-fades out once the user zooms the
+// globe in past this delta from the initial zoom. Dataset previews are framed
+// far enough out to sit beside the text, so they deliberately do NOT dismiss
+// it: the flag stays set through the return flight, whose zoom would otherwise
+// cross the threshold on the way back and make the panel blink.
 // On mobile the panel always shows (opacity rules are desktop-only) and flows
 // inline above the project list.
 const DISMISS_AT = 2.5;
 
 const heroVisible = computed(() => {
-  if (isHoveringCard.value) return false;
+  if (isHoveringCard.value || isPreviewing.value) return true;
   return zoom.value - initialZoom.value < DISMISS_AT;
 });
 </script>
@@ -23,7 +27,7 @@ const heroVisible = computed(() => {
   <section class="hero-part">
     <div class="hero-content" :class="{ 'is-visible': heroVisible }">
       <h1 class="hero-title">
-        Decoding the<br />physics of<br /><em>cities</em>
+        Complexity<br />in time<br />and <em>space</em>
       </h1>
 
       <p class="hero-body">
@@ -46,15 +50,8 @@ const heroVisible = computed(() => {
       </p>
 
       <p class="hero-body">
-        <a
-          class="urbes-link"
-          href="https://www.epfl.ch/labs/urbes/"
-          target="_blank"
-          rel="noopener"
-          >URBES</a
-        >
-        Globe brings our research to life through visualizations, open data, and
-        model simulations - start exploring!
+        URBES Globe brings our research to life through visualizations, open
+        data, and model simulations - start exploring!
       </p>
     </div>
   </section>
@@ -91,7 +88,7 @@ const heroVisible = computed(() => {
   margin: 0;
 }
 
-/* Every "URBES" is the lab link; it carries the only colour in the body. */
+/* The single lab link in the body; it carries the only colour there. */
 .urbes-link {
   color: var(--color-accent);
   text-decoration: none;
