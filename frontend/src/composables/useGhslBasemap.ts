@@ -2,7 +2,7 @@ import { onBeforeUnmount, ref, watch, type Ref } from "vue";
 import maplibregl, { type Map, type PaddingOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { pmtilesProtocol } from "@/lib/pmtilesClient";
-import { basemapSources, basemapLayers } from "@/config/basemap";
+import { basemapSources, basemapLayers, basemapSky } from "@/config/basemap";
 
 export interface GhslBasemapOptions {
   center: [number, number];
@@ -63,6 +63,9 @@ export function useGhslBasemap(
           ...(options.projection
             ? { projection: { type: options.projection } }
             : {}),
+          // Keeps the space around the globe transparent so the page's
+          // --color-map-bg reads as the ground. See basemapSky.
+          sky: { ...basemapSky },
           sources: { ...basemapSources },
           layers: [...basemapLayers],
         },
