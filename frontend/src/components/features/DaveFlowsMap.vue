@@ -8,6 +8,7 @@ import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+import { isPreviewMode } from "@/utils/previewMode";
 
 const props = defineProps<{
   projectId: string;
@@ -35,7 +36,12 @@ const basemapCenter: [number, number] = (project?.geometry.coordinates as [
   number,
   number,
 ]) || [6.5, 46.5];
-const basemapZoom = project?.properties.zoom || 8;
+// Screenshot runs capture further out (see ProjectMap.vue) so the landing-page
+// billboard reads as a vignette beside the hero text.
+const basemapZoom =
+  (isPreviewMode ? project?.properties.previewZoom : undefined) ??
+  project?.properties.zoom ??
+  8;
 const basemapPitch = project?.properties.pitch || 0;
 
 // Arc data — set once after fetch
@@ -86,7 +92,9 @@ function makeLayers() {
         return near ? [80, 220, 255, 255] : [80, 200, 255, 18];
       },
       getWidth: (d) => Math.sqrt(d.properties!.flow / maxFlow) * 4,
-      widthMinPixels: 0.5,
+      // Captures are framed far out, where the thinnest arcs fall below a pixel
+      // and the preview reads as haze. Interactive maps keep the fine hairlines.
+      widthMinPixels: isPreviewMode ? 1.4 : 0.5,
       // updateTriggers tell deck.gl when to re-run the color accessors
       updateTriggers: {
         getSourceColor: [brushLng, brushLat, brushActive],
@@ -105,6 +113,25 @@ function scheduleRedraw() {
   });
 }
 
+// Build-time screenshot: report the settled camera and signal the capture
+// script. deck.gl draws the arcs on its own canvas after the map goes idle, so
+// map events alone would fire too early — onAfterRender is the first moment a
+// frame containing arcs actually exists. Guarded so it only ever fires once,
+// and only with data on screen.
+let previewSignalled = false;
+
+function signalPreviewReady() {
+  if (!isPreviewMode || previewSignalled || !map || arcs.length === 0) return;
+  previewSignalled = true;
+  window.__previewCamera = {
+    center: map.getCenter().toArray() as [number, number],
+    zoom: map.getZoom(),
+    pitch: map.getPitch(),
+    bearing: map.getBearing(),
+  };
+  window.__previewReady = true;
+}
+
 const loadFlows = async (url: string) => {
   const resp = await fetch(url);
   const geojson: GeoJSON.FeatureCollection = await resp.json();
@@ -115,6 +142,7 @@ const loadFlows = async (url: string) => {
     deckOverlay = new MapboxOverlay({
       interleaved: false,
       layers: makeLayers(),
+      onAfterRender: signalPreviewReady,
     });
     map!.addControl(deckOverlay as unknown as maplibregl.IControl);
   } else {
@@ -144,6 +172,9 @@ onMounted(() => {
     canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
+      // Match the live globe so the captured curvature and perspective line up
+      // with the hover billboard (same trick as ProjectMap.vue).
+      projection: isPreviewMode ? { type: "globe" } : undefined,
       sources: {},
       layers: [],
     },
@@ -155,7 +186,9 @@ onMounted(() => {
     renderWorldCopies: false,
   });
 
-  map.addControl(new maplibregl.NavigationControl(), "top-left");
+  if (!isPreviewMode) {
+    map.addControl(new maplibregl.NavigationControl(), "top-left");
+  }
 
   map.on("load", () => {
     isLoading.value = false;
@@ -216,6 +249,7 @@ onUnmounted(() => {
 <template>
   <div class="project-map-wrapper">
     <GhslBasemap
+      v-if="!isPreviewMode"
       ref="basemapRef"
       :center="basemapCenter"
       :zoom="basemapZoom"

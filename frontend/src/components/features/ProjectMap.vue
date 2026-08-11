@@ -30,7 +30,14 @@ const basemapCenter: [number, number] = (project?.geometry.coordinates as [
   number,
   number,
 ]) || [8.2, 46.8];
-const basemapZoom = project?.properties.zoom || 8;
+// Screenshot runs capture at `previewZoom` when the project sets one, so the
+// landing-page billboard frames the dataset as a compact vignette that sits
+// beside the hero text instead of filling the globe. Interactive visits always
+// use the project's own `zoom`.
+const basemapZoom =
+  (isPreviewMode ? project?.properties.previewZoom : undefined) ??
+  project?.properties.zoom ??
+  8;
 const basemapPitch = project?.properties.pitch || 0;
 
 const buildTemporalField = (
