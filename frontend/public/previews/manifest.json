@@ -1,35 +1,11 @@
 {
-  "buildings": {
-    "camera": {
-      "center": [
-        6.6327,
-        46.5397
-      ],
-      "zoom": 13,
-      "pitch": 30,
-      "bearing": 0
-    },
-    "size": 1000
-  },
-  "roads_swiss_statistics": {
-    "camera": {
-      "center": [
-        6.58,
-        46.51
-      ],
-      "zoom": 10,
-      "pitch": 0,
-      "bearing": 0
-    },
-    "size": 1000
-  },
   "hourly_adult_population": {
     "camera": {
       "center": [
         6.58,
         46.41
       ],
-      "zoom": 9,
+      "zoom": 7,
       "pitch": 30,
       "bearing": 0
     },
@@ -41,7 +17,7 @@
         6.58,
         46.41
       ],
-      "zoom": 9,
+      "zoom": 7,
       "pitch": 30,
       "bearing": 0
     },
@@ -65,7 +41,7 @@
         6.555,
         46.46
       ],
-      "zoom": 9,
+      "zoom": 7,
       "pitch": 0,
       "bearing": 0
     },

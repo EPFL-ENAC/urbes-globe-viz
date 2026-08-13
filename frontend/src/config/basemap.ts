@@ -45,11 +45,38 @@ const rasterContrast = [
   0.7,
 ] as const;
 
+/**
+ * The globe's own surface colour. Light mode inverts the whole basemap canvas
+ * (see style.css), so this near-black is what paints the near-white "paper"
+ * globe there.
+ */
+export const basemapSurfaceColor = "#010101";
+
+/**
+ * Without an explicit sky, MapLibre floods the entire canvas with the
+ * background layer, so the sphere and the space around it end up the same
+ * colour and the globe has no visible edge — the dark theme's long-standing
+ * "globe and background are the same black" problem. Painting the sky in the
+ * surface colour keeps the canvas transparent outside the sphere, letting
+ * `--color-map-bg` act as the ground the globe sits on (grey in light mode,
+ * #1a1a1a in dark). `atmosphere-blend: 0` keeps the limb a crisp edge rather
+ * than a glowing halo, in keeping with the flat paper look.
+ */
+export const basemapSky = {
+  "sky-color": basemapSurfaceColor,
+  "horizon-color": basemapSurfaceColor,
+  "fog-color": basemapSurfaceColor,
+  "sky-horizon-blend": 0,
+  "horizon-fog-blend": 0,
+  "fog-ground-blend": 0,
+  "atmosphere-blend": 0,
+} as const;
+
 export const basemapLayers: LayerSpecification[] = [
   {
     id: "background",
     type: "background",
-    paint: { "background-color": "#010101" },
+    paint: { "background-color": basemapSurfaceColor },
   },
   {
     id: "graticules",

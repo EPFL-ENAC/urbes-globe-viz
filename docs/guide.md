@@ -420,13 +420,12 @@ Now you tell the app about your dataset by creating a configuration file.
 
 Look at the existing project configs and pick the one most similar to your data. This will be your starting point.
 
-| File                         | What it shows                                | Layer type                         | Good starting point for…            |
-| ---------------------------- | -------------------------------------------- | ---------------------------------- | ----------------------------------- |
-| `buildings.ts`               | Swiss buildings colored by construction year | `fill-extrusion` (3D)              | 3D polygon data                     |
-| `roads_swiss_statistics.ts`  | Swiss roads colored by traffic volume        | `line`                             | Line data (roads, rivers, …)        |
-| `building_heights_china.ts`  | Building heights as colored dots             | `circle`                           | Point data                          |
-| `hourly_adult_population.ts` | Population dynamics grid + flow arcs         | `fill-extrusion` + custom renderer | Area data, origin-destination flows |
-| `wrf.ts`                     | Urban climate (WRF/PALM COG rasters)         | COG + subViz                       | Multi-variable COG with time slider |
+| File                         | What it shows                        | Layer type                         | Good starting point for…            |
+| ---------------------------- | ------------------------------------ | ---------------------------------- | ----------------------------------- |
+| `len_other_car_roads.ts`     | Road length per grid cell            | `fill-extrusion` (3D)              | 3D polygon / grid data              |
+| `she_sim_temporal.ts`        | Simulated urban height over time     | `fill-extrusion` + time slider     | Data with a time dimension          |
+| `hourly_adult_population.ts` | Population dynamics grid + flow arcs | `fill-extrusion` + custom renderer | Area data, origin-destination flows |
+| `wrf.ts`                     | Urban climate (WRF/PALM COG rasters) | COG + subViz                       | Multi-variable COG with time slider |
 
 All files are in `frontend/src/config/projects/`.
 
@@ -435,7 +434,7 @@ All files are in `frontend/src/config/projects/`.
 Copy the most similar project config and rename it to match your dataset:
 
 ```bash
-cp frontend/src/config/projects/roads_swiss_statistics.ts \
+cp frontend/src/config/projects/car_road_length.ts \
    frontend/src/config/projects/my_dataset_name.ts
 ```
 
@@ -595,12 +594,10 @@ import { myDatasetNameProject } from "./my_dataset_name";
 
 ```typescript
 const allProjects: ProjectConfig[] = [
-  buildingsProject,
   wrfProject,
-  roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
-  daveFlowsProject,
-  buildingHeightsChinaProject,
+  lenOtherCarRoadsProject,
+  sheSimTemporalProject,
   myDatasetNameProject, // ← add this line
 ];
 ```

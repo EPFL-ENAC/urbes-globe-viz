@@ -18,10 +18,12 @@
 //   npm run dev            # in another terminal, then:
 //   npm run previews
 //   PREVIEW_BASE_URL=http://localhost:4173 npm run previews   # vite preview
-//   npm run previews -- wrf buildings   # limit to specific project ids
+//   npm run previews -- wrf             # limit to specific project ids
 //
-// The DAVE flows deck.gl renderer still needs its own readiness hook and is not
-// captured here.
+// A project can be captured through one of its sub-vizzes with `?viz=<id>` (see
+// the `query` field below and src/utils/previewMode.ts) — that is how the
+// population project is previewed by its DAVE mobility-flow arcs instead of its
+// default extruded bars.
 
 import { chromium } from "playwright";
 import sharp from "sharp";
@@ -35,20 +37,19 @@ const MANIFEST = resolve(OUT_DIR, "manifest.json");
 
 const BASE_URL = process.env.PREVIEW_BASE_URL ?? "http://localhost:5173";
 
+// `query` is appended to the capture URL — use it to pick a sub-viz renderer.
 const PROJECTS = [
-  "buildings",
-  "roads_swiss_statistics",
-  "hourly_adult_population",
-  "len_other_car_roads",
-  "she_sim_temporal",
-  "wrf",
+  { id: "hourly_adult_population", query: "&viz=flows" },
+  { id: "len_other_car_roads" },
+  { id: "she_sim_temporal" },
+  { id: "wrf" },
 ];
 
 // Optional positional args limit the run to specific project ids, e.g.
 //   npm run previews -- wrf      # regenerate only wrf.png (+ its manifest entry)
 const ONLY = process.argv.slice(2);
 const TARGETS = ONLY.length
-  ? PROJECTS.filter((id) => ONLY.includes(id))
+  ? PROJECTS.filter((p) => ONLY.includes(p.id))
   : PROJECTS;
 
 const CAPTURE = 1000; // logical px, square viewport
@@ -58,7 +59,7 @@ const READY_TIMEOUT = 60_000;
 const SETTLE = 600; // paint margin after tiles/network settle
 
 /** @returns {Promise<{center:[number,number],zoom:number,pitch:number,bearing:number}>} camera */
-async function capture(browser, id) {
+async function capture(browser, id, query = "") {
   const context = await browser.newContext({
     viewport: { width: CAPTURE, height: CAPTURE },
     deviceScaleFactor: SCALE,
@@ -66,7 +67,7 @@ async function capture(browser, id) {
 
   const page = await context.newPage();
   try {
-    await page.goto(`${BASE_URL}/project/${id}?preview=1`, {
+    await page.goto(`${BASE_URL}/project/${id}?preview=1${query}`, {
       waitUntil: "load",
     });
     await page.waitForFunction(() => window.__previewReady === true, null, {
@@ -101,7 +102,10 @@ async function readManifest() {
   }
 }
 
+// Set PREVIEW_CHROMIUM_PATH to use an already-installed Chromium (e.g. a CI or
+// container image that ships one) instead of Playwright's own download.
 const browser = await chromium.launch({
+  executablePath: process.env.PREVIEW_CHROMIUM_PATH || undefined,
   args: ["--use-gl=angle", "--use-angle=swiftshader", "--ignore-gpu-blocklist"],
 });
 
@@ -109,9 +113,9 @@ console.log(`Capturing previews from ${BASE_URL}`);
 const manifest = await readManifest();
 let failures = 0;
 try {
-  for (const id of TARGETS) {
+  for (const { id, query } of TARGETS) {
     try {
-      const camera = await capture(browser, id);
+      const camera = await capture(browser, id, query ?? "");
       // `size` = the logical-px side of the square capture viewport. The runtime
       // billboard treats the image as that many CSS px at `camera.zoom` and
       // rescales by the live zoom delta to pin it on the globe.

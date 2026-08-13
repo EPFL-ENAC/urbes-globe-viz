@@ -11,7 +11,7 @@ import type { SubViz } from "@/config/projects/types";
 import { renderDescription } from "@/utils/markdown";
 import { DEFAULT_TITLE } from "@/router";
 import { useIsCompactProject } from "@/composables/useIsMobile";
-import { isPreviewMode } from "@/utils/previewMode";
+import { isPreviewMode, previewVizId } from "@/utils/previewMode";
 import {
   computed,
   defineAsyncComponent,
@@ -49,7 +49,17 @@ const projectConfig = computed(() =>
 
 const subVizList = computed(() => projectConfig.value?.subViz);
 
-const activeSubVizIndex = ref(0);
+// Screenshot runs may target a specific sub-viz via `?viz=<id>` so the landing
+// page billboard shows e.g. mobility flows instead of the default bars.
+const initialSubVizIndex = (() => {
+  if (!isPreviewMode || !previewVizId) return 0;
+  const index = allProjects
+    .find((p) => p.id === projectId)
+    ?.subViz?.findIndex((viz) => viz.id === previewVizId);
+  return index != null && index >= 0 ? index : 0;
+})();
+
+const activeSubVizIndex = ref(initialSubVizIndex);
 
 const activeRenderer = computed(() => {
   if (subVizList.value) {
@@ -76,6 +86,11 @@ const activeCenter = computed(() => {
 });
 
 const activeZoom = computed(() => {
+  // Screenshot runs frame further out (see ProjectMap.vue) so landing-page
+  // billboards read as vignettes beside the hero text.
+  if (isPreviewMode && projectConfig.value?.previewZoom != null) {
+    return projectConfig.value.previewZoom;
+  }
   if (subVizList.value) {
     return (
       subVizList.value[activeSubVizIndex.value]?.zoom ??
