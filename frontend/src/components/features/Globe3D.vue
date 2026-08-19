@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import { registerProtocols } from "@/lib/pmtilesClient";
 import { projectsGeoJSON } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
@@ -18,7 +18,6 @@ const props = defineProps<{
 
 const container = ref<HTMLDivElement | null>(null);
 const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
-const isLoading = ref(true);
 const projectStore = useProjectStore();
 const router = useRouter();
 const preview = useMapPreview();
@@ -31,7 +30,6 @@ let spinRunning = false;
 let spinKilled = false; // set on first explicit user gesture (pointerdown/wheel)
 let resettingToOverview = false; // true while the scroll-back restore flyTo is in flight
 let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
-let pmtilesRegistered = false;
 let markersSetupStarted = false;
 let unsubscribeBasemapSync: (() => void) | null = null;
 
@@ -217,14 +215,7 @@ onMounted(() => {
   projectStore.setZoomLevel(initialCamera.zoom);
   projectStore.setInitialZoom(initialCamera.zoom);
 
-  if (!pmtilesRegistered) {
-    try {
-      maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
-    } catch {
-      // GhslBasemap registered it first — fine.
-    }
-    pmtilesRegistered = true;
-  }
+  registerProtocols();
 
   map = new maplibregl.Map({
     container: container.value,
@@ -346,12 +337,10 @@ onMounted(() => {
   };
 
   map.once("render", () => {
-    isLoading.value = false;
     captureInitialPose();
     setupMarkers();
   });
   map.on("load", () => {
-    isLoading.value = false;
     captureInitialPose();
     setupMarkers();
   });
@@ -415,9 +404,6 @@ onUnmounted(() => {
       projection="globe"
       :padding="{ top: 0, right: 0, bottom: 72, left: 0 }"
     />
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
     <div ref="container" class="globe-container"></div>
   </div>
 </template>
@@ -441,33 +427,5 @@ onUnmounted(() => {
   height: 100%;
   position: relative;
   z-index: 1;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-map-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-text-muted);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

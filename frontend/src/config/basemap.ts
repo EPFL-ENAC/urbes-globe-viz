@@ -11,14 +11,19 @@
  */
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
-// Always use the deployed URL — ghsl.pmtiles is too large (~14 GB) for local dev
-const ghslUrl = "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles";
-
 export const basemapSources: Record<string, SourceSpecification> = {
+  // Hybrid source behind the "ghsl://" protocol (see lib/pmtilesClient.ts):
+  // z0–5 come from the bundled local pyramid in public/ghsl-low/ (instant
+  // first paint, near-instant coarse fallbacks while deeper tiles load),
+  // z6–13 from the remote ghsl.pmtiles archive (~14 GB, deployed URL only —
+  // too large for local dev). One source, so MapLibre swaps coarse tiles for
+  // sharp ones per tile instead of blending stacked raster layers.
   "ghsl-urban": {
     type: "raster",
-    url: ghslUrl,
+    tiles: ["ghsl://{z}/{x}/{y}"],
     tileSize: 256,
+    minzoom: 0,
+    maxzoom: 13,
   },
   "osm-buildings": {
     type: "vector",
@@ -76,6 +81,12 @@ export const basemapLayers: LayerSpecification[] = [
     source: "ghsl-urban",
     paint: {
       "raster-contrast": rasterContrast as unknown as number,
+      // Raster fade is controlled here, not by the Map `fadeDuration` option
+      // (MapLibre defaults to 300 ms). 0 makes cached tiles appear the moment
+      // they decode, so a warm reload paints the globe in one step instead of
+      // tiles visibly fading in; the cost is that zoom refinement swaps
+      // coarse→sharp with a pop instead of a cross-fade.
+      "raster-fade-duration": 0,
       "raster-opacity": [
         "interpolate",
         ["linear"],

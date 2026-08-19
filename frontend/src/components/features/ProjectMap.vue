@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
-import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import { registerProtocols } from "@/lib/pmtilesClient";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
 import { isPreviewMode } from "@/utils/previewMode";
 
@@ -17,8 +17,6 @@ const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 let unsubscribeBasemapSync: (() => void) | null = null;
-
-let pmtilesRegistered = false;
 
 const getLayerConfig = () =>
   mapLayers.find((layer) => layer.id === props.projectId);
@@ -129,17 +127,6 @@ const applyLayerTime = (timeValue: number) => {
   }
 };
 
-const ensureProtocol = () => {
-  if (!pmtilesRegistered) {
-    try {
-      maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
-    } catch {
-      // Already registered by another mount (e.g. GhslBasemap).
-    }
-    pmtilesRegistered = true;
-  }
-};
-
 const initializeMap = () => {
   if (!mapContainer.value || map) return;
 
@@ -232,7 +219,7 @@ const initializeMap = () => {
 
 onMounted(() => {
   if (!mapContainer.value) return;
-  ensureProtocol();
+  registerProtocols();
   initializeMap();
 });
 

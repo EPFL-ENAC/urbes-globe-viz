@@ -1,7 +1,7 @@
 import { onBeforeUnmount, ref, watch, type Ref } from "vue";
 import maplibregl, { type Map, type PaddingOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import { registerProtocols } from "@/lib/pmtilesClient";
 import { basemapSources, basemapLayers, basemapSky } from "@/config/basemap";
 
 export interface GhslBasemapOptions {
@@ -21,18 +21,6 @@ export interface GhslBasemapOptions {
   padding?: Partial<PaddingOptions>;
 }
 
-let protocolRegistered = false;
-function ensureProtocol() {
-  if (protocolRegistered) return;
-  try {
-    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
-    protocolRegistered = true;
-  } catch {
-    // Another call site (e.g. an overlay map) beat us to it.
-    protocolRegistered = true;
-  }
-}
-
 /**
  * Creates a non-interactive MapLibre instance in `container` containing only
  * the GHSL + OSM-buildings basemap. Meant to sit behind an interactive overlay
@@ -49,7 +37,7 @@ export function useGhslBasemap(
   const map = ref<Map | null>(null);
   const ready = ref(false);
 
-  ensureProtocol();
+  registerProtocols();
 
   watch(
     container,
@@ -80,6 +68,9 @@ export function useGhslBasemap(
         refreshExpiredTiles: false,
         fadeDuration: 500,
         renderWorldCopies: false,
+        // Retain up to 8 zoom levels of off-view tiles (default 5) so fast
+        // zoom-out / re-zoom reuses cached textures instead of refetching.
+        maxTileCacheZoomLevels: 8,
       });
 
       if (options.padding) {
