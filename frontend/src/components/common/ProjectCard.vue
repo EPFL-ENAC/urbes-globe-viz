@@ -111,10 +111,13 @@ const handleClick = () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Duotone purple: flatten to greyscale, re-tint via sepia, then rotate
-     that warm hue around to purple. Same idea as a sepia effect, but in
-     shades of purple instead of brown. */
-  filter: grayscale(1) sepia(1) hue-rotate(220deg) saturate(2.2) brightness(0.8);
+  /* Duotone purple: flatten to greyscale, then map that luminance onto a
+     violet ramp pinned to --color-accent's hue. Shares the filters (and the
+     rationale) with the globe billboards — see #preview-duotone-* in
+     index.html. Deliberately NOT theme-aware: a thumbnail sits in its own
+     frame rather than over the globe, so it wants one fixed exposure in both
+     themes — the dark ramp washes these out. */
+  filter: url(#preview-duotone-light);
 }
 
 .card-text {

@@ -64,6 +64,45 @@
             <feFuncB type="table" tableValues="0 0.30 0.57 0.81 1" />
           </feComponentTransfer>
         </filter>
+        <!-- Dataset preview duotones (billboards on the globe + card
+             thumbnails). Unlike the basemap above these carry the DATA, so
+             they keep real chroma - the ramp climbs to ~70% saturation rather
+             than staying near-monochrome. Hue is pinned at 260deg, matching
+             --color-accent, at every stop.
+
+             These replace a `sepia() hue-rotate() saturate() brightness()`
+             chain. That chain was correct in light mode but the dark variant's
+             brightness(1.3) drove the already-saturated output past 255: once a
+             channel clips, the ratio between channels collapses and the hue
+             slides from 262deg to ~300deg, so the brightest (and densest) parts
+             of a preview washed out to pink-white. A table ramp sets both
+             endpoints explicitly and cannot clip, so the two themes differ by
+             where the ramp sits, not by a multiply on top of it. -->
+        <!-- near-black -> accent -> pale lavender. The luminance of these five
+             stops tracks the old sepia chain almost exactly (0/30/60/83/95%),
+             so the previews keep the airy, high-contrast look they had; the
+             only thing that changes is that hue stays at 260deg through the
+             highlights instead of drifting to 300deg once they clipped. -->
+        <filter id="preview-duotone-light" color-interpolation-filters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="0.018 0.27 0.538 0.795 0.937" />
+            <feFuncG type="table" tableValues="0.014 0.21 0.425 0.725 0.912" />
+            <feFuncB type="table" tableValues="0.026 0.39 0.765 0.935 0.988" />
+          </feComponentTransfer>
+        </filter>
+        <!-- Same hue, lifted so the data reads against the dark globe. Matches
+             the old brightness(1.3) exposure (0/48/86/100/100%) but stops just
+             short of pure white, keeping a violet cast in the brightest data
+             where the old chain blew it out to flat #ffffff. -->
+        <filter id="preview-duotone-dark" color-interpolation-filters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="0.027 0.432 0.743 0.889 0.968" />
+            <feFuncG type="table" tableValues="0.021 0.336 0.67 0.847 0.954" />
+            <feFuncB type="table" tableValues="0.039 0.624 0.89 0.973 0.996" />
+          </feComponentTransfer>
+        </filter>
       </defs>
     </svg>
     <div id="app"></div>
