@@ -79,9 +79,10 @@ onUnmounted(stop);
 </script>
 
 <template>
-  <div class="time-slider">
+  <div class="time-slider map-control">
     <div class="time-slider-header">
-      <div class="text-caption slider-muted">{{ label }}</div>
+      <div class="map-micro-label">{{ label }}</div>
+      <!-- The live value is the one emphasised element: ink, sans, medium. -->
       <div class="text-body2 slider-value text-weight-medium">
         {{ formatDisplayValue(sliderValue) }}
       </div>
@@ -91,15 +92,14 @@ onUnmounted(stop);
       <q-btn
         dense
         flat
-        round
+        square
         size="sm"
         class="slider-btn"
         :icon="isPlaying ? 'pause' : 'play_arrow'"
+        :aria-label="isPlaying ? 'Pause' : 'Play'"
         @click="togglePlay"
       />
-      <span class="slider-muted text-caption">{{
-        formatDisplayValue(min)
-      }}</span>
+      <span class="map-micro-label">{{ formatDisplayValue(min) }}</span>
       <q-slider
         v-model="sliderValue"
         :min="min"
@@ -107,33 +107,36 @@ onUnmounted(stop);
         :step="step"
         class="time-slider-input"
       />
-      <span class="slider-muted text-caption">{{
-        formatDisplayValue(max)
-      }}</span>
+      <span class="map-micro-label">{{ formatDisplayValue(max) }}</span>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Surface styling comes from the shared .map-control primitive in style.css. */
 .time-slider {
   width: 100%;
   max-width: 100%;
   padding: 14px 16px;
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  backdrop-filter: blur(4px);
 }
 
 .slider-value {
   color: var(--color-text);
 }
 
-.slider-muted {
+/* Square bordered button, matching the .drawer-toggle / .nav-btn idiom.
+   Circles are reserved for map markers (handoff §3). */
+.slider-btn {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
+  transition: color 0.15s ease;
 }
 
-.slider-btn {
+.slider-btn:hover {
   color: var(--color-text);
 }
 
@@ -141,6 +144,7 @@ onUnmounted(stop);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
@@ -152,6 +156,32 @@ onUnmounted(stop);
 
 .time-slider-input {
   flex: 1;
+  min-width: 0;
   margin: 0;
+}
+
+/* Square the Quasar slider. The track ships a 4px radius and inner/selection
+   inherit from it, so zeroing the track covers the whole bar. */
+.time-slider-input :deep(.q-slider__track) {
+  border-radius: 0;
+}
+
+/* The thumb is an <svg> circle (.q-slider__thumb-shape), not a CSS box, so it
+   is hidden and the square drawn on the thumb element itself — which is
+   already absolutely positioned and translate(-50%, -50%) centred on the
+   value, so the square lands exactly where the circle did. */
+.time-slider-input :deep(.q-slider__thumb-shape) {
+  display: none;
+}
+
+.time-slider-input :deep(.q-slider__thumb) {
+  width: 12px;
+  height: 12px;
+  background: var(--color-accent);
+}
+
+/* Kept (not hidden) so keyboard focus stays visible — just squared. */
+.time-slider-input :deep(.q-slider__focus-ring) {
+  border-radius: 0;
 }
 </style>

@@ -160,6 +160,78 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---------------------------------------------------------------------------
+   On-map control chrome — square, hairline, opaque, no shadow (handoff §3).
+   The paper handoff only works through the landing page, so these classes are
+   the reference for the map controls (legend, time slider, layer selectors).
+   Shared globally because the panel + chip CSS was previously duplicated
+   verbatim across MapLegend, VariableSelector and ProjectDetailView.
+   --------------------------------------------------------------------------- */
+
+/* --color-surface-raised is opaque in BOTH themes (#ffffff / #1a1a1a), unlike
+   --color-surface which is translucent in dark and needs a backdrop blur to
+   stay readable. --color-border-strong because an #ececec hairline vanishes
+   against a light basemap. */
+.map-control {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  color: var(--color-text);
+}
+
+/* The mono uppercase tracked micro-label — handoff §2 calls this the signature
+   of the system. Every small structural label on the map uses it. */
+.map-micro-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.map-chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Applied when the map has the full viewport (drawer collapsed): the chips lay
+   out across the free width instead of towering up the left edge. */
+.map-chip-list--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.map-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  /* Colour-only motion (handoff §4) — never scale or lift. */
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.map-chip:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.map-chip.active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 /* GHSL basemap canvas container — the dark-paletted basemap sits behind an
    overlay map. In light mode we invert the canvas so the basemap reads as
    light-on-dark → dark-on-light without touching MapLibre paint. hue-rotate
@@ -193,14 +265,26 @@ a:hover {
   z-index: 10;
 }
 
-/* MapLibre controls (zoom +/- and attribution "i") themed via CSS vars. */
+/* MapLibre controls (zoom +/- and attribution "i") themed via CSS vars.
+   MapLibre's own stylesheet rounds the group and its first/last/only/focused
+   buttons to 4px — zero every one of them so the native chrome is square like
+   the rest of the map controls. The box-shadow is a 1px hairline, not
+   elevation. */
 .maplibregl-ctrl-group {
   background-color: var(--color-surface-raised);
-  box-shadow: 0 0 0 1px var(--color-border);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
+  border-radius: 0;
 }
 
-.maplibregl-ctrl-group button {
+.maplibregl-ctrl-group button,
+.maplibregl-ctrl-group button:first-child,
+.maplibregl-ctrl-group button:last-child,
+.maplibregl-ctrl-group button:only-child,
+.maplibregl-ctrl-group button:focus:first-child,
+.maplibregl-ctrl-group button:focus:last-child,
+.maplibregl-ctrl-group button:focus:only-child {
   background-color: transparent;
+  border-radius: 0;
 }
 
 .maplibregl-ctrl-group button + button {

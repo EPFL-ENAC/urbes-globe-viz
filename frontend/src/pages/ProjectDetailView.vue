@@ -572,7 +572,8 @@ const activeSubVizTitle = computed(() => {
         >
           <div
             v-if="!isMobile && subVizList && subVizList.length > 1"
-            class="subviz-selector"
+            class="subviz-selector map-control map-chip-list"
+            :class="{ 'map-chip-list--row': !drawerOpen }"
             role="tablist"
           >
             <button
@@ -580,7 +581,7 @@ const activeSubVizTitle = computed(() => {
               :key="viz.id"
               type="button"
               role="tab"
-              class="subviz-chip"
+              class="map-chip"
               :class="{ active: i === activeSubVizIndex }"
               :aria-selected="i === activeSubVizIndex"
               @click="scrollToSubViz(i)"
@@ -588,10 +589,13 @@ const activeSubVizTitle = computed(() => {
               {{ viz.title }}
             </button>
           </div>
+          <!-- The class falls through onto the component root, flipping the
+               chip list to a row when the map has the full viewport. -->
           <VariableSelector
             v-if="activeCogVariables?.length"
             v-model="activeVariableId"
             :variables="activeCogVariables"
+            :class="{ 'map-chip-list--row': !drawerOpen }"
           />
         </div>
         <MapLegend
@@ -653,7 +657,7 @@ const activeSubVizTitle = computed(() => {
             :key="viz.id"
             type="button"
             role="tab"
-            class="subviz-chip sheet-chip"
+            class="map-chip sheet-chip"
             :class="{ active: i === activeSubVizIndex }"
             :aria-selected="i === activeSubVizIndex"
             @click="pickSubViz(i)"
@@ -715,42 +719,11 @@ const activeSubVizTitle = computed(() => {
   width: 0;
 }
 
+/* Surface, chip and list styling come from the shared .map-control /
+   .map-chip-list / .map-chip primitives in style.css — the same set
+   VariableSelector uses, so the two selectors stay in lockstep. */
 .subviz-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 10px 12px;
-  background: var(--color-surface);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border-radius: 10px;
-}
-
-.subviz-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 14px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.subviz-chip:hover {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.subviz-chip.active {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
 }
 
 /* Square seam button: collapse/expand the info panel. Rides the drawer/map seam
@@ -1064,8 +1037,30 @@ const activeSubVizTitle = computed(() => {
 .time-slider-wrap {
   flex: 1;
   min-width: 0;
+  /* Without a ceiling the track spans the whole viewport once the drawer
+     collapses, which reads as a stray rule across the map. */
+  max-width: min(520px, 100%);
   display: flex;
   justify-content: stretch;
+}
+
+/* Full-width map (drawer collapsed). The controls get more room, so the chip
+   lists lay out horizontally (via .map-chip-list--row on the components) and
+   the group grows sideways instead of stacking up the left edge.
+   Scoped to the drawer breakpoint: below it the drawer never renders, the
+   bottom bar uses its own mobile layout, and .map-full would fight it. */
+@media (min-width: 1024px) {
+  .map-full .selectors-group {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    max-width: 520px;
+  }
+
+  /* .legend-wrap lands on MapLegend's root, so this is the panel itself. */
+  .map-full .legend-wrap {
+    max-width: 260px;
+  }
 }
 
 .map-bottom-bar-mobile {
@@ -1090,10 +1085,12 @@ const activeSubVizTitle = computed(() => {
   flex-shrink: 0;
 }
 
-/* Slider takes its own row; a shared one would leave too little track. */
+/* Slider takes its own row; a shared one would leave too little track. Having
+   its own row, it also opts out of the desktop max-width cap. */
 .map-bottom-bar-mobile .time-slider-wrap {
   flex: 1 1 100%;
   align-self: stretch;
+  max-width: none;
 }
 
 .project-sheet {
@@ -1107,12 +1104,11 @@ const activeSubVizTitle = computed(() => {
   background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  border-top: 1px solid var(--color-border);
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
+  /* Square, hairline-separated, no elevation (handoff §3): the top edge alone
+     lifts the sheet off the map. */
+  border-top: 1px solid var(--color-border-strong);
   color: var(--color-text);
   transition: height 0.32s cubic-bezier(0.22, 0.8, 0.28, 1);
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -1142,7 +1138,6 @@ const activeSubVizTitle = computed(() => {
 .sheet-grip {
   width: 42px;
   height: 4px;
-  border-radius: 3px;
   background: var(--color-border-strong);
   margin: 0 auto 4px;
   opacity: 0.9;

@@ -41,6 +41,18 @@ The app follows a calm, editorial "ink on near-white paper" feel (EPFL Architect
 - The GHSL basemap is a dark MapLibre style inverted to paper via CSS (`.ghsl-basemap-canvas { filter: invert(1) hue-rotate(180deg) }` under `[data-theme="light"]`); markers ride a separate, non-inverted overlay canvas.
 - Source of intent: `design_handoff_paper_globe/README.md`. The "panel breaking the globe edge" landing re-layout from §5 is **not yet implemented** (deferred).
 
+### Map control chrome
+
+The handoff only works through the landing page — it never specs the legend, time slider or layer selectors. These global classes in `style.css` are the reference for on-map chrome, derived from handoff §2–§4:
+
+- `.map-control` — panel surface: square, `1px solid var(--color-border-strong)`, no shadow. Uses `--color-surface-raised` (opaque in **both** themes) rather than `--color-surface` (translucent in dark), which is why these panels need no `backdrop-filter`.
+- `.map-micro-label` — the mono uppercase tracked label (`--font-mono`, 11px, `0.14em`). Legend title, gradient unit, slider label and min/max readouts. The live slider value stays ink sans so it remains the one emphasised element.
+- `.map-chip-list` / `.map-chip` — square chips, colour-only transitions, `--color-accent` on `.active`. Consumed by `VariableSelector.vue` **and** the `subViz` selector in `ProjectDetailView.vue`; these were duplicate CSS before, so change the primitive, not a copy.
+
+**Responsive to the collapsed drawer.** "Full screen" is `drawerOpen === false` → `.map-full` on `.map-container` (no Fullscreen API anywhere in the app). Because `.map-full` is an ancestor of `.map-bottom-bar`, the adaptation is plain descendant CSS in `ProjectDetailView.vue`, guarded by `@media (min-width: 1024px)` so it cannot fight the mobile bar: chip lists flip to a row (`.map-chip-list--row`, passed down via Vue attribute fallthrough onto the component root — no prop, no `:deep()`), the legend widens, and `.time-slider-wrap` is capped at `min(520px, 100%)` so the track does not span the viewport.
+
+MapLibre's own `.maplibregl-ctrl-group` ships a 4px radius on the group and its first/last/only/focused buttons; all are zeroed in `style.css`.
+
 ## Project Structure
 
 ```

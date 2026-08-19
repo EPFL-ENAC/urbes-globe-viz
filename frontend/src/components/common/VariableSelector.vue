@@ -12,11 +12,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="variable-selector">
+  <!-- `map-chip-list` is on the root so the parent can flip the list to a row
+       (`map-chip-list--row`) via attribute fallthrough when the map goes full
+       width — no extra prop needed. -->
+  <div class="variable-selector map-control map-chip-list">
     <button
       v-for="v in variables"
       :key="v.id"
-      class="var-chip"
+      class="map-chip"
       :class="{ active: v.id === modelValue }"
       @click="emit('update:modelValue', v.id)"
     >
@@ -26,42 +29,10 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+/* Surface, chip and list styling come from the shared .map-control /
+   .map-chip-list / .map-chip primitives in style.css. */
 .variable-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 10px 12px;
-  background: var(--color-surface);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border-radius: 10px;
   pointer-events: auto;
-}
-
-.var-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 14px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.var-chip:hover {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.var-chip.active {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
 }
 </style>
