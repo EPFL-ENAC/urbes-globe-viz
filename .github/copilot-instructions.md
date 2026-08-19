@@ -29,6 +29,30 @@
 - File naming: components = PascalCase, config/utils = camelCase
 - Commit messages follow Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, etc.
 
+## Theme & Typography ("Paper" design system)
+
+The app follows a calm, editorial "ink on near-white paper" feel (EPFL Architecture Hub).
+
+- **Light is the default.** `src/style.css` bare `:root` holds the paper palette (`--color-bg: #fdfdfd`, solid `#ffffff` surfaces, `#141414` ink text, `#8e8e8e` muted, `#ececec` hairline borders). Dark lives under `:root[data-theme="dark"]`. `installTheme` (`stores/theme.ts`, `DEFAULT_MODE = "light"`) always sets `<html data-theme>` explicitly, so theme-scoped CSS keys off `[data-theme="light|dark"]`.
+- **Accent is rationed.** Violet `--color-accent: #a078f0` only on links, active states, the one emphasised headline word, and the globe markers (`useMapPreview.ts createDotIcon` fill). Never a large fill or chrome.
+- **Font is Suisse Int'l**, self-hosted from `public/fonts/SuisseIntl-*.ttf` (`@font-face` in `style.css`), exposed as `--font-sans`. `--font-mono` drives the signature uppercase-tracked micro-labels (eyebrows, card meta). No Inter/Nunito.
+- **Square + hairline, no shadow.** Quasar radius/shadow zeroed in `quasar-variables.sass`; ripple off in `main.ts`. Structure comes from 1px borders, not elevation.
+- **Colour-only motion.** Hovers change colour (or nudge a link arrow 4px); never `scale()`/lift/drop-shadow. Headlines are sentence case (uppercase reserved for mono labels).
+- The GHSL basemap is a dark MapLibre style inverted to paper via CSS (`.ghsl-basemap-canvas { filter: invert(1) hue-rotate(180deg) }` under `[data-theme="light"]`); markers ride a separate, non-inverted overlay canvas.
+- Source of intent: `design_handoff_paper_globe/README.md`. The "panel breaking the globe edge" landing re-layout from §5 is **not yet implemented** (deferred).
+
+### Map control chrome
+
+The handoff only works through the landing page — it never specs the legend, time slider or layer selectors. These global classes in `style.css` are the reference for on-map chrome, derived from handoff §2–§4:
+
+- `.map-control` — panel surface: square, `1px solid var(--color-border-strong)`, no shadow. Uses `--color-surface-raised` (opaque in **both** themes) rather than `--color-surface` (translucent in dark), which is why these panels need no `backdrop-filter`.
+- `.map-micro-label` — the mono uppercase tracked label (`--font-mono`, 11px, `0.14em`). Legend title, gradient unit, slider label and min/max readouts. The live slider value stays ink sans so it remains the one emphasised element.
+- `.map-chip-list` / `.map-chip` — square chips, colour-only transitions, `--color-accent` on `.active`. Consumed by `VariableSelector.vue` **and** the `subViz` selector in `ProjectDetailView.vue`; these were duplicate CSS before, so change the primitive, not a copy.
+
+**Responsive to the collapsed drawer.** "Full screen" is `drawerOpen === false` → `.map-full` on `.map-container` (no Fullscreen API anywhere in the app). Because `.map-full` is an ancestor of `.map-bottom-bar`, the adaptation is plain descendant CSS in `ProjectDetailView.vue`, guarded by `@media (min-width: 1024px)` so it cannot fight the mobile bar: chip lists flip to a row (`.map-chip-list--row`, passed down via Vue attribute fallthrough onto the component root — no prop, no `:deep()`), the legend widens, and `.time-slider-wrap` is capped at `min(520px, 100%)` so the track does not span the viewport.
+
+MapLibre's own `.maplibregl-ctrl-group` ships a 4px radius on the group and its first/last/only/focused buttons; all are zeroed in `style.css`.
+
 ## Project Structure
 
 ```
@@ -58,6 +82,7 @@ Key fields:
 - `zoom?` + `pitch?`: full-view camera when the project is opened in detail view
 - `previewZoom?`: zoom used for the globe hover preview. Leave undefined to fall back to `zoom - PREVIEW_ZOOM_OFFSET` (defined in `Globe3D.vue`). Set a per-project value when the offset default zooms in too far or not far enough (e.g. very low base `zoom`)
 - `source?` + `layer?`: MapLibre source/layer spec (omit for custom renderers)
+- `cardImage?`: curated, hand-picked thumbnail for the **project card** only. File lives at `public/previews/cards/<cardImage>` (theme-independent). Distinct from the auto-generated globe overlay. See **Project Previews**
 - `renderer?`: `"deckgl-arcs"` → uses `DaveFlowsMap`; undefined → uses `ProjectMap`
 - `subViz?: SubViz[]`: optional array for carousel/scrollytelling multi-dataset projects
 
@@ -87,6 +112,16 @@ For charts or other interactive per-project content, set `descriptionComponent: 
 2. Export a `ProjectConfig` — see `_example.ts.example` for the template
 3. Register in `index.ts` `allProjects` array
 
+### Project Previews
+
+Two separate, independent things:
+
+1. **Card thumbnails** (`ProjectCard.vue`) - curated, hand-picked images you choose. Drop a source image (any size/format) at `frontend/card-images/<id>.<ext>`, then `npm run card-images` (sharp; `scripts/process-card-images.mjs`) square-crops it and writes `public/previews/cards/<id>.webp` (512px). Set `cardImage: "<id>.webp"` on the config; `ProjectCard.vue` serves `public/previews/cards/<cardImage>`. Sources stay in `card-images/` (committed, not shipped) so only the lean webp lands in `public/`. The card applies a duotone-purple CSS filter at display time, so source colour doesn't matter. Theme-independent. Omit `cardImage` to render an empty styled box.
+
+2. **Globe hover overlays** (`useMapPreview.ts`) - auto-generated, lightweight, transparent **data-only** PNGs shown over the globe basemap on hover, so the globe never loads the heavy PMTiles/COG dataset just to preview. Files: `public/previews/<id>.png` plus `public/previews/manifest.json` (`{ <id>: { camera: { center, zoom, pitch, bearing }, size } }`). The image is captured at the project's **real camera pose** (its detail-view pitch/zoom), so the 3D perspective is baked into the pixels. On hover, `Globe3D.vue` flies the live globe to that exact `camera`, and `useMapPreview.add()` mounts the PNG as a screen-space DOM `<img>` **billboard** (not a MapLibre source): it is pinned to `map.project(camera.center)` and scaled by `2^(liveZoom - camera.zoom)`, recomputed on every `move`, so it tracks the globe like it's painted on it. `size` is the logical-px side of the square capture viewport - what lets the runtime rescale the image to any live zoom. The billboard is revealed (fade-in) only on `moveend` once the flight has settled at the capture pose (`isSettledAtCapture`: zoom match + a `project`→`unproject` round-trip on the center to reject points behind the globe), so it only ever shows perfectly aligned, never mid-flight or over the wrong hemisphere. Because the basemap is excluded and layer colours are theme-independent hex, **one PNG serves both themes** - the live globe basemap shows through the transparent areas.
+
+Regenerate overlays with `npm run previews` (in `frontend/`), a Playwright + sharp script (`scripts/generate-previews.mjs`) that screenshots each project's map view at its real pose and writes a 1024px transparent PNG. Pass project ids to limit the run: `npm run previews -- wrf buildings` (merges into the existing manifest). It needs a running app server with geodata access - dev server (default `http://localhost:5173`) or a `vite preview` build via `PREVIEW_BASE_URL`. The app cooperates through `?preview=1` (`src/utils/previewMode.ts`): chrome **and basemap** are hidden, page backgrounds are dropped (App.vue clears html+body; ProjectDetailView clears the root) so Playwright's `omitBackground` yields true alpha, and on idle the map sets `window.__previewReady` + `window.__previewCamera = { center, zoom, pitch, bearing }`. Both `ProjectMap.vue` (globe projection, real pitch) and `CogRasterMap.vue` (deck.gl COG, e.g. `wrf`; kept on mercator - the overlay doesn't sync to globe and its projects sit at high enough zoom that it's negligible) emit these hooks; the DAVE flows renderer still needs its own and is not captured.
+
 ### Updating a geodata file (cache busting)
 
 **Do not overwrite a geodata file in place under the same name.** nginx serves the new
@@ -108,6 +143,22 @@ files additionally get `immutable` because their name always carries a version.)
 | `"deckgl-arcs"` | `DaveFlowsMap.vue` | OD arc flows (deck.gl ArcLayer) |
 
 `DaveFlowsMap` accepts a `dataUrl` prop. When it changes, it hot-swaps the arc data via `deckOverlay.setProps()` — no map recreation, no camera reset.
+
+## Hub Scroll (ProjectDetailView desktop, projects with `subViz`)
+
+The project drawer is one native scroll flow ("hub scroll") in `ProjectDetailView.vue` — no scroll-driven JS animation. Key mechanics, all CSS-sticky:
+
+- Direct children of `.hub-scroll` interleave sticky `.hub-title` buttons and flow `.hub-content` sections. Each title has BOTH sticky insets (inline, per index): `top` docks it in the top stack once passed; `bottom` pins it parked in the bottom stack before reached. Opaque bg + ascending z-index give the ~20% peek overlap.
+- Sections flow at their **natural height** — do not reintroduce a per-section `min-height`, it was what buried short sections under a viewport of blank column each. Only the LAST `.hub-content` gets the inline `hubContentMinH` (one full "stop": container height minus top pad, title strip, and the parked bottom stack). That tail is not cosmetic: it is exactly the scroll range the last title needs to reach its own top dock, so `scrollToHub(n-1)` and the last activation threshold stay reachable. Solo-hub projects are unaffected — their only section is also the last one.
+- `.hub-content-inner` is sticky inside its section, but only has slack where the section is taller than its text: the stretched last section (short text pins below its docked title while the empty remainder scrolls beneath) and sections holding a component that grew. Elsewhere the parent clamps it to zero slack and it scrolls 1:1 — CSS sticky does that discrimination for free.
+- The only scroll JS: compare `scrollTop` against cached `.hub-content` `offsetTop`s to set `hubActiveIndex` (drives map/legend via `activeSubVizIndex = hubIndex - 1`; hub index 0 is the project overview). Offsets re-measured on resize + a `ResizeObserver` (async chart SFCs grow after mount), which also re-runs `onHubScroll` — with natural heights that growth moves the docking thresholds, so the active index would otherwise go stale at a fixed scrollTop.
+
+Gotchas learned the hard way:
+
+- **Never put `padding-top` on the sticky scroller**: Chrome measures sticky `top` insets from the content edge, double-offsetting every docked title. Use a flow spacer (`.hub-topspacer`) instead.
+- Measure flow positions from the non-sticky `.hub-content` elements — sticky elements report displaced `offsetTop`.
+- The navbar-clearance band above the docked stack is open scrollport; an opaque `::before` strip on `.subviz-layout` stops passed content from sliding up behind the transparent navbar.
+- Do NOT drive per-frame animation from a Vue ref updated in a scroll handler (whole-template re-render per frame) or animate `top`/`bottom` (relayout of text/charts per frame) — that was the v1 lag.
 
 ## Reusable Time Slider Pattern
 

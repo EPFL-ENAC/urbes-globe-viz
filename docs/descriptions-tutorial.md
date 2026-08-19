@@ -92,7 +92,7 @@ description: `
 `,
 ```
 
-Worked example: [`frontend/src/config/projects/roads_swiss_statistics.ts`](../frontend/src/config/projects/roads_swiss_statistics.ts).
+Worked example: [`frontend/src/config/projects/car_road_length.ts`](../frontend/src/config/projects/car_road_length.ts).
 
 ---
 
@@ -111,10 +111,9 @@ sub-viz, named to match the config id.
 
 ```
 frontend/src/config/projects/
-├── buildings.ts
+├── hourly_adult_population.ts
 ├── wrf.ts
 └── descriptions/
-    ├── buildings.vue
     ├── hourly_adult_population.vue
     ├── wrf_d02.vue                 # ECharts line chart
     ├── wrf_d03.vue                 # inline SVG schema
@@ -128,9 +127,10 @@ Add a `descriptionComponent` field to your config:
 
 ```ts
 {
-  id: "buildings",
-  description: "Swiss building footprints ...",   // still required (fallback)
-  descriptionComponent: () => import("./descriptions/buildings.vue"),
+  id: "hourly_adult_population",
+  description: "A census tells you where people live ...", // still required (fallback)
+  descriptionComponent: () =>
+    import("./descriptions/hourly_adult_population.vue"),
   // ... rest of the config
 }
 ```
@@ -142,9 +142,9 @@ body styling (text size, line height) via attribute fallthrough, so
 
 ### Example: ECharts chart
 
-[`descriptions/buildings.vue`](../frontend/src/config/projects/descriptions/buildings.vue)
-shows a bar histogram by construction decade, with each bar coloured from the
-same red → yellow → green ramp that the map applies to the building year.
+[`descriptions/hourly_adult_population.vue`](../frontend/src/config/projects/descriptions/hourly_adult_population.vue)
+shows how the simulated population rises and falls over the 24 hours the map
+animates, using the shared chart theme so it follows light/dark mode.
 
 Minimal shape:
 

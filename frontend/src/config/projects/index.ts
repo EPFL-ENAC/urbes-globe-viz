@@ -1,17 +1,13 @@
 import type { Feature, FeatureCollection, Point } from "geojson";
 import type { ProjectConfig } from "./types";
-import { buildingsProject } from "./buildings";
 import { wrfProject } from "./wrf";
-import { roadsSwissStatisticsProject } from "./roads_swiss_statistics";
 import { hourlyAdultPopulationProject } from "./hourly_adult_population";
 import { lenOtherCarRoadsProject } from "./car_road_length";
 import { sheSimTemporalProject } from "./she_sim_temporal";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
-  buildingsProject,
   wrfProject,
-  roadsSwissStatisticsProject,
   hourlyAdultPopulationProject,
   lenOtherCarRoadsProject,
   sheSimTemporalProject,
@@ -30,7 +26,7 @@ export interface ProjectProperties {
   info: string;
   category: string;
   year: number | string;
-  preview?: string;
+  cardImage?: string;
   zoom?: number;
   previewZoom?: number;
   pitch?: number;
@@ -53,7 +49,7 @@ export const projectsGeoJSON: ProjectCollection = {
       info: p.info,
       category: p.category,
       year: p.year,
-      preview: p.preview,
+      cardImage: p.cardImage,
       zoom: p.zoom,
       previewZoom: p.previewZoom,
       pitch: p.pitch,

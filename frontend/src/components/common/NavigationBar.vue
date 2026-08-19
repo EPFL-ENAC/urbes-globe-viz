@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import epflLogo from "@/assets/EPFL_Logo.svg";
 import { useThemeStore } from "@/stores/theme";
 import { useIsMobile, useIsCompactProject } from "@/composables/useIsMobile";
 import { useRoute, useRouter } from "vue-router";
@@ -46,7 +45,7 @@ const goBack = () => {
         <q-btn
           v-if="showBackButton"
           flat
-          round
+          square
           icon="arrow_back"
           size="md"
           class="nav-btn"
@@ -54,7 +53,39 @@ const goBack = () => {
           @click="goBack"
         />
         <template v-else>
-          <img :src="epflLogo" alt="EPFL" style="height: 16px" />
+          <button
+            v-if="isProjectDetail"
+            type="button"
+            class="back-link"
+            aria-label="Back to globe"
+            @click="goBack"
+          >
+            <span class="back-arrow">←</span>Back
+          </button>
+          <q-separator
+            v-if="isProjectDetail"
+            vertical
+            size="1px"
+            class="nav-separator"
+          />
+          <svg
+            class="epfl-logo"
+            viewBox="0 0 182.4 53"
+            fill="currentColor"
+            role="img"
+            aria-label="EPFL"
+          >
+            <path d="M0,21.6H11.4V9.8H38.3V0H0Z" />
+            <path d="M0,53H38.3V43.2H11.4V31.4H0Z" />
+            <path d="M11.4,21.6H36V31.4H11.4Z" />
+            <path
+              d="M86,4.9c-1.5-1.5-3.4-2.6-5.7-3.5C78,0.4,75.1,0,71.8,0H48.1v53h11.4V31.4h12.2c3.3,0,6.1-0.4,8.5-1.3 c2.3-0.9,4.2-2.1,5.7-3.5c1.5-1.5,2.5-3.1,3.2-5s1-3.8,1-5.8s-0.3-4-1-5.8C88.5,8,87.4,6.3,86,4.9z M78,18.7 c-0.6,0.8-1.3,1.4-2.3,1.8c-0.9,0.4-2,0.7-3.3,0.9c-1.2,0.1-2.5,0.2-3.9,0.2h-9.1V9.8h9.1c1.3,0,2.6,0.1,3.9,0.2 c1.2,0.1,2.3,0.4,3.3,0.9c0.9,0.4,1.7,1,2.3,1.8c0.6,0.8,0.9,1.8,0.9,3S78.6,18,78,18.7z"
+            />
+            <path d="M155.5,43.2V0H144V53H182.4V43.2Z" />
+            <path d="M97.4,21.6H108.9V9.8H135.8V0H97.4Z" />
+            <path d="M97.4,31.4H108.8V53H97.4Z" />
+            <path d="M108.9,21.6H133.5V31.4H108.9Z" />
+          </svg>
           <q-separator vertical size="1px" class="nav-separator" />
           <span class="text-h6 text-weight-bold nav-title">URBES</span>
         </template>
@@ -63,7 +94,7 @@ const goBack = () => {
       <div class="row items-center q-gutter-sm">
         <q-btn
           flat
-          round
+          square
           :icon="themeIcon"
           :aria-label="themeLabel"
           size="md"
@@ -73,7 +104,7 @@ const goBack = () => {
 
         <q-btn
           flat
-          round
+          square
           icon="info"
           size="md"
           class="nav-btn"
@@ -95,7 +126,7 @@ const goBack = () => {
       <div v-if="infoOpen" class="info-panel">
         <q-btn
           flat
-          round
+          square
           dense
           icon="close"
           class="close-btn nav-btn"
@@ -107,10 +138,14 @@ const goBack = () => {
           <p class="text-body1 panel-body q-mb-md">
             URBES Viz is an interactive visualization platform developed to
             explore and communicate research data from the
-            <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>. This demo
-            showcases a 3D globe-based interface offering an immersive,
-            multi-scale view of urban building energy research across geographic
-            contexts worldwide.
+            <a
+              href="https://www.epfl.ch/labs/urbes/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >URBES lab</a
+            >. This demo showcases a 3D globe-based interface offering an
+            immersive, multi-scale view of urban building energy research across
+            geographic contexts worldwide.
           </p>
           <p class="text-body1 panel-body">
             Built on the design principles, data structures, and user experience
@@ -133,10 +168,16 @@ const goBack = () => {
           <p class="text-h6 q-mb-xs panel-heading">Contributors</p>
           <p class="text-body1 panel-body">
             URBES Viz is developed at EPFL by
-            <a href="https://www.epfl.ch/labs/urbes/">URBES lab</a>, with
-            technical implementation by
+            <a
+              href="https://www.epfl.ch/labs/urbes/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >URBES lab</a
+            >, with technical implementation by
             <a
               href="https://www.epfl.ch/schools/enac/about/data-at-enac/enac-it4research/"
+              target="_blank"
+              rel="noopener noreferrer"
               >ENAC-IT4Research</a
             >'s research software engineers. Contact point: ... ?
           </p>
@@ -153,7 +194,10 @@ const goBack = () => {
           <p class="text-h6 q-mb-xs panel-heading">Basemap data</p>
           <p class="text-body1 panel-body">
             GHSL layer data provided by the
-            <a href="https://emergency.copernicus.eu/"
+            <a
+              href="https://emergency.copernicus.eu/"
+              target="_blank"
+              rel="noopener noreferrer"
               >Copernicus Emergency Management Service</a
             >.
           </p>
@@ -181,8 +225,49 @@ const goBack = () => {
   pointer-events: auto;
 }
 
-.nav-title {
+/* Inlined as real SVG so the fills (currentColor) follow the theme:
+   black on light, white on dark. */
+.epfl-logo {
+  height: 16px;
+  width: auto;
+  display: block;
   color: var(--color-text);
+}
+
+.nav-title {
+  color: var(--color-accent);
+}
+
+/* Tracked-uppercase micro-label back link (desktop project detail), mirroring
+   the design mockup's "← Atlas" header affordance. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--color-text);
+}
+
+.back-arrow {
+  display: inline-block;
+  font-size: 14px;
+  transition: transform 0.15s ease;
+}
+
+.back-link:hover .back-arrow {
+  transform: translateX(-3px);
 }
 
 .nav-separator {

@@ -138,13 +138,36 @@ watch(
 
     if (projectId) {
       pauseSpin();
+      // Pin the hero open for the whole preview, including the return flight.
+      projectStore.setPreviewFlightActive(true);
 
       const feature = projectsGeoJSON.features.find(
         (f) => f.properties.id === projectId,
       );
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
-      if (lng != null && lat != null) {
+      const camera = preview.getPreviewCamera(projectId);
+      if (camera) {
+        // Fly to the exact pose the billboard was captured from, so its
+        // baked-in pitch/zoom perspective lines up with the live globe. Reveal
+        // the (preloaded) image right away so its fade-in overlaps the flight
+        // and converges as the globe settles, rather than waiting for moveend.
+        flying = true;
+        map.flyTo({
+          center: camera.center,
+          zoom: camera.zoom,
+          pitch: camera.pitch,
+          bearing: camera.bearing,
+          // Kept snappy: the preview only reveals once this lands (perfectly
+          // aligned), so a long flight directly delays when it appears.
+          duration: 800,
+        });
+        map.once("moveend", () => {
+          flying = false;
+        });
+        preview.add(map, projectId);
+      } else if (lng != null && lat != null) {
+        // No captured preview: just frame the marker at a sensible zoom.
         const featureZoom = feature.properties.zoom || 8;
         const previewZoom = Math.max(
           initialCamera.zoom,
@@ -161,7 +184,6 @@ watch(
           flying = false;
         });
       }
-      preview.add(map, projectId);
     } else {
       // On unhover, zoom back out but stay at the current longitude so the
       // camera doesn't jump away from where the user was just looking.
@@ -176,6 +198,8 @@ watch(
       });
       map.once("moveend", () => {
         flying = false;
+        // Back at the initial pose: the hero returns to plain zoom-based rules.
+        projectStore.setPreviewFlightActive(false);
         resumeSpin();
       });
     }
@@ -189,6 +213,7 @@ onMounted(() => {
 
   // Pinia survives route changes; stale hover/zoom hid the hero.
   projectStore.setHoveredProject(null);
+  projectStore.setPreviewFlightActive(false);
   projectStore.setZoomLevel(initialCamera.zoom);
   projectStore.setInitialZoom(initialCamera.zoom);
 
@@ -289,6 +314,12 @@ onMounted(() => {
         "icon-image": ["concat", ["get", "id"], "-marker"],
         "icon-size": 1,
         "icon-allow-overlap": true,
+        // Conform icons to the sphere's surface instead of the default
+        // camera-facing billboard, so they foreshorten and tilt with the
+        // globe's curvature (e.g. near the limb) like real terrain would,
+        // instead of feeling detached from its rotation.
+        "icon-pitch-alignment": "map",
+        "icon-rotation-alignment": "map",
       },
     });
 
@@ -354,18 +385,9 @@ onMounted(() => {
   });
 });
 
-// React to zoom requests from other components (e.g. HeroSection dot nav)
-watch(
-  () => projectStore.targetZoom,
-  (zoom) => {
-    if (zoom == null || !map) return;
-    map.easeTo({ zoom, duration: 600 });
-    projectStore.targetZoom = null;
-  },
-);
-
 onUnmounted(() => {
   pauseSpin();
+  projectStore.setPreviewFlightActive(false);
   if (unsubscribeBasemapSync) {
     unsubscribeBasemapSync();
     unsubscribeBasemapSync = null;

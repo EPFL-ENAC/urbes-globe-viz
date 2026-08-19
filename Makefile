@@ -1,7 +1,11 @@
-.PHONY: help install dev lint format clean uninstall download-geodata upload-geodata
+.PHONY: help install dev lint format clean uninstall download-geodata upload-geodata previews
 
 GEODATA_URL := https://urbes-viz.epfl.ch/geodata
 GEODATA_DIR := frontend/public/geodata
+
+# Base URL of a running app server for screenshot capture (override as needed,
+# e.g. make previews PREVIEW_BASE_URL=http://localhost:4173 for `vite preview`)
+PREVIEW_BASE_URL ?= http://localhost:5173
 
 # Files too large for local download — always streamed from NAS
 GEODATA_EXCLUDE := ghsl.pmtiles,index.html,robots.txt
@@ -17,6 +21,7 @@ help:
 	@echo "  uninstall        Remove git hooks and clean dependencies"
 	@echo "  download-geodata Download geodata files to frontend/public/geodata/"
 	@echo "  upload-geodata   Upload geodata to shared NAS via SMB"
+	@echo "  previews         Generate project preview thumbnails (needs a running app server)"
 
 install:
 	@echo "Installing root dependencies..."
@@ -54,3 +59,7 @@ download-geodata:
 
 upload-geodata:
 	@./scripts/upload-geodata.sh
+
+previews:
+	@echo "Generating previews from $(PREVIEW_BASE_URL)..."
+	cd frontend && PREVIEW_BASE_URL=$(PREVIEW_BASE_URL) npm run previews

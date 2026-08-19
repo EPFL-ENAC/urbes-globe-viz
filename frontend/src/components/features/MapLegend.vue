@@ -5,8 +5,10 @@ defineProps<{ legend: ProjectLegend }>();
 </script>
 
 <template>
-  <div class="map-legend">
-    <div v-if="legend.title" class="legend-title">{{ legend.title }}</div>
+  <div class="map-legend map-control">
+    <div v-if="legend.title" class="legend-title map-micro-label">
+      {{ legend.title }}
+    </div>
 
     <!-- Discrete items -->
     <div v-if="legend.items?.length" class="legend-items">
@@ -53,7 +55,7 @@ defineProps<{ legend: ProjectLegend }>();
           >{{ stop.value }}</span
         >
       </div>
-      <div v-if="legend.gradient.unit" class="gradient-unit">
+      <div v-if="legend.gradient.unit" class="gradient-unit map-micro-label">
         {{ legend.gradient.unit }}
       </div>
     </div>
@@ -61,30 +63,22 @@ defineProps<{ legend: ProjectLegend }>();
 </template>
 
 <style scoped>
+/* Surface styling comes from the shared .map-control primitive in style.css. */
 .map-legend {
   position: relative;
   flex-shrink: 0;
   align-self: flex-end;
-  border-radius: 10px;
-  background: var(--color-surface);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   padding: 12px 14px;
   min-width: 140px;
   max-width: 220px;
   z-index: 10;
-  color: var(--color-text);
   font-size: 11px;
   pointer-events: none;
 }
 
+/* Tracking/case/colour come from .map-micro-label. */
 .legend-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
   margin-bottom: 8px;
-  opacity: 0.9;
-  text-transform: uppercase;
 }
 
 .legend-items {
@@ -118,7 +112,6 @@ defineProps<{ legend: ProjectLegend }>();
 .gradient-bar {
   width: 12px;
   min-height: 120px;
-  border-radius: 3px;
   flex-shrink: 0;
 }
 
@@ -138,8 +131,7 @@ defineProps<{ legend: ProjectLegend }>();
   position: absolute;
   bottom: 10px;
   right: 12px;
-  opacity: 0.55;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 @media (max-width: 1023px) {
@@ -153,7 +145,8 @@ defineProps<{ legend: ProjectLegend }>();
   .legend-title {
     font-size: 10px;
     margin-bottom: 3px;
-    letter-spacing: 0.3px;
+    /* Tighter tracking at the small size, still within the 0.12–0.16em band. */
+    letter-spacing: 0.12em;
   }
 
   .legend-items {

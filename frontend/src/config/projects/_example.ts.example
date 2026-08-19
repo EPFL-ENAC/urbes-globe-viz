@@ -50,8 +50,10 @@ export const myProjectConfig: ProjectConfig = {
   //   Demographics | Mobility | … (add new ones freely)
   category: "Infrastructure",
   year: 2024,
-  // Preview image filename — place the file in frontend/public/previews/
-  preview: "my_project_id.png",
+  // Curated card thumbnail — place the file in frontend/public/previews/cards/.
+  // The globe hover overlay is generated automatically (npm run previews) as
+  // public/previews/<id>.png and does not need a field here.
+  cardImage: "my_project_id.jpg",
   // Default map zoom (1 = world, 14 = street level) and camera tilt (0–75°)
   zoom: 10,
   pitch: 0,

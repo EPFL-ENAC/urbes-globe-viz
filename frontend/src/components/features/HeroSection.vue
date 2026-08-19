@@ -1,118 +1,58 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { useProjectStore } from "@/stores/project";
-import { useIsMobile } from "@/composables/useIsMobile";
-
-// Each HeroSection renders its own text block. On desktop, CSS absolute-
-// positions both parts into the same overlay slot and cross-fades them via
-// the `is-active` class. On mobile the same markup flows inline so the
-// intro sits above the project list and the outro below it.
-const props = withDefaults(defineProps<{ part?: "intro" | "outro" }>(), {
-  part: "intro",
-});
 
 const projectStore = useProjectStore();
-const isMobile = useIsMobile();
 const zoom = computed(() => projectStore.zoomLevel);
 const initialZoom = computed(() => projectStore.initialZoom);
 const isHoveringCard = computed(() => !!projectStore.hoveredProjectId);
+const isPreviewing = computed(() => projectStore.previewFlightActive);
 
-// Hero text splits into two sequential panels. Two inputs advance through
-// them independently:
-//   (a) zooming the globe — can transition panel 0 → 1 → hidden
-//   (b) wheeling over the hero text — toggles 0 ↔ 1 only; never dismisses
-//
-// The active panel is the max of both inputs' "progress", so the globe can
-// still dismiss the hero even after a hero-scroll, but hero-scroll alone
-// only pages between the two visible panels.
-const PANEL_0_END = 0.25;
-const PANEL_1_END = 1.25;
+// Single hero panel. On desktop it cross-fades out once the user zooms the
+// globe in past this delta from the initial zoom. Dataset previews are framed
+// far enough out to sit beside the text, so they deliberately do NOT dismiss
+// it: the flag stays set through the return flight, whose zoom would otherwise
+// cross the threshold on the way back and make the panel blink.
+// On mobile the panel always shows (opacity rules are desktop-only) and flows
+// inline above the project list.
+const DISMISS_AT = 2.5;
 
-const heroPanelIndex = ref<0 | 1>(0);
-
-const activePanel = computed(() => {
-  if (isHoveringCard.value) return -1;
-  const zoomProgress = zoom.value - initialZoom.value;
-  const heroProgress = heroPanelIndex.value === 1 ? PANEL_0_END : 0;
-  const p = Math.max(zoomProgress, heroProgress);
-  if (p < PANEL_0_END) return 0;
-  if (p < PANEL_1_END) return 1;
-  return -1;
+const heroVisible = computed(() => {
+  if (isHoveringCard.value || isPreviewing.value) return true;
+  return zoom.value - initialZoom.value < DISMISS_AT;
 });
-
-const heroVisible = computed(() => activePanel.value !== -1);
-const isActive = computed(() =>
-  props.part === "intro" ? activePanel.value === 0 : activePanel.value === 1,
-);
-
-watch(zoom, (z) => {
-  if (z <= initialZoom.value + 0.001) heroPanelIndex.value = 0;
-});
-
-function onHeroWheel(e: WheelEvent) {
-  // Mobile scrolls the page; desktop swallows the wheel and pages the hero.
-  if (isMobile.value) return;
-  e.preventDefault();
-  e.stopPropagation();
-  heroPanelIndex.value = e.deltaY > 0 ? 1 : 0;
-}
-
-function goToPanel(index: number) {
-  heroPanelIndex.value = index === 1 ? 1 : 0;
-  const base = projectStore.initialZoom;
-  projectStore.requestZoom(index === 0 ? base : base + PANEL_0_END);
-}
 </script>
 
 <template>
-  <section class="hero-part" :class="`hero-part-${part}`">
-    <div v-if="part === 'intro'" v-show="heroVisible" class="hero-dots">
-      <div
-        class="dot"
-        :class="{ active: activePanel === 0 }"
-        @click="goToPanel(0)"
-      ></div>
-      <div
-        class="dot"
-        :class="{ active: activePanel === 1 }"
-        @click="goToPanel(1)"
-      ></div>
-    </div>
-
-    <div
-      class="hero-content"
-      :class="{ 'is-active': isActive }"
-      @wheel="onHeroWheel"
-    >
-      <h1 v-if="part === 'intro'" class="hero-title">
-        Decoding the<br />physics of<br />cities
+  <section class="hero-part">
+    <div class="hero-content" :class="{ 'is-visible': heroVisible }">
+      <h1 class="hero-title">
+        Complexity<br />in time<br />and <em>space</em>
       </h1>
-      <h1 v-else class="hero-title">Complexity<br />in time and<br />space</h1>
 
-      <p v-if="part === 'intro'" class="hero-body">
+      <p class="hero-body">
         From the heartbeat of daily mobility to the temperature of their skin,
         cities are complex adaptive systems made of multiple interconnected
-        components (e.g., demography, transport, energy). At URBES, a
-        multidisciplinary research group at EPFL, we explore their dynamics
-        across scales, quantify their interactions with the biosphere, and seek
-        to uncover the fundamental laws that govern their behaviour.
-      </p>
-      <p v-else class="hero-body">
-        URBES Globe brings our research to life through visualizations, open
-        data, and model simulations - start exploring!
+        components (e.g., demography, transport, energy).
       </p>
 
-      <div v-if="part === 'outro'" class="btn-row">
-        <q-btn
-          class="btn"
+      <p class="hero-body">
+        At
+        <a
+          class="urbes-link"
           href="https://www.epfl.ch/labs/urbes/"
           target="_blank"
           rel="noopener"
-          unelevated
-        >
-          Visit Urbes Lab
-        </q-btn>
-      </div>
+          >URBES</a
+        >, a multidisciplinary research group at EPFL, we explore their dynamics
+        across scales, quantify their interactions with the biosphere, and seek
+        to uncover the fundamental laws that govern their behaviour.
+      </p>
+
+      <p class="hero-body">
+        URBES Globe brings our research to life through visualizations, open
+        data, and model simulations - start exploring!
+      </p>
     </div>
   </section>
 </template>
@@ -124,40 +64,45 @@ function goToPanel(index: number) {
 }
 
 .hero-title {
+  font-family: var(--font-sans);
   font-weight: 300;
-  font-size: clamp(2.5rem, 6vw, 3.75rem);
-  line-height: 1.05;
-  text-transform: uppercase;
+  font-size: clamp(2.875rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
   margin: 0 0 1rem;
 }
 
+/* The single emphasised word carries the only colour in the headline. */
+.hero-title em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
 .hero-body {
-  font-family: "Nunito", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 1rem;
-  line-height: 1.5;
-  color: var(--color-text-muted);
+  line-height: 1.55;
+  /* Full-contrast body: white in dark mode, black in light mode. */
+  color: var(--color-text);
   margin: 0;
 }
 
-.btn-row {
-  display: flex;
-  gap: 0.75rem;
-  padding-top: 1rem;
+/* The single lab link in the body; it carries the only colour there. */
+.urbes-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.15s ease-in-out;
 }
 
-.btn {
-  padding: 0.65rem 1rem;
-  background: #e30613;
-  color: #ffffff;
-  font-family: "Nunito", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
+.urbes-link:hover {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
 }
 
-.hero-dots {
-  display: none;
+/* Equal spacing between every consecutive body paragraph. */
+.hero-body + .hero-body {
+  margin-top: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -172,27 +117,6 @@ function goToPanel(index: number) {
     pointer-events: none;
   }
 
-  .hero-dots {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    pointer-events: auto;
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-border-strong);
-    transition: background 0.3s ease;
-    cursor: pointer;
-  }
-
-  .dot.active {
-    background: #e30613;
-  }
-
   .hero-content {
     max-width: 550px;
     opacity: 0;
@@ -200,7 +124,7 @@ function goToPanel(index: number) {
     pointer-events: none;
   }
 
-  .hero-content.is-active {
+  .hero-content.is-visible {
     opacity: 1;
     pointer-events: auto;
   }

@@ -1,5 +1,10 @@
 ## URBES Globe Viz - Vue.js Application Structure with Visual Design
 
+> SUPERSEDED (visual direction): the current aesthetic is the light "ink on paper"
+> system in `../design_handoff_paper_globe/README.md` and the "Theme & Typography"
+> section of `.github/copilot-instructions.md`. The dark-theme description below is
+> kept for structural reference only; dark is now an opt-in toggle, not the default.
+
 ### Design Language
 
 **Overall Aesthetic:** Modern, minimalist, dark theme with emphasis on data visualization

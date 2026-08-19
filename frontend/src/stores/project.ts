@@ -8,7 +8,11 @@ export const useProjectStore = defineStore("project", () => {
   // Globe3D sets this on mount based on viewport width; other components
   // (e.g. HeroSection) scale their zoom-dependent logic against it.
   const initialZoom = ref(2);
-  const targetZoom = ref<number | null>(null);
+  // True from the moment a card-hover preview flight starts until the globe has
+  // flown all the way back out. The hero reads it so a preview never dismisses
+  // the intro text - not on the way in, and not during the return flight, whose
+  // zoom would otherwise briefly cross the dismiss threshold.
+  const previewFlightActive = ref(false);
 
   function selectProject(id: string) {
     selectedProject.value = id;
@@ -26,8 +30,8 @@ export const useProjectStore = defineStore("project", () => {
     initialZoom.value = zoom;
   }
 
-  function requestZoom(zoom: number) {
-    targetZoom.value = zoom;
+  function setPreviewFlightActive(active: boolean) {
+    previewFlightActive.value = active;
   }
 
   return {
@@ -35,11 +39,11 @@ export const useProjectStore = defineStore("project", () => {
     hoveredProjectId,
     zoomLevel,
     initialZoom,
-    targetZoom,
+    previewFlightActive,
     selectProject,
     setHoveredProject,
     setZoomLevel,
     setInitialZoom,
-    requestZoom,
+    setPreviewFlightActive,
   };
 });

@@ -4,10 +4,10 @@
  * light theme is produced by applying `filter: invert(1)` to the basemap
  * canvas container (see `style.css` and the `.ghsl-basemap-canvas` class).
  *
- * Layers (rendered bottom → top):
- * 1. Dark background
- * 2. GHSL built-surface raster (live PMTiles).
- * 3. OpenStreetMap buildings vector — appears at zoom 10+.
+ * App background is pure white (light) / pure black (dark). Neither coastlines
+ * nor graticules are drawn: the GHSL settlement raster is the only thing that
+ * describes the sphere, so continents read purely as where people live. The
+ * canvas is then duotoned to the violet accent in style.css.
  */
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
@@ -37,11 +37,38 @@ const rasterContrast = [
   0.7,
 ] as const;
 
+/**
+ * The globe's own surface colour. Light mode inverts the whole basemap canvas
+ * (see style.css), so this near-black is what paints the near-white "paper"
+ * globe there.
+ */
+export const basemapSurfaceColor = "#010101";
+
+/**
+ * Without an explicit sky, MapLibre floods the entire canvas with the
+ * background layer, so the sphere and the space around it end up the same
+ * colour and the globe has no visible edge — the dark theme's long-standing
+ * "globe and background are the same black" problem. Painting the sky in the
+ * surface colour keeps the canvas transparent outside the sphere, letting
+ * `--color-map-bg` act as the ground the globe sits on (grey in light mode,
+ * #1a1a1a in dark). `atmosphere-blend: 0` keeps the limb a crisp edge rather
+ * than a glowing halo, in keeping with the flat paper look.
+ */
+export const basemapSky = {
+  "sky-color": basemapSurfaceColor,
+  "horizon-color": basemapSurfaceColor,
+  "fog-color": basemapSurfaceColor,
+  "sky-horizon-blend": 0,
+  "horizon-fog-blend": 0,
+  "fog-ground-blend": 0,
+  "atmosphere-blend": 0,
+} as const;
+
 export const basemapLayers: LayerSpecification[] = [
   {
     id: "background",
     type: "background",
-    paint: { "background-color": "#111111" },
+    paint: { "background-color": basemapSurfaceColor },
   },
   {
     id: "ghsl-layer",

@@ -26,7 +26,6 @@ const isMobile = useIsMobile();
           />
         </div>
       </div>
-      <HeroSection part="outro" />
     </div>
   </div>
 </template>
@@ -68,7 +67,8 @@ const isMobile = useIsMobile();
 .projects-list {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  /* Roomy enough that a long, wrapping card title doesn't crowd its neighbor. */
+  gap: 56px;
   flex-wrap: nowrap;
   overflow-x: auto;
   justify-content: flex-start;

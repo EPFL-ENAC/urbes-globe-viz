@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { mapLayers, projectsGeoJSON } from "@/config/projects";
 import { pmtilesProtocol } from "@/lib/pmtilesClient";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+import { isPreviewMode } from "@/utils/previewMode";
 
 const props = defineProps<{
   projectId: string;
@@ -29,7 +30,14 @@ const basemapCenter: [number, number] = (project?.geometry.coordinates as [
   number,
   number,
 ]) || [8.2, 46.8];
-const basemapZoom = project?.properties.zoom || 8;
+// Screenshot runs capture at `previewZoom` when the project sets one, so the
+// landing-page billboard frames the dataset as a compact vignette that sits
+// beside the hero text instead of filling the globe. Interactive visits always
+// use the project's own `zoom`.
+const basemapZoom =
+  (isPreviewMode ? project?.properties.previewZoom : undefined) ??
+  project?.properties.zoom ??
+  8;
 const basemapPitch = project?.properties.pitch || 0;
 
 const buildTemporalField = (
@@ -152,6 +160,9 @@ const initializeMap = () => {
     canvasContextAttributes: { alpha: true, premultipliedAlpha: true },
     style: {
       version: 8,
+      // Match the live globe so the captured perspective (curvature at low
+      // zoom, plus the project's pitch) lines up with the hover billboard.
+      projection: isPreviewMode ? { type: "globe" } : undefined,
       sources: {
         [layerConfig.id]: layerConfig.source,
       },
@@ -163,6 +174,8 @@ const initializeMap = () => {
     },
     center: basemapCenter,
     zoom: basemapZoom,
+    // Capture at the project's real pitch: the hover preview flies the globe to
+    // this exact pose, so the baked-in 3D/perspective matches what it frames.
     pitch: basemapPitch,
     refreshExpiredTiles: false,
     fadeDuration: 500,
@@ -170,11 +183,29 @@ const initializeMap = () => {
     maxTileCacheSize: 50,
   });
 
-  map.addControl(new maplibregl.NavigationControl(), "top-left");
+  if (!isPreviewMode) {
+    map.addControl(new maplibregl.NavigationControl(), "top-left");
+  }
 
   map.on("load", () => {
     isLoading.value = false;
   });
+
+  // Build-time screenshot: record the settled camera (so the hover preview can
+  // fly to the same pose) and signal the capture script once tiles have
+  // settled. The basemap is hidden in preview mode so the capture is data-only
+  // over a transparent background.
+  if (isPreviewMode) {
+    map.once("idle", () => {
+      window.__previewCamera = {
+        center: map!.getCenter().toArray() as [number, number],
+        zoom: map!.getZoom(),
+        pitch: map!.getPitch(),
+        bearing: map!.getBearing(),
+      };
+      window.__previewReady = true;
+    });
+  }
 
   map.on("error", (e) => {
     console.error("Map error:", e);
@@ -228,6 +259,7 @@ watch(
 <template>
   <div class="project-map-wrapper">
     <GhslBasemap
+      v-if="!isPreviewMode"
       ref="basemapRef"
       :center="basemapCenter"
       :zoom="basemapZoom"
