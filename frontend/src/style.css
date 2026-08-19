@@ -261,13 +261,16 @@ a:hover {
    white / purple whatever palette the dataset itself uses — the same treatment
    as the card thumbnails in ProjectCard.vue. Detail pages keep the real data
    colours. The billboard sits outside .ghsl-basemap-canvas, so light mode's
-   invert never touches it; only the exposure differs per theme. */
+   invert never touches it; the two themes differ only in where the ramp sits.
+   The PNGs stay in their native colours on disk on purpose: the detail pages
+   reuse the same files and want the real palette. See #preview-duotone-* in
+   index.html for why this is a table ramp and not a hue-rotate. */
 .map-preview-billboard {
-  filter: grayscale(1) sepia(1) hue-rotate(220deg) saturate(2.2) brightness(0.8);
+  filter: url(#preview-duotone-light);
 }
 
 :root[data-theme="dark"] .map-preview-billboard {
-  filter: grayscale(1) sepia(1) hue-rotate(220deg) saturate(2.2) brightness(1.3);
+  filter: url(#preview-duotone-dark);
 }
 
 /* Lift MapLibre controls above sibling canvases (e.g. deck.gl non-interleaved
