@@ -21,6 +21,51 @@
     <title>URBES - Laboratory of Urban and Environmental Systems</title>
   </head>
   <body>
+    <!-- Duotone ramps for the GHSL basemap canvas (see style.css). The raster is
+         baked pure white with settlement density in alpha, so it composites to a
+         plain greyscale ramp and MapLibre cannot colour it (this build has no
+         raster-color). A CSS sepia/hue-rotate chain can tint it but cannot land
+         on a specific hex — it drifts pink. feComponentTransfer maps the ramp
+         onto exact stops instead: white -> --color-accent -> deep violet in
+         light, black -> --color-accent-strong -> pale lilac in dark.
+         color-interpolation-filters="sRGB" is required; the SVG default of
+         linearRGB would shift every stop. -->
+    <svg class="svg-filter-defs" aria-hidden="true" focusable="false">
+      <defs>
+        <!-- Stops are near-monochrome by design: the globe should read as the
+             black/white original with a violet cast, not as a violet globe.
+             Chroma stays low and both ends run to white / black; only the
+             midtone carries visible colour. Hue holds at ~265deg across all
+             stops so the tint never drifts toward pink. -->
+        <!-- Five stops, not three. GHSL density is heavily skewed to low
+             values, so most settled pixels land in the FIRST part of the ramp;
+             a straight line from white to a pale midpoint drops them onto the
+             paper and the globe reads empty. These curves fall steeply early
+             and flatten late, so low-density settlement keeps its body while
+             the ends stay clean white / black. Weighted toward body over
+             chroma: the early stops sit well clear of the paper/void so the
+             continents keep their mass. Hue holds at ~263-267deg throughout, so
+             the extra tone never turns the globe into a colour field. -->
+        <!-- white paper -> violet-greys -> near-black violet -->
+        <filter id="ghsl-duotone-light" color-interpolation-filters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="1 0.78 0.58 0.36 0.165" />
+            <feFuncG type="table" tableValues="1 0.73 0.51 0.29 0.106" />
+            <feFuncB type="table" tableValues="1 0.84 0.68 0.46 0.239" />
+          </feComponentTransfer>
+        </filter>
+        <!-- black -> violet-greys -> near-white violet -->
+        <filter id="ghsl-duotone-dark" color-interpolation-filters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="0 0.22 0.45 0.70 0.949" />
+            <feFuncG type="table" tableValues="0 0.17 0.37 0.63 0.918" />
+            <feFuncB type="table" tableValues="0 0.30 0.57 0.81 1" />
+          </feComponentTransfer>
+        </filter>
+      </defs>
+    </svg>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

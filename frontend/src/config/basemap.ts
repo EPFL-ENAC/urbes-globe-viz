@@ -4,12 +4,12 @@
  * light theme is produced by applying `filter: invert(1)` to the basemap
  * canvas container (see `style.css` and the `.ghsl-basemap-canvas` class).
  *
- * App background is pure white (light) / pure black (dark).
- * Water is near-black (#050505) → inverts to very light grey #fafafa for light mode.
- * Land keeps the desaturated purple-grey.
+ * App background is pure white (light) / pure black (dark). Neither coastlines
+ * nor graticules are drawn: the GHSL settlement raster is the only thing that
+ * describes the sphere, so continents read purely as where people live. The
+ * canvas is then duotoned to the violet accent in style.css.
  */
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
-import { geodataBaseUrl } from "./geodata";
 
 // Always use the deployed URL — ghsl.pmtiles is too large (~14 GB) for local dev
 const ghslUrl = "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles";
@@ -24,14 +24,6 @@ export const basemapSources: Record<string, SourceSpecification> = {
     type: "vector",
     url: "https://tiles.openfreemap.org/planet",
     minzoom: 10,
-  },
-  "ne-land": {
-    type: "vector",
-    url: `pmtiles://${geodataBaseUrl}/ne_10m_land.pmtiles`,
-  },
-  "ne-graticules": {
-    type: "vector",
-    url: `pmtiles://${geodataBaseUrl}/ne_10m_graticules_20.pmtiles`,
   },
 };
 
@@ -77,27 +69,6 @@ export const basemapLayers: LayerSpecification[] = [
     id: "background",
     type: "background",
     paint: { "background-color": basemapSurfaceColor },
-  },
-  {
-    id: "graticules",
-    type: "line",
-    source: "ne-graticules",
-    "source-layer": "graticules",
-    paint: {
-      "line-color": "#8c8c8c",
-      "line-width": 1,
-      "line-opacity": 0.3,
-    },
-  },
-  {
-    id: "land-fill",
-    type: "fill",
-    source: "ne-land",
-    "source-layer": "land",
-    paint: {
-      "fill-color": "#1c1822",
-      "fill-outline-color": "transparent",
-    },
   },
   {
     id: "ghsl-layer",
