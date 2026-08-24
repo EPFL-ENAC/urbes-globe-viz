@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import { registerProtocols } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ArcLayer } from "@deck.gl/layers";
 import { projectsGeoJSON } from "@/config/projects";
@@ -205,11 +205,7 @@ watch(flowUrl, (url) => {
 onMounted(() => {
   if (!mapContainer.value) return;
 
-  try {
-    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
-  } catch {
-    // Already registered from Globe3D / another map mount
-  }
+  registerProtocols();
 
   map = new maplibregl.Map({
     container: mapContainer.value,

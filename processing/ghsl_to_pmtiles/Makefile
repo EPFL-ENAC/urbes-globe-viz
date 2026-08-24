@@ -14,6 +14,9 @@ help:
 	@echo "  make upload       Upload ghsl.pmtiles to CDN"
 	@echo ""
 	@echo "Full pipeline: make vrt tiles-low tiles-high postprocess pmtiles upload"
+	@echo ""
+	@echo "After uploading, regenerate the bundled low-zoom floor tiles:"
+	@echo "  cd frontend && npm run extract:ghsl-low"
 
 vrt:
 	cd $(GEODATA) && gdaldem color-relief \

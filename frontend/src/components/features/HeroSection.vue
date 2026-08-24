@@ -59,7 +59,7 @@ const heroVisible = computed(() => {
 
 <style scoped>
 .hero-part {
-  padding: 20px 20px 28px;
+  padding: 20px var(--page-gutter) 28px;
   color: var(--color-text);
 }
 
@@ -113,7 +113,7 @@ const heroVisible = computed(() => {
     justify-self: start;
     width: 750px;
     max-width: 100%;
-    padding: 1rem 2rem;
+    padding: 1rem var(--page-gutter);
     pointer-events: none;
   }
 
@@ -127,6 +127,38 @@ const heroVisible = computed(() => {
   .hero-content.is-visible {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+/* Compact desktop (narrow or short windows, e.g. heavy display scaling): the
+   layout is unchanged, the type just shrinks. At full size the hero is ~470px
+   tall and, stacked over the card strip, no longer fits a 620px-tall viewport
+   — the title slides up under the nav. Tighter headline, body and paragraph
+   gaps bring it down to ~330px. The 552px right edge of the text (520px
+   measure + gutter) is what Globe3D reserves as left padding; keep in sync.
+   Query mirrors COMPACT_LANDING_QUERY in composables/useIsMobile.ts. */
+@media (min-width: 768px) and (max-width: 1280px),
+  (min-width: 768px) and (max-height: 800px) {
+  .hero-part {
+    padding: 0.5rem var(--page-gutter) 0.75rem;
+  }
+
+  .hero-content {
+    max-width: 520px;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-body {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .hero-body + .hero-body {
+    margin-top: 0.6rem;
   }
 }
 </style>

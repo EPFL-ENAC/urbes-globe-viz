@@ -2,12 +2,12 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { pmtilesProtocol } from "@/lib/pmtilesClient";
+import { registerProtocols } from "@/lib/pmtilesClient";
 import { projectsGeoJSON } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useMapPreview } from "@/composables/useMapPreview";
-import { useIsMobile } from "@/composables/useIsMobile";
+import { useIsMobile, useIsCompactLanding } from "@/composables/useIsMobile";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
 
 const props = defineProps<{
@@ -18,12 +18,26 @@ const props = defineProps<{
 
 const container = ref<HTMLDivElement | null>(null);
 const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
-const isLoading = ref(true);
 const projectStore = useProjectStore();
 const router = useRouter();
 const preview = useMapPreview();
 const isMobile = useIsMobile();
+const isCompactLanding = useIsCompactLanding();
 const passive = () => props.backgroundMode || isMobile.value;
+
+// Camera padding frames the sphere inside the part of the viewport the page
+// chrome leaves free. Default: centred, lifted above the bottom project strip.
+// Compact desktop (see COMPACT_LANDING_QUERY): the sphere is pushed to the
+// right of the hero text (whose right edge is 552px, see HeroSection.vue) and
+// below the nav, so it no longer sits under the headline; it still runs
+// behind the card strip like the default frame does.
+const DEFAULT_PADDING = { top: 0, right: 0, bottom: 72, left: 0 };
+const COMPACT_PADDING = { top: 60, right: 0, bottom: 72, left: 560 };
+
+function currentPadding() {
+  return isCompactLanding.value ? COMPACT_PADDING : DEFAULT_PADDING;
+}
+const initialPadding = currentPadding();
 
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
@@ -31,7 +45,6 @@ let spinRunning = false;
 let spinKilled = false; // set on first explicit user gesture (pointerdown/wheel)
 let resettingToOverview = false; // true while the scroll-back restore flyTo is in flight
 let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
-let pmtilesRegistered = false;
 let markersSetupStarted = false;
 let unsubscribeBasemapSync: (() => void) | null = null;
 
@@ -39,6 +52,20 @@ let unsubscribeBasemapSync: (() => void) | null = null;
 // phones and fills large monitors: smaller screens need a tighter globe.
 function computeInitialZoom(): number {
   const w = window.innerWidth;
+  // Compact desktop: the sphere only has the slot to the right of the hero
+  // text, so pick the zoom whose sphere just fits it. Globe
+  // circumference is 512·2^z px, so diameter = 512·2^z/π — times ~1.1 on
+  // screen, since the globe projection's perspective camera draws the sphere
+  // a little larger than the mercator scale at its centre. Clamped so a very
+  // cramped window still shows a globe, not a marble, and a merely short one
+  // doesn't grow past the standard laptop size.
+  if (isCompactLanding.value) {
+    const slotW = w - COMPACT_PADDING.left - COMPACT_PADDING.right;
+    const slotH =
+      window.innerHeight - COMPACT_PADDING.top - COMPACT_PADDING.bottom;
+    const fit = Math.log2((Math.min(slotW, slotH) * Math.PI) / 512 / 1.1);
+    return Math.min(2, Math.max(1, fit));
+  }
   if (w >= 2560) return 4; // extra-large monitor / 4K+
   if (w >= 1280) return 3; // large monitor (FHD, QHD)
   if (w <= 768) return 3;
@@ -217,14 +244,7 @@ onMounted(() => {
   projectStore.setZoomLevel(initialCamera.zoom);
   projectStore.setInitialZoom(initialCamera.zoom);
 
-  if (!pmtilesRegistered) {
-    try {
-      maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
-    } catch {
-      // GhslBasemap registered it first — fine.
-    }
-    pmtilesRegistered = true;
-  }
+  registerProtocols();
 
   map = new maplibregl.Map({
     container: container.value,
@@ -245,7 +265,7 @@ onMounted(() => {
     },
   });
 
-  map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
+  map.setPadding(initialPadding);
   projectStore.setZoomLevel(2);
 
   if (passive()) {
@@ -346,17 +366,24 @@ onMounted(() => {
   };
 
   map.once("render", () => {
-    isLoading.value = false;
     captureInitialPose();
     setupMarkers();
   });
   map.on("load", () => {
-    isLoading.value = false;
     captureInitialPose();
     setupMarkers();
   });
 
   resumeSpin();
+
+  // Re-frame when the window crosses the compact breakpoint (resize, browser
+  // zoom). setPadding fires move events, so the basemap picks the new padding
+  // up through syncFrom. Initial zoom is deliberately left alone: a reload
+  // settles it, and re-picking it mid-session would fight the user's camera.
+  watch(isCompactLanding, () => {
+    map?.setPadding(currentPadding());
+  });
+
   // Track zoom level in store, and enforce minZoom manually — MapLibre's
   // globe projection doesn't reliably clamp scroll-zoom at the configured
   // minZoom, so we snap back here whenever zoom dips below the initial.
@@ -413,11 +440,8 @@ onUnmounted(() => {
       :min-zoom="initialCamera.zoom"
       :max-zoom="15"
       projection="globe"
-      :padding="{ top: 0, right: 0, bottom: 72, left: 0 }"
+      :padding="initialPadding"
     />
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
     <div ref="container" class="globe-container"></div>
   </div>
 </template>
@@ -441,33 +465,5 @@ onUnmounted(() => {
   height: 100%;
   position: relative;
   z-index: 1;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-map-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-text-muted);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>
