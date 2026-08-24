@@ -27,12 +27,12 @@ const passive = () => props.backgroundMode || isMobile.value;
 
 // Camera padding frames the sphere inside the part of the viewport the page
 // chrome leaves free. Default: centred, lifted above the bottom project strip.
-// Compact desktop (see COMPACT_LANDING_QUERY): the sphere is pushed to the
-// right of the hero text (whose right edge is 552px, see HeroSection.vue) and
-// below the nav, so it no longer sits under the headline; it still runs
-// behind the card strip like the default frame does.
+// Compact desktop (see COMPACT_LANDING_QUERY): the hero is a 440px left column
+// and the projects a 240px right column, so the sphere is pushed into the
+// middle-right slot instead of sitting under the text. The two widths mirror
+// the CSS in HeroSection.vue / GlobeView.vue — keep them in sync.
 const DEFAULT_PADDING = { top: 0, right: 0, bottom: 72, left: 0 };
-const COMPACT_PADDING = { top: 60, right: 0, bottom: 72, left: 560 };
+const COMPACT_PADDING = { top: 60, right: 240, bottom: 24, left: 440 };
 
 function currentPadding() {
   return isCompactLanding.value ? COMPACT_PADDING : DEFAULT_PADDING;
@@ -52,8 +52,8 @@ let unsubscribeBasemapSync: (() => void) | null = null;
 // phones and fills large monitors: smaller screens need a tighter globe.
 function computeInitialZoom(): number {
   const w = window.innerWidth;
-  // Compact desktop: the sphere only has the slot to the right of the hero
-  // text, so pick the zoom whose sphere just fits it. Globe
+  // Compact desktop: the sphere only has the slot between the hero column and
+  // the projects column, so pick the zoom whose sphere just fits it. Globe
   // circumference is 512·2^z px, so diameter = 512·2^z/π — times ~1.1 on
   // screen, since the globe projection's perspective camera draws the sphere
   // a little larger than the mercator scale at its centre. Clamped so a very

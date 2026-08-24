@@ -135,34 +135,52 @@ const isMobile = useIsMobile();
   }
 }
 
-/* Compact desktop (narrow or short windows, e.g. heavy display scaling): same
-   layout, smaller strip. The full-size strip is ~220px tall, which together
-   with the hero no longer fits a 620px-tall viewport; 96px thumbnails and a
-   smaller title bring it to ~200px (HeroSection.vue shrinks its type for the
-   same reason). Cards stay a little wider than the thumbnail so the longest
-   titles wrap to three lines, not four.
+/* Compact desktop (narrow or short windows, e.g. heavy display scaling): the
+   bottom strip would eat a third of a 620px-tall viewport and the centred
+   globe would sit under the hero. Instead the hero is a left column, the
+   projects a scrollable column on the right, and Globe3D pads the sphere into
+   the free middle-right slot. The column's outer width (176px cards + two
+   gutters = 240px) is what Globe3D reserves as right padding; keep in sync.
    Query mirrors COMPACT_LANDING_QUERY in composables/useIsMobile.ts. */
 @media (min-width: 768px) and (max-width: 1280px),
   (min-width: 768px) and (max-height: 800px) {
+  .foreground {
+    grid-template-rows: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .projects-wrap {
-    padding: 0.5rem var(--page-gutter) 0.75rem;
+    grid-row: 1;
+    grid-column: 2;
+    width: auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    /* Clears the fixed 60px NavigationBar. */
+    padding: 76px var(--page-gutter) 0;
+    overflow: hidden;
+  }
+
+  .projects-heading {
+    display: block;
+    padding: 0 0 12px;
+    color: var(--color-text);
   }
 
   .projects-list {
-    gap: 40px;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 28px;
+    overflow-x: visible;
+    overflow-y: auto;
+    padding-bottom: 24px;
   }
 
+  /* Cards otherwise grow to their longest title line; a fixed width makes
+     titles wrap under the 120px thumbnail and keeps the column narrow. */
   .projects-list :deep(.project-card) {
-    width: 150px;
-  }
-
-  .projects-list :deep(.card-image) {
-    width: 96px;
-    height: 96px;
-  }
-
-  .projects-list :deep(.card-title) {
-    font-size: 0.875rem;
+    width: 176px;
   }
 }
 </style>
