@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.0.1...v1.1.0) (2026-08-24)
+
+
+### Features
+
+* **globe:** instant basemap paint via bundled low-zoom tiles and hybrid ghsl:// source ([0b78e38](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/0b78e38077402c2761ad62bb69fcce240b2741e9))
+
+
+### Bug Fixes
+
+* **landing:** nav on the page gutter, b/w basemap, compact type for zoomed browsers ([ce9831c](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/ce9831c032112788226e5ebc2506312a4fdc356b))
+
 ## [1.0.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v0.2.2...v1.0.1) (2026-08-19)
 
 
