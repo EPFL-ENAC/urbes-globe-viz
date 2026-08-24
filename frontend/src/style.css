@@ -56,6 +56,10 @@
   --font-sans: "Suisse Int'l", Arial, "Helvetica Neue", Helvetica, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
+  /* The single horizontal page gutter: nav lockup, hero, project list and the
+     detail drawer all hang on this same left line (mobile override below). */
+  --page-gutter: 2rem;
+
   font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
@@ -117,6 +121,10 @@
    Scoped to .globe-view-root so the bottom sheet and info panel (solid
    backgrounds) keep the standard muted treatment. */
 @media (max-width: 767px) {
+  :root {
+    --page-gutter: 20px;
+  }
+
   .globe-view-root {
     --color-text-muted: rgba(0, 0, 0, 0.95);
   }
@@ -233,19 +241,18 @@ a:hover {
 }
 
 /* GHSL basemap canvas container — the dark-paletted basemap sits behind an
-   overlay map. The canvas composites as a greyscale ramp (near-black sphere,
-   white settlement), which the SVG duotone filters in index.html map onto the
-   site's violet accent: paper-white -> accent -> deep violet in light, black ->
-   accent-strong -> pale lilac in dark. Done with feComponentTransfer rather
-   than a sepia/hue-rotate CSS chain because that chain lands around 300-320deg
-   and reads pink, nowhere near --color-accent. */
+   overlay map. The canvas composites as a plain greyscale ramp (near-black
+   sphere, white settlement) and is kept black/white on purpose: the violet
+   accent is reserved for markers, links and the dataset previews. Light mode
+   is that same ramp inverted, giving the ink-on-paper globe. invert(0) rather
+   than `none` as the dark value so the theme toggle can animate the filter. */
 .ghsl-basemap-canvas {
   transition: filter 0.25s ease;
-  filter: url(#ghsl-duotone-dark);
+  filter: invert(0);
 }
 
 :root[data-theme="light"] .ghsl-basemap-canvas {
-  filter: url(#ghsl-duotone-light);
+  filter: invert(1);
 }
 
 /* Filter defs only — never painted. */

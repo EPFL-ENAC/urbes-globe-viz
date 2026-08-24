@@ -40,7 +40,7 @@ const goBack = () => {
     :class="{ 'nav-bar-glass': useGlass }"
     style="height: 60px; z-index: 1000"
   >
-    <div class="row items-center justify-between q-px-md" style="height: 100%">
+    <div class="row items-center justify-between nav-inner">
       <div class="row items-center q-gutter-sm">
         <q-btn
           v-if="showBackButton"
@@ -52,22 +52,10 @@ const goBack = () => {
           aria-label="Back to globe"
           @click="goBack"
         />
+        <!-- The EPFL | URBES lockup is always the first thing on the page
+             gutter, on every route; the back link is appended AFTER it so
+             navigating into a project never shifts the brand sideways. -->
         <template v-else>
-          <button
-            v-if="isProjectDetail"
-            type="button"
-            class="back-link"
-            aria-label="Back to globe"
-            @click="goBack"
-          >
-            <span class="back-arrow">←</span>Back
-          </button>
-          <q-separator
-            v-if="isProjectDetail"
-            vertical
-            size="1px"
-            class="nav-separator"
-          />
           <svg
             class="epfl-logo"
             viewBox="0 0 182.4 53"
@@ -88,6 +76,21 @@ const goBack = () => {
           </svg>
           <q-separator vertical size="1px" class="nav-separator" />
           <span class="text-h6 text-weight-bold nav-title">URBES</span>
+          <q-separator
+            v-if="isProjectDetail"
+            vertical
+            size="1px"
+            class="nav-separator"
+          />
+          <button
+            v-if="isProjectDetail"
+            type="button"
+            class="back-link"
+            aria-label="Back to globe"
+            @click="goBack"
+          >
+            <span class="back-arrow">←</span>Back
+          </button>
         </template>
       </div>
 
@@ -217,6 +220,13 @@ const goBack = () => {
   pointer-events: auto;
 }
 
+/* Same horizontal gutter as the hero, project list and detail drawer, so the
+   lockup sits on the page's left line instead of Quasar's 16px. */
+.nav-inner {
+  height: 100%;
+  padding: 0 var(--page-gutter);
+}
+
 .nav-bar-glass {
   background: color-mix(in srgb, var(--color-bg) 55%, transparent);
   backdrop-filter: blur(12px) saturate(1.2);
@@ -310,10 +320,11 @@ const goBack = () => {
   color: var(--color-text-muted);
 }
 
+/* Lands exactly over the nav's info button that opened the panel. */
 .close-btn {
   position: absolute;
   top: 10px;
-  right: 32px;
+  right: var(--page-gutter);
   z-index: 1;
 }
 

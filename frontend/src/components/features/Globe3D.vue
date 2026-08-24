@@ -7,7 +7,7 @@ import { projectsGeoJSON } from "@/config/projects";
 import { useProjectStore } from "@/stores/project";
 import { useRouter } from "vue-router";
 import { useMapPreview } from "@/composables/useMapPreview";
-import { useIsMobile } from "@/composables/useIsMobile";
+import { useIsMobile, useIsCompactLanding } from "@/composables/useIsMobile";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
 
 const props = defineProps<{
@@ -22,7 +22,22 @@ const projectStore = useProjectStore();
 const router = useRouter();
 const preview = useMapPreview();
 const isMobile = useIsMobile();
+const isCompactLanding = useIsCompactLanding();
 const passive = () => props.backgroundMode || isMobile.value;
+
+// Camera padding frames the sphere inside the part of the viewport the page
+// chrome leaves free. Default: centred, lifted above the bottom project strip.
+// Compact desktop (see COMPACT_LANDING_QUERY): the sphere is pushed to the
+// right of the hero text (whose right edge is 552px, see HeroSection.vue) and
+// below the nav, so it no longer sits under the headline; it still runs
+// behind the card strip like the default frame does.
+const DEFAULT_PADDING = { top: 0, right: 0, bottom: 72, left: 0 };
+const COMPACT_PADDING = { top: 60, right: 0, bottom: 72, left: 560 };
+
+function currentPadding() {
+  return isCompactLanding.value ? COMPACT_PADDING : DEFAULT_PADDING;
+}
+const initialPadding = currentPadding();
 
 let map: maplibregl.Map | null = null;
 let animationFrame: number | null = null;
@@ -37,6 +52,20 @@ let unsubscribeBasemapSync: (() => void) | null = null;
 // phones and fills large monitors: smaller screens need a tighter globe.
 function computeInitialZoom(): number {
   const w = window.innerWidth;
+  // Compact desktop: the sphere only has the slot to the right of the hero
+  // text, so pick the zoom whose sphere just fits it. Globe
+  // circumference is 512·2^z px, so diameter = 512·2^z/π — times ~1.1 on
+  // screen, since the globe projection's perspective camera draws the sphere
+  // a little larger than the mercator scale at its centre. Clamped so a very
+  // cramped window still shows a globe, not a marble, and a merely short one
+  // doesn't grow past the standard laptop size.
+  if (isCompactLanding.value) {
+    const slotW = w - COMPACT_PADDING.left - COMPACT_PADDING.right;
+    const slotH =
+      window.innerHeight - COMPACT_PADDING.top - COMPACT_PADDING.bottom;
+    const fit = Math.log2((Math.min(slotW, slotH) * Math.PI) / 512 / 1.1);
+    return Math.min(2, Math.max(1, fit));
+  }
   if (w >= 2560) return 4; // extra-large monitor / 4K+
   if (w >= 1280) return 3; // large monitor (FHD, QHD)
   if (w <= 768) return 3;
@@ -236,7 +265,7 @@ onMounted(() => {
     },
   });
 
-  map.setPadding({ top: 0, right: 0, bottom: 72, left: 0 });
+  map.setPadding(initialPadding);
   projectStore.setZoomLevel(2);
 
   if (passive()) {
@@ -346,6 +375,15 @@ onMounted(() => {
   });
 
   resumeSpin();
+
+  // Re-frame when the window crosses the compact breakpoint (resize, browser
+  // zoom). setPadding fires move events, so the basemap picks the new padding
+  // up through syncFrom. Initial zoom is deliberately left alone: a reload
+  // settles it, and re-picking it mid-session would fight the user's camera.
+  watch(isCompactLanding, () => {
+    map?.setPadding(currentPadding());
+  });
+
   // Track zoom level in store, and enforce minZoom manually — MapLibre's
   // globe projection doesn't reliably clamp scroll-zoom at the configured
   // minZoom, so we snap back here whenever zoom dips below the initial.
@@ -402,7 +440,7 @@ onUnmounted(() => {
       :min-zoom="initialCamera.zoom"
       :max-zoom="15"
       projection="globe"
-      :padding="{ top: 0, right: 0, bottom: 72, left: 0 }"
+      :padding="initialPadding"
     />
     <div ref="container" class="globe-container"></div>
   </div>

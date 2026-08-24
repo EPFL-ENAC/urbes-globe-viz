@@ -16,8 +16,8 @@ const isMobile = useIsMobile();
     </div>
     <div class="foreground">
       <HeroSection />
-      <div class="projects-heading text-h6 text-weight-medium">Projects</div>
       <div class="projects-wrap">
+        <div class="projects-heading text-h6 text-weight-medium">Projects</div>
         <div class="projects-list">
           <ProjectCard
             v-for="feature in projectsGeoJSON.features"
@@ -60,7 +60,7 @@ const isMobile = useIsMobile();
 
 .projects-wrap {
   width: 100%;
-  padding: 1rem 2rem;
+  padding: 1rem var(--page-gutter);
   pointer-events: auto;
 }
 
@@ -118,7 +118,7 @@ const isMobile = useIsMobile();
 
   .projects-heading {
     display: block;
-    padding: 8px 20px 4px;
+    padding: 8px var(--page-gutter) 4px;
     color: var(--color-text);
   }
 
@@ -130,8 +130,39 @@ const isMobile = useIsMobile();
     flex-direction: column;
     gap: 3rem;
     overflow-x: visible;
-    padding: 8px 20px 28px;
+    padding: 8px var(--page-gutter) 28px;
     justify-content: flex-start;
+  }
+}
+
+/* Compact desktop (narrow or short windows, e.g. heavy display scaling): same
+   layout, smaller strip. The full-size strip is ~220px tall, which together
+   with the hero no longer fits a 620px-tall viewport; 96px thumbnails and a
+   smaller title bring it to ~200px (HeroSection.vue shrinks its type for the
+   same reason). Cards stay a little wider than the thumbnail so the longest
+   titles wrap to three lines, not four.
+   Query mirrors COMPACT_LANDING_QUERY in composables/useIsMobile.ts. */
+@media (min-width: 768px) and (max-width: 1280px),
+  (min-width: 768px) and (max-height: 800px) {
+  .projects-wrap {
+    padding: 0.5rem var(--page-gutter) 0.75rem;
+  }
+
+  .projects-list {
+    gap: 40px;
+  }
+
+  .projects-list :deep(.project-card) {
+    width: 150px;
+  }
+
+  .projects-list :deep(.card-image) {
+    width: 96px;
+    height: 96px;
+  }
+
+  .projects-list :deep(.card-title) {
+    font-size: 0.875rem;
   }
 }
 </style>

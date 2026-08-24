@@ -853,7 +853,8 @@ const activeSubVizTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 0 48px;
+  /* Page gutter: the titles line up under the EPFL | URBES lockup. */
+  padding: 0 var(--page-gutter);
   background: var(--color-bg);
   border: 0;
   border-bottom: 1px solid var(--color-border);
@@ -907,7 +908,7 @@ const activeSubVizTitle = computed(() => {
 /* Plain flow content: scrolls 1:1 and slides under both opaque title stacks.
    Height is natural; only the last section carries an inline min-height. */
 .hub-content {
-  padding: 16px 48px 32px;
+  padding: 16px var(--page-gutter) 32px;
 }
 
 /* The section's text block; sticky top inset bound inline per section. Its
@@ -1127,7 +1128,7 @@ const activeSubVizTitle = computed(() => {
   border: 0;
   color: inherit;
   text-align: left;
-  padding: 10px 18px 12px;
+  padding: 10px var(--page-gutter) 12px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1200,7 +1201,7 @@ const activeSubVizTitle = computed(() => {
 .sheet-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 20px 32px;
+  padding: 8px var(--page-gutter) 32px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }

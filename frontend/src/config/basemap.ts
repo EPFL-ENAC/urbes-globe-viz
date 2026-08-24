@@ -7,7 +7,7 @@
  * App background is pure white (light) / pure black (dark). Neither coastlines
  * nor graticules are drawn: the GHSL settlement raster is the only thing that
  * describes the sphere, so continents read purely as where people live. The
- * canvas is then duotoned to the violet accent in style.css.
+ * canvas stays black/white in both themes; only the previews carry the accent.
  */
 import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
