@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.1.0...v1.1.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **landing:** purple "Complexity", intro sentence moved to the info panel ([620fd6d](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/620fd6d2d5e1429c50c4f977ed7231ce3ce83a9a))
+
+
+### Reverts
+
+* back to the horizontal project strip on compact viewports ([27ad88e](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/27ad88e0486e60c52e0fa8de2760db0d5c01d693))
+
 ## [1.1.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.0.1...v1.1.0) (2026-08-24)
 
 
