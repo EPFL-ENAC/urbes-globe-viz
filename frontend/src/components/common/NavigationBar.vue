@@ -146,9 +146,8 @@ const goBack = () => {
               target="_blank"
               rel="noopener noreferrer"
               >URBES lab</a
-            >. This demo showcases a 3D globe-based interface offering an
-            immersive, multi-scale view of urban building energy research across
-            geographic contexts worldwide.
+            >. URBES Globe brings our research to life through visualizations,
+            open data, and model simulations - start exploring!
           </p>
           <p class="text-body1 panel-body">
             Built on the design principles, data structures, and user experience
@@ -161,9 +160,19 @@ const goBack = () => {
           <div class="section-divider" />
 
           <p class="text-h6 q-mb-xs panel-heading">How to cite</p>
-          <p class="text-body1 panel-body">
+          <p class="text-body1 panel-body q-mb-md">
             If you use data or visuals from this platform in your work, please
-            cite it as follows: ... ?
+            cite it as follows:
+          </p>
+          <p class="text-body1 panel-body">
+            Manoli, G., Weil, C., &amp; Ripoll, P. (2026). URBES Globe
+            Visualization [Software]. Zenodo.
+            <a
+              href="https://doi.org/10.5281/zenodo.20560106"
+              target="_blank"
+              rel="noopener noreferrer"
+              >https://doi.org/10.5281/zenodo.20560106</a
+            >
           </p>
 
           <div class="section-divider" />
@@ -182,7 +191,9 @@ const goBack = () => {
               target="_blank"
               rel="noopener noreferrer"
               >ENAC-IT4Research</a
-            >'s research software engineers. Contact point: ... ?
+            >'s research software engineers. Contact point:
+            <a href="mailto:gabriele.manoli@epfl.ch">gabriele.manoli@epfl.ch</a
+            >.
           </p>
 
           <div class="section-divider" />
