@@ -27,7 +27,7 @@ const heroVisible = computed(() => {
   <section class="hero-part">
     <div class="hero-content" :class="{ 'is-visible': heroVisible }">
       <h1 class="hero-title">
-        Complexity<br />in time<br />and <em>space</em>
+        <em>Complexity</em><br />in time<br />and space
       </h1>
 
       <p class="hero-body">
@@ -47,11 +47,6 @@ const heroVisible = computed(() => {
         >, a multidisciplinary research group at EPFL, we explore their dynamics
         across scales, quantify their interactions with the biosphere, and seek
         to uncover the fundamental laws that govern their behaviour.
-      </p>
-
-      <p class="hero-body">
-        URBES Globe brings our research to life through visualizations, open
-        data, and model simulations - start exploring!
       </p>
     </div>
   </section>
