@@ -8,10 +8,10 @@ const COMPACT_PROJECT_QUERY = "(max-width: 1023px)";
 // laptops, and any monitor under heavy display/browser scaling (a 1080p screen
 // at 150% is a 1280x~620 viewport). The full-size hero + card strip no longer
 // fit above each other there and the centred globe sits under the hero text,
-// so the layout switches to hero-left / globe-middle / projects as a
-// right-hand column (GlobeView.vue, HeroSection.vue) and Globe3D pads the
-// sphere into the free slot. The CSS media blocks repeat this query verbatim
-// (custom properties can't hold media queries) — keep them in sync.
+// so the type and thumbnails shrink (HeroSection.vue, GlobeView.vue) and
+// Globe3D pads the sphere to the right of the text. The CSS media blocks
+// repeat this query verbatim (custom properties can't hold media queries) —
+// keep them in sync.
 const COMPACT_LANDING_QUERY =
   "(min-width: 768px) and (max-width: 1280px), (min-width: 768px) and (max-height: 800px)";
 
