@@ -102,7 +102,7 @@ For visual coherency across projects, stick to normal / italic / links and avoid
 
 `markdown-it` is configured in `src/utils/markdown.ts` with `html: true, linkify: true, typographer: false`. No runtime sanitization - descriptions live in committed TS reviewed via PR.
 
-For charts or other interactive per-project content, set `descriptionComponent: () => import("./descriptions/<id>.vue")`. When present, it overrides `description` at render time (wrapped with `defineAsyncComponent`). Custom description SFCs live in `frontend/src/config/projects/descriptions/`, one file per project or subViz named to match the config id (worked example: `descriptions/wrf_d02.vue` with ECharts). The SFC's root inherits the body styling via attribute fallthrough, so keep it single-root.
+For charts or other interactive per-project content, set `descriptionComponent: () => import("./descriptions/<id>.vue")`. When present, it overrides `description` at render time (wrapped with `defineAsyncComponent`). Custom description SFCs live in `frontend/src/config/projects/descriptions/`, one file per project or subViz named to match the config id (worked example: `descriptions/hourly_adult_population.vue` with ECharts). The SFC's root inherits the body styling via attribute fallthrough, so keep it single-root.
 
 **Important**: `ProjectConfig` is never serialized to GeoJSON. Always import `allProjects` from `config/projects/index.ts` to access it at runtime (e.g. in `ProjectDetailView`).
 
