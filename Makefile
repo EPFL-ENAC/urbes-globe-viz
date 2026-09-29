@@ -5,7 +5,7 @@ GEODATA_DIR := frontend/public/geodata
 
 # Base URL of a running app server for screenshot capture (override as needed,
 # e.g. make previews PREVIEW_BASE_URL=http://localhost:4173 for `vite preview`)
-PREVIEW_BASE_URL ?= http://localhost:5173
+PREVIEW_BASE_URL ?= http://localhost:$(or $(FRONTEND_PORT),5173)
 
 # Files too large for local download — always streamed from NAS
 GEODATA_EXCLUDE := ghsl.pmtiles,index.html,robots.txt
