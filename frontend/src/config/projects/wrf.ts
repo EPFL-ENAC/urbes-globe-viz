@@ -258,7 +258,7 @@ One-way nested numerical weather simulations over Swiss urban areas, cascading f
       // consumer that renders plain-text descriptions (e.g. globe tooltip).
       description:
         "Regional mesoscale WRF simulation output at 1 km over the Leman basin, resolving lake breezes, valley circulations, and the combined urban footprint of Lausanne and Geneva.",
-      // Component override: renders a chart + prose. See the SFC for the pattern.
+      // Component override: renders the nested-domains schema + prose.
       descriptionComponent: () => import("./descriptions/wrf_d02.vue"),
       coordinates: [6.555, 46.46],
       zoom: 9,
