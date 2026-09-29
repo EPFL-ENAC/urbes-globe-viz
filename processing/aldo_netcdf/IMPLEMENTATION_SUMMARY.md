@@ -225,7 +225,7 @@ uv run nc_to_cog.py \
    - Copy COG to `frontend/public/geodata/`
    - Add project config (see example above)
    - `cd frontend && npm run dev`
-   - Verify visualization at http://localhost:9000
+   - Verify visualization at http://localhost:5173
 
 4. **Upload to production** when ready:
    ```bash

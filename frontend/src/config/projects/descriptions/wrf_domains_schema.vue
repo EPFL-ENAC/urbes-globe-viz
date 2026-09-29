@@ -1,12 +1,12 @@
 <!--
-  Shared schema used by wrf_d03.vue and wrf_d04.vue. Renders the three
-  nested WRF domains and highlights whichever child was requested.
+  Shared schema used by wrf_d02.vue, wrf_d03.vue and wrf_d04.vue. Renders the
+  three nested WRF domains and highlights the one that was requested.
 -->
 <script setup lang="ts">
 import { computed } from "vue";
 import { useChartTheme } from "@/utils/chart-theme";
 
-const props = defineProps<{ highlight: "d03" | "d04" }>();
+const props = defineProps<{ highlight: "d02" | "d03" | "d04" }>();
 const chartTheme = useChartTheme();
 
 const accent = "#e4460a";
@@ -33,6 +33,13 @@ function style(isHighlighted: boolean) {
       };
 }
 
+// When a child is highlighted, the parent keeps its dashed outline and label
+// opacity, so the d03 and d04 schemas look the same as before.
+const d02 = computed(() =>
+  props.highlight === "d02"
+    ? { ...style(true), dash: undefined }
+    : { ...style(false), strokeOpacity: 1, title: 0.75, dash: "4 4" },
+);
 const d03 = computed(() => style(props.highlight === "d03"));
 const d04 = computed(() => style(props.highlight === "d04"));
 </script>
@@ -52,13 +59,21 @@ const d04 = computed(() => style(props.highlight === "d04"));
       y="35"
       width="360"
       height="160"
-      fill="none"
-      :stroke="chartTheme.axis"
-      stroke-width="1"
-      stroke-dasharray="4 4"
+      :fill="d02.fill"
+      :fill-opacity="d02.fillOpacity"
+      :stroke="d02.stroke"
+      :stroke-opacity="d02.strokeOpacity"
+      :stroke-width="d02.strokeWidth"
+      :stroke-dasharray="d02.dash"
       rx="4"
     />
-    <text x="28" y="28" font-size="11" fill="currentColor" fill-opacity="0.75">
+    <text
+      x="28"
+      y="28"
+      font-size="11"
+      fill="currentColor"
+      :fill-opacity="d02.title"
+    >
       d02 - Leman region, 1 km
     </text>
 

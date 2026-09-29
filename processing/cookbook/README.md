@@ -102,7 +102,7 @@ Place your output file in `frontend/public/geodata/` and register it in the app:
 1. Copy `frontend/src/config/projects/_example.ts.example` → `frontend/src/config/projects/my_project.ts`
 2. Fill in the project metadata (id, title, coordinates, source, layer)
 3. Add the import to `frontend/src/config/projects/index.ts`
-4. `cd frontend && npm run dev` — your project appears at http://localhost:9000
+4. `cd frontend && npm run dev` — your project appears at http://localhost:5173
 
 See the [example template](../../frontend/src/config/projects/_example.ts.example) for all available fields.
 

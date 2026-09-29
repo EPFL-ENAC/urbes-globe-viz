@@ -8,7 +8,7 @@
 
 **Urbes Globe Viz** is a Vue 3 + MapLibre GL JS research visualization platform for the URBES group at EPFL. It displays geospatial datasets (urban morphology, mobility flows, building heights, etc.) on an interactive 3D globe.
 
-- **Dev**: https://urbes-globe-viz-dev.epfl.ch/ | **Prod**: https://urbes-globe-viz.epfl.ch/
+- **Dev**: https://urbes-viz-dev.epfl.ch/ | **Prod**: https://urbes-viz.epfl.ch/
 - **Geodata (NAS)**: `https://urbes-viz.epfl.ch/geodata/` (served via nginx from shared EPFL NAS)
 
 ## Tech Stack
@@ -95,14 +95,14 @@ Each sub-viz has `id`, `title`, `description`, and optionally `renderer`, `sourc
 `description` (on both `ProjectConfig` and `SubViz`) is rendered as **Markdown** with inline HTML allowed, via `markdown-it` + `v-html` in `ProjectDetailView.vue`. All three styles are valid in the same field:
 
 - Plain prose: `"Swiss building footprints"`
-- Markdown syntax: `"Swiss _building_ footprints, see [source](url)"` (worked example: `car_road_length.ts`)
+- Markdown syntax: `"Swiss _building_ footprints, see [source](url)"` (worked example: `wrf.ts`)
 - Raw HTML: `"<p>Swiss <em>building</em> footprints</p>"` (worked example: `roads_swiss_statistics.ts`)
 
 For visual coherency across projects, stick to normal / italic / links and avoid bold emphasis in description copy.
 
 `markdown-it` is configured in `src/utils/markdown.ts` with `html: true, linkify: true, typographer: false`. No runtime sanitization - descriptions live in committed TS reviewed via PR.
 
-For charts or other interactive per-project content, set `descriptionComponent: () => import("./descriptions/<id>.vue")`. When present, it overrides `description` at render time (wrapped with `defineAsyncComponent`). Custom description SFCs live in `frontend/src/config/projects/descriptions/`, one file per project or subViz named to match the config id (worked example: `descriptions/wrf_d02.vue` with ECharts). The SFC's root inherits the body styling via attribute fallthrough, so keep it single-root.
+For charts or other interactive per-project content, set `descriptionComponent: () => import("./descriptions/<id>.vue")`. When present, it overrides `description` at render time (wrapped with `defineAsyncComponent`). Custom description SFCs live in `frontend/src/config/projects/descriptions/`, one file per project or subViz named to match the config id (worked example: `descriptions/hourly_adult_population.vue` with ECharts). The SFC's root inherits the body styling via attribute fallthrough, so keep it single-root.
 
 **Important**: `ProjectConfig` is never serialized to GeoJSON. Always import `allProjects` from `config/projects/index.ts` to access it at runtime (e.g. in `ProjectDetailView`).
 

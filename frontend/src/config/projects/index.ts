@@ -2,14 +2,12 @@ import type { Feature, FeatureCollection, Point } from "geojson";
 import type { ProjectConfig } from "./types";
 import { wrfProject } from "./wrf";
 import { hourlyAdultPopulationProject } from "./hourly_adult_population";
-import { lenOtherCarRoadsProject } from "./car_road_length";
 import { sheSimTemporalProject } from "./she_sim_temporal";
 
 // ─── All projects — add new project imports + entries here ───────────────────
 const allProjects: ProjectConfig[] = [
   wrfProject,
   hourlyAdultPopulationProject,
-  lenOtherCarRoadsProject,
   sheSimTemporalProject,
 ];
 

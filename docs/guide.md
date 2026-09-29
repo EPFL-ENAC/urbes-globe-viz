@@ -49,7 +49,7 @@ A step-by-step guide for researchers. No prior programming experience required.
 
 ## How this project works
 
-Urbes Globe Viz is a website that displays geospatial datasets on an interactive 3D globe. It is built and maintained by the EPFL URBES group and ENAC-IT4R. You can see it live at https://urbes-globe-viz.epfl.ch/.
+Urbes Globe Viz is a website that displays geospatial datasets on an interactive 3D globe. It is built and maintained by the EPFL URBES group and ENAC-IT4R. You can see it live at https://urbes-viz.epfl.ch/.
 
 **You do not need to understand JavaScript or web development.** Adding a dataset means:
 
@@ -72,13 +72,13 @@ Your data file (CSV, Shapefile, GeoJSON, GeoTIFF, …)
    Frontend config file (.ts — copy an existing one and edit it)
         │
         ▼
-   Test on your computer (localhost:9000)
+   Test on your computer (localhost:5173)
         │
         ▼
    Submit a pull request on GitHub → deployed to the website
 ```
 
-**Local vs. deployed:** When you develop, the app runs on your own computer at `http://localhost:9000`. Nobody else can see it. Once your changes are reviewed and merged on GitHub, they appear on the public EPFL website within minutes.
+**Local vs. deployed:** When you develop, the app runs on your own computer at `http://localhost:5173`. Nobody else can see it. Once your changes are reviewed and merged on GitHub, they appear on the public EPFL website within minutes.
 
 ### What goes where
 
@@ -422,7 +422,6 @@ Look at the existing project configs and pick the one most similar to your data.
 
 | File                         | What it shows                        | Layer type                         | Good starting point for…            |
 | ---------------------------- | ------------------------------------ | ---------------------------------- | ----------------------------------- |
-| `len_other_car_roads.ts`     | Road length per grid cell            | `fill-extrusion` (3D)              | 3D polygon / grid data              |
 | `she_sim_temporal.ts`        | Simulated urban height over time     | `fill-extrusion` + time slider     | Data with a time dimension          |
 | `hourly_adult_population.ts` | Population dynamics grid + flow arcs | `fill-extrusion` + custom renderer | Area data, origin-destination flows |
 | `wrf.ts`                     | Urban climate (WRF/PALM COG rasters) | COG + subViz                       | Multi-variable COG with time slider |
@@ -434,7 +433,7 @@ All files are in `frontend/src/config/projects/`.
 Copy the most similar project config and rename it to match your dataset:
 
 ```bash
-cp frontend/src/config/projects/car_road_length.ts \
+cp frontend/src/config/projects/she_sim_temporal.ts \
    frontend/src/config/projects/my_dataset_name.ts
 ```
 
@@ -596,7 +595,6 @@ import { myDatasetNameProject } from "./my_dataset_name";
 const allProjects: ProjectConfig[] = [
   wrfProject,
   hourlyAdultPopulationProject,
-  lenOtherCarRoadsProject,
   sheSimTemporalProject,
   myDatasetNameProject, // ← add this line
 ];
@@ -648,7 +646,7 @@ Start the development server:
 cd frontend && npm run dev
 ```
 
-Open http://localhost:9000 in your browser:
+Open http://localhost:5173 in your browser:
 
 1. Find your project card on the globe — it should appear at the coordinates you specified
 2. Click on it — the project detail view opens with your map
@@ -741,8 +739,8 @@ The data file (.pmtiles, .geojson, or .tif) must be placed on the **shared EPFL 
 ### 4.7 What happens next
 
 1. A team member reviews your pull request — they may ask for small changes
-2. Once approved and merged, the dataset appears on the **dev site** (https://urbes-globe-viz-dev.epfl.ch/) within a few minutes
-3. If the data file is already on the NAS, it also appears on the **production site** (https://urbes-globe-viz.epfl.ch/)
+2. Once approved and merged, the dataset appears on the **dev site** (https://urbes-viz-dev.epfl.ch/) within a few minutes
+3. If the data file is already on the NAS, it also appears on the **production site** (https://urbes-viz.epfl.ch/)
 
 ---
 

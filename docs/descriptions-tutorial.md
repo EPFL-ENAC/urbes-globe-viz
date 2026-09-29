@@ -69,7 +69,7 @@ Used as input to _DAVE_ for estimating per-cell car capacities.
 `,
 ```
 
-Worked example: [`frontend/src/config/projects/car_road_length.ts`](../frontend/src/config/projects/car_road_length.ts).
+Worked example: [`frontend/src/config/projects/wrf.ts`](../frontend/src/config/projects/wrf.ts).
 
 ---
 
@@ -92,7 +92,7 @@ description: `
 `,
 ```
 
-Worked example: [`frontend/src/config/projects/car_road_length.ts`](../frontend/src/config/projects/car_road_length.ts).
+Worked example: [`frontend/src/config/projects/wrf.ts`](../frontend/src/config/projects/wrf.ts).
 
 ---
 
@@ -115,10 +115,10 @@ frontend/src/config/projects/
 ├── wrf.ts
 └── descriptions/
     ├── hourly_adult_population.vue
-    ├── wrf_d02.vue                 # ECharts line chart
+    ├── wrf_d02.vue                 # domains schema, d02 highlighted
     ├── wrf_d03.vue                 # inline SVG schema
     ├── wrf_d04.vue                 # reuses the same schema
-    └── wrf_domains_schema.vue      # shared by d03 + d04
+    └── wrf_domains_schema.vue      # shared by d02, d03 and d04
 ```
 
 ### Wiring
@@ -200,7 +200,6 @@ const option = computed(() => {
 
 Other worked examples:
 
-- [`descriptions/wrf_d02.vue`](../frontend/src/config/projects/descriptions/wrf_d02.vue) - line chart (diurnal temperature)
 - [`descriptions/hourly_adult_population.vue`](../frontend/src/config/projects/descriptions/hourly_adult_population.vue) - line chart (hourly population)
 
 Tree-shake the ECharts imports you actually use (`LineChart`, `BarChart`,
@@ -234,8 +233,8 @@ const chartTheme = useChartTheme();
 
 Worked example:
 [`descriptions/wrf_domains_schema.vue`](../frontend/src/config/projects/descriptions/wrf_domains_schema.vue),
-shared by `wrf_d03.vue` and `wrf_d04.vue` via a `highlight` prop. That is a
-pattern worth copying when two related sub-vizzes should show the same figure
+shared by `wrf_d02.vue`, `wrf_d03.vue` and `wrf_d04.vue` via a `highlight` prop. That is a
+pattern worth copying when related sub-vizzes should show the same figure
 with a small variation.
 
 ---
