@@ -35,7 +35,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname, "../public/previews");
 const MANIFEST = resolve(OUT_DIR, "manifest.json");
 
-const BASE_URL = process.env.PREVIEW_BASE_URL ?? "http://localhost:5173";
+const BASE_URL =
+  process.env.PREVIEW_BASE_URL ??
+  `http://localhost:${process.env.FRONTEND_PORT ?? 5173}`;
 
 // `query` is appended to the capture URL — use it to pick a sub-viz renderer.
 const PROJECTS = [
