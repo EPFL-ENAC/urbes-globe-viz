@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.1.1...v1.2.0) (2026-09-29)
+
+
+### Features
+
+* **cards:** new card image for population dynamics, showing mobility flows ([aa7d98d](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/aa7d98daf4c6a299d5fad3022bb2aa6c6a86dbad)), closes [#45](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/45)
+* **landing:** catchier project titles ([c28c0d7](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/c28c0d743bf3fe6f636810f90e72c13d46c82105)), closes [#45](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/45)
+
+
+### Bug Fixes
+
+* **wrf:** replace the fake d02 chart with the domains schema ([863a7da](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/863a7dac7a81651ce779b70c40e15406de6326a4)), closes [#45](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/45)
+
 ## [1.1.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.1.0...v1.1.1) (2026-09-08)
 
 
