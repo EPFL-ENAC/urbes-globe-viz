@@ -217,7 +217,7 @@ export const wrfProject: ProjectConfig = {
   id: "wrf",
   coordinates: [6.63, 46.52], // Lausanne area
 
-  title: "Urban Climate",
+  title: "Lake-City Climates",
   description: `
 One-way nested numerical weather simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban climate in complex terrain, ranging from [regional circulation patterns](https://royalsocietypublishing.org/rsta/article-abstract/383/2308/20240576/234202/Urbanization-effects-on-lake-land-circulations-in?redirectedFrom=fulltext) to [wind energy](https://onlinelibrary.wiley.com/doi/10.1002/we.70043) harvesting potential, to microscale heat adaptation strategies.
 `,
