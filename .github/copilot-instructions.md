@@ -95,7 +95,7 @@ Each sub-viz has `id`, `title`, `description`, and optionally `renderer`, `sourc
 `description` (on both `ProjectConfig` and `SubViz`) is rendered as **Markdown** with inline HTML allowed, via `markdown-it` + `v-html` in `ProjectDetailView.vue`. All three styles are valid in the same field:
 
 - Plain prose: `"Swiss building footprints"`
-- Markdown syntax: `"Swiss _building_ footprints, see [source](url)"` (worked example: `car_road_length.ts`)
+- Markdown syntax: `"Swiss _building_ footprints, see [source](url)"` (worked example: `wrf.ts`)
 - Raw HTML: `"<p>Swiss <em>building</em> footprints</p>"` (worked example: `roads_swiss_statistics.ts`)
 
 For visual coherency across projects, stick to normal / italic / links and avoid bold emphasis in description copy.

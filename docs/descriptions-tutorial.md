@@ -69,7 +69,7 @@ Used as input to _DAVE_ for estimating per-cell car capacities.
 `,
 ```
 
-Worked example: [`frontend/src/config/projects/car_road_length.ts`](../frontend/src/config/projects/car_road_length.ts).
+Worked example: [`frontend/src/config/projects/wrf.ts`](../frontend/src/config/projects/wrf.ts).
 
 ---
 
@@ -92,7 +92,7 @@ description: `
 `,
 ```
 
-Worked example: [`frontend/src/config/projects/car_road_length.ts`](../frontend/src/config/projects/car_road_length.ts).
+Worked example: [`frontend/src/config/projects/wrf.ts`](../frontend/src/config/projects/wrf.ts).
 
 ---
 

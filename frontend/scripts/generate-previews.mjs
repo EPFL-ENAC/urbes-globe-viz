@@ -42,7 +42,6 @@ const BASE_URL =
 // `query` is appended to the capture URL — use it to pick a sub-viz renderer.
 const PROJECTS = [
   { id: "hourly_adult_population", query: "&viz=flows" },
-  { id: "len_other_car_roads" },
   { id: "she_sim_temporal" },
   { id: "wrf" },
 ];

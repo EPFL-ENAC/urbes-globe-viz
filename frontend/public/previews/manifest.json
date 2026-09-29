@@ -11,18 +11,6 @@
     },
     "size": 1000
   },
-  "len_other_car_roads": {
-    "camera": {
-      "center": [
-        6.58,
-        46.41
-      ],
-      "zoom": 7,
-      "pitch": 30,
-      "bearing": 0
-    },
-    "size": 1000
-  },
   "she_sim_temporal": {
     "camera": {
       "center": [
