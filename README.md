@@ -2,8 +2,8 @@
 
 Interactive 3D globe visualization platform for the [URBES research group](https://www.epfl.ch/labs/urbes/) at EPFL, displaying urban morphology, mobility flows, building heights, and other geospatial datasets.
 
-- **Dev:** https://urbes-globe-viz-dev.epfl.ch/
-- **Prod:** https://urbes-globe-viz.epfl.ch/
+- **Dev:** https://urbes-viz-dev.epfl.ch/
+- **Prod:** https://urbes-viz.epfl.ch/
 - **GitHub:** https://github.com/EPFL-ENAC/urbes-globe-viz
 
 ---
@@ -41,7 +41,7 @@ make install   # install frontend dependencies + git hooks
 make lint      # ESLint + Prettier check
 make format    # Prettier auto-format
 
-cd frontend && npm run dev    # dev server at http://localhost:9000
+cd frontend && npm run dev    # dev server at http://localhost:5173
 cd frontend && npm run build  # production build
 ```
 
