@@ -29,7 +29,7 @@ export const myProjectConfig: ProjectConfig = {
   // Descriptions live in committed TS (PR-reviewed); no runtime sanitization.
   description: "One or two sentences describing what this dataset shows.",
   //
-  // MARKDOWN variant (see car_road_length.ts for a worked example):
+  // MARKDOWN variant (see wrf.ts for a worked example):
   // description: `
   // Aggregated car road length from [SwissTLM3D](https://www.swisstopo.admin.ch/).
   //
