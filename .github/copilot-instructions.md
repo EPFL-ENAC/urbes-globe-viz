@@ -8,7 +8,7 @@
 
 **Urbes Globe Viz** is a Vue 3 + MapLibre GL JS research visualization platform for the URBES group at EPFL. It displays geospatial datasets (urban morphology, mobility flows, building heights, etc.) on an interactive 3D globe.
 
-- **Dev**: https://urbes-globe-viz-dev.epfl.ch/ | **Prod**: https://urbes-globe-viz.epfl.ch/
+- **Dev**: https://urbes-viz-dev.epfl.ch/ | **Prod**: https://urbes-viz.epfl.ch/
 - **Geodata (NAS)**: `https://urbes-viz.epfl.ch/geodata/` (served via nginx from shared EPFL NAS)
 
 ## Tech Stack

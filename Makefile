@@ -14,7 +14,7 @@ GEODATA_EXCLUDE := ghsl.pmtiles,index.html,robots.txt
 help:
 	@echo "Available commands:"
 	@echo "  install          Install dependencies and set up git hooks"
-	@echo "  dev              Start frontend dev server (http://localhost:9000)"
+	@echo "  dev              Start frontend dev server (http://localhost:5173)"
 	@echo "  lint             Check formatting with Prettier"
 	@echo "  format           Auto-format all files with Prettier"
 	@echo "  clean            Remove node_modules and lock files"
