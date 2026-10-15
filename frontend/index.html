@@ -19,6 +19,18 @@
       crossorigin
     />
     <title>URBES - Laboratory of Urban and Environmental Systems</title>
+    <!-- Set the theme before first paint, same rule as stores/theme.ts
+         (stored choice, else OS setting). Avoids a light flash in dark mode. -->
+    <script>
+      try {
+        var t = localStorage.getItem("urbes:theme");
+        if (t !== "light" && t !== "dark") {
+          var dark = matchMedia("(prefers-color-scheme: dark)").matches;
+          t = dark ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <!-- Duotone ramps for the dataset previews (see style.css). A CSS
