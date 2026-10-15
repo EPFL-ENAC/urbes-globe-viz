@@ -6,9 +6,17 @@ export type ThemeMode = "light" | "dark";
 export type ThemeOverride = ThemeMode | null;
 
 const STORAGE_KEY = "urbes:theme";
-// Light "paper" is the app's identity — we ignore `prefers-color-scheme` and
-// only switch to dark when the user explicitly toggles.
-const DEFAULT_MODE: ThemeMode = "light";
+// Without an explicit choice we follow the OS setting (`prefers-color-scheme`),
+// live. Light "paper" stays the fallback when the browser gives no answer.
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+function readSystem(): ThemeMode {
+  try {
+    return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 function readOverride(): ThemeOverride {
   try {
@@ -21,8 +29,17 @@ function readOverride(): ThemeOverride {
 
 export const useThemeStore = defineStore("theme", () => {
   const override = ref<ThemeOverride>(readOverride());
+  const system = ref<ThemeMode>(readSystem());
 
-  const mode = computed<ThemeMode>(() => override.value ?? DEFAULT_MODE);
+  try {
+    window.matchMedia(DARK_QUERY).addEventListener("change", (e) => {
+      system.value = e.matches ? "dark" : "light";
+    });
+  } catch {
+    // no matchMedia, keep the fallback
+  }
+
+  const mode = computed<ThemeMode>(() => override.value ?? system.value);
 
   function set(next: ThemeMode) {
     override.value = next;
@@ -32,8 +49,11 @@ export const useThemeStore = defineStore("theme", () => {
     override.value = null;
   }
 
+  // Toggling back to the OS value drops the override, so the site follows the
+  // OS again instead of staying stuck on a stored choice.
   function toggle() {
-    override.value = mode.value === "dark" ? "light" : "dark";
+    const next: ThemeMode = mode.value === "dark" ? "light" : "dark";
+    override.value = next === system.value ? null : next;
   }
 
   // Persist override changes.
@@ -46,7 +66,7 @@ export const useThemeStore = defineStore("theme", () => {
     }
   });
 
-  return { override, mode, set, clearOverride, toggle };
+  return { override, system, mode, set, clearOverride, toggle };
 });
 
 /**
