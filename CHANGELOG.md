@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.2.0...v1.3.0) (2026-10-15)
+
+
+### Features
+
+* **theme:** follow the OS dark/light setting ([d1d4792](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/d1d4792ea1e08c1f8b7a976d0c1c3f56d5227d0e))
+
 ## [1.2.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.1.1...v1.2.0) (2026-09-29)
 
 
