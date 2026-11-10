@@ -133,6 +133,34 @@ function armKillSpinListeners() {
   canvas.addEventListener("wheel", killSpin, { once: true });
 }
 
+// Passive (mobile, background) globe: no user gestures, the page scrolls over
+// it. Applied at mount and again when passive() flips, so a phone turned to
+// landscape (or a resized window) gets the right handlers.
+const GESTURE_HANDLERS = [
+  "dragPan",
+  "dragRotate",
+  "scrollZoom",
+  "doubleClickZoom",
+  "touchZoomRotate",
+  "keyboard",
+  "boxZoom",
+] as const;
+
+function applyInteractivity() {
+  if (!map) return;
+  const interactive = !passive();
+  for (const name of GESTURE_HANDLERS) {
+    if (interactive) map[name].enable();
+    else map[name].disable();
+  }
+  // Any explicit user gesture (drag or wheel) permanently kills the idle spin
+  // until the user scrolls back out to the initial zoom (see zoomend handler).
+  // Re-arming is safe: addEventListener drops the duplicate listener.
+  if (interactive) armKillSpinListeners();
+}
+
+watch(passive, applyInteractivity);
+
 // When the user scrolls back out to the initial zoom after panning/zooming,
 // fly to the original overview and re-arm the idle spin.
 function restoreOverview() {
@@ -283,35 +311,23 @@ onMounted(() => {
   map.setPadding(initialPadding);
   projectStore.setZoomLevel(2);
 
-  if (passive()) {
-    map.dragPan.disable();
-    map.dragRotate.disable();
-    map.scrollZoom.disable();
-    map.doubleClickZoom.disable();
-    map.touchZoomRotate.disable();
-    map.keyboard.disable();
-    map.boxZoom.disable();
-  } else {
-    // Any explicit user gesture (drag or wheel) permanently kills the idle spin
-    // until the user scrolls back out to the initial zoom (see zoomend handler).
-    armKillSpinListeners();
+  applyInteractivity();
 
-    // Block scroll-out wheel events when already at the zoom floor. Otherwise
-    // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
-    // which shifts the center even when the zoom itself is clamped — giving
-    // the impression of panning the globe by scrolling at min zoom.
-    map.getCanvas().addEventListener(
-      "wheel",
-      (e) => {
-        if (!map) return;
-        if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-        }
-      },
-      { capture: true, passive: false },
-    );
-  }
+  // Block scroll-out wheel events when already at the zoom floor. Otherwise
+  // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
+  // which shifts the center even when the zoom itself is clamped — giving
+  // the impression of panning the globe by scrolling at min zoom.
+  map.getCanvas().addEventListener(
+    "wheel",
+    (e) => {
+      if (!map || passive()) return;
+      if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    { capture: true, passive: false },
+  );
 
   // Sync camera from overlay → basemap. Attach once the basemap is created
   // (its `ready` ref flips after the instance mounts; `syncFrom` is safe
@@ -358,18 +374,21 @@ onMounted(() => {
       },
     });
 
-    if (!passive()) {
-      map.on("mouseenter", "project-circles", () => {
-        map!.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "project-circles", () => {
-        map!.getCanvas().style.cursor = "grab";
-      });
-      map.on("click", "project-circles", (e) => {
-        const id = e.features?.[0]?.properties?.id;
-        if (id) router.push(`/project/${id}`);
-      });
-    }
+    // Always registered, checked at event time: passive() can change after
+    // mount (a phone turned to landscape crosses the mobile breakpoint).
+    map.on("mouseenter", "project-circles", () => {
+      if (passive()) return;
+      map!.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "project-circles", () => {
+      if (passive()) return;
+      map!.getCanvas().style.cursor = "grab";
+    });
+    map.on("click", "project-circles", (e) => {
+      if (passive()) return;
+      const id = e.features?.[0]?.properties?.id;
+      if (id) router.push(`/project/${id}`);
+    });
   };
 
   let initialPoseCaptured = false;
