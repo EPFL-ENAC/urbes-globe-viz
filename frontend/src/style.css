@@ -120,7 +120,7 @@
    the muted colour gets bumped and a letter-shadow is added for legibility.
    Scoped to .globe-view-root so the bottom sheet and info panel (solid
    backgrounds) keep the standard muted treatment. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) {
   :root {
     --page-gutter: 20px;
   }

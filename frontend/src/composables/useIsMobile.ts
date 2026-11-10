@@ -1,6 +1,10 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-const MOBILE_QUERY = "(max-width: 767px)";
+// Phones in landscape are wider than 767px but only ~400px tall: the desktop
+// landing (hero over a card strip) doesn't fit there and the title runs under
+// the nav. So short screens get the mobile layout too. The CSS media blocks
+// repeat this query verbatim, keep them in sync.
+const MOBILE_QUERY = "(max-width: 767px), (max-height: 500px)";
 // Project detail collapses to bottom-sheet UI at tablet width: the 50vw
 // drawer + map split is too cramped below a laptop.
 const COMPACT_PROJECT_QUERY = "(max-width: 1023px)";
@@ -13,7 +17,7 @@ const COMPACT_PROJECT_QUERY = "(max-width: 1023px)";
 // repeat this query verbatim (custom properties can't hold media queries) —
 // keep them in sync.
 const COMPACT_LANDING_QUERY =
-  "(min-width: 768px) and (max-width: 1280px), (min-width: 768px) and (max-height: 800px)";
+  "(min-width: 768px) and (min-height: 501px) and (max-width: 1280px), (min-width: 768px) and (min-height: 501px) and (max-height: 800px)";
 
 function useMediaQuery(query: string) {
   const mql = typeof window !== "undefined" ? window.matchMedia(query) : null;
