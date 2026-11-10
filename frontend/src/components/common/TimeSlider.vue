@@ -136,8 +136,10 @@ onUnmounted(stop);
   transition: color 0.15s ease;
 }
 
-.slider-btn:hover {
-  color: var(--color-text);
+@media (hover: hover) {
+  .slider-btn:hover {
+    color: var(--color-text);
+  }
 }
 
 .time-slider-header {
@@ -183,5 +185,23 @@ onUnmounted(stop);
 /* Kept (not hidden) so keyboard focus stays visible — just squared. */
 .time-slider-input :deep(.q-slider__focus-ring) {
   border-radius: 0;
+}
+
+/* Compact (touch) layouts: same look, bigger hit areas. The play button and
+   the slider get an invisible area 40px tall, so a finger can hit them. */
+@media (max-width: 1023px) {
+  .slider-btn::after,
+  .time-slider-input::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+
+  /* The margin keeps the thumb off the min/max labels at both ends: it is
+     centred on the value, so half of it sits past the track. */
+  .time-slider-input {
+    position: relative;
+    margin: 0 6px;
+  }
 }
 </style>

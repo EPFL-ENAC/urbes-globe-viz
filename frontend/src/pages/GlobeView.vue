@@ -80,7 +80,7 @@ const isMobile = useIsMobile();
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) {
   .globe-layer {
     position: fixed;
     pointer-events: none;
@@ -142,8 +142,8 @@ const isMobile = useIsMobile();
    same reason). Cards stay a little wider than the thumbnail so the longest
    titles wrap to three lines, not four.
    Query mirrors COMPACT_LANDING_QUERY in composables/useIsMobile.ts. */
-@media (min-width: 768px) and (max-width: 1280px),
-  (min-width: 768px) and (max-height: 800px) {
+@media (min-width: 768px) and (min-height: 501px) and (max-width: 1280px),
+  (min-width: 768px) and (min-height: 501px) and (max-height: 800px) {
   .projects-wrap {
     padding: 0.5rem var(--page-gutter) 0.75rem;
   }
