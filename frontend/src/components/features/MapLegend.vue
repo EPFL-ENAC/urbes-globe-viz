@@ -137,13 +137,14 @@ defineProps<{ legend: ProjectLegend }>();
 @media (max-width: 1023px) {
   .map-legend {
     padding: 6px 8px;
-    font-size: 10px;
+    font-size: 12px;
     min-width: 110px;
     max-width: 170px;
   }
 
+  /* 12px is the smallest size that reads on a phone. */
   .legend-title {
-    font-size: 10px;
+    font-size: 12px;
     margin-bottom: 3px;
     /* Tighter tracking at the small size, still within the 0.12–0.16em band. */
     letter-spacing: 0.12em;
@@ -158,10 +159,18 @@ defineProps<{ legend: ProjectLegend }>();
     min-height: 48px;
   }
 
+  /* The unit gets its own row under the scale, not the corner: the narrow
+     panel has no room beside the labels and the unit sat on top of them. */
+  .legend-gradient-block {
+    flex-wrap: wrap;
+    row-gap: 3px;
+  }
+
   .gradient-unit {
-    bottom: 4px;
-    right: 6px;
-    font-size: 9px;
+    position: static;
+    flex-basis: 100%;
+    text-align: right;
+    font-size: 12px;
   }
 }
 </style>

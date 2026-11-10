@@ -387,6 +387,22 @@ const toggleDrawer = () => {
   drawerOpen.value = !drawerOpen.value;
 };
 
+// The closed sheet shows its whole header (grip, title, sub-viz chips). Its
+// height changes with the title length, the chip row and the font, so it is
+// measured, not hard-coded. The map bottom bar sits on top of it.
+const sheetHeader = ref<HTMLElement | null>(null);
+const sheetPeek = ref(0);
+const sheetHeaderObserver = new ResizeObserver(() => {
+  const el = sheetHeader.value;
+  // +1 for the sheet's top border.
+  sheetPeek.value = el ? Math.ceil(el.getBoundingClientRect().height) + 1 : 0;
+});
+watch(sheetHeader, (el, old) => {
+  if (old) sheetHeaderObserver.unobserve(old);
+  if (el) sheetHeaderObserver.observe(el);
+});
+onBeforeUnmount(() => sheetHeaderObserver.disconnect());
+
 const toggleSheet = () => {
   sheetOpen.value = !sheetOpen.value;
 };
@@ -419,6 +435,7 @@ const activeSubVizTitle = computed(() => {
   <div
     class="fit relative detail-bg"
     :class="{ 'preview-mode': isPreviewMode }"
+    :style="sheetPeek ? { '--sheet-peek': sheetPeek + 'px' } : undefined"
   >
     <!-- Project Drawer (desktop only) -->
     <div
@@ -626,31 +643,34 @@ const activeSubVizTitle = computed(() => {
       class="project-sheet"
       :class="{ 'sheet-open': sheetOpen, 'sheet-closed': !sheetOpen }"
     >
-      <button
-        type="button"
-        class="sheet-header"
-        :aria-expanded="sheetOpen"
-        aria-label="Toggle project details"
-        @click="toggleSheet"
-      >
-        <div class="sheet-grip" />
-        <div class="sheet-header-row">
-          <div class="sheet-header-text">
-            <div class="text-h6 sheet-title">{{ project.title }}</div>
-            <div class="text-caption sheet-year">{{ project.year }}</div>
+      <!-- A div, not a button: the chips are buttons and cannot nest in one.
+           The toggle covers the grip, title and chevron. -->
+      <div ref="sheetHeader" class="sheet-header">
+        <button
+          type="button"
+          class="sheet-toggle"
+          :aria-expanded="sheetOpen"
+          aria-label="Toggle project details"
+          @click="toggleSheet"
+        >
+          <div class="sheet-grip" />
+          <div class="sheet-header-row">
+            <div class="sheet-header-text">
+              <div class="text-h6 sheet-title">{{ project.title }}</div>
+              <div class="text-caption sheet-year">{{ project.year }}</div>
+            </div>
+            <q-icon
+              name="keyboard_arrow_up"
+              size="24px"
+              class="sheet-chevron"
+              :class="{ flipped: sheetOpen }"
+            />
           </div>
-          <q-icon
-            name="keyboard_arrow_up"
-            size="24px"
-            class="sheet-chevron"
-            :class="{ flipped: sheetOpen }"
-          />
-        </div>
+        </button>
         <div
           v-if="subVizList && subVizList.length > 1"
           class="sheet-chips"
           role="tablist"
-          @click.stop
         >
           <button
             v-for="(viz, i) in subVizList"
@@ -665,7 +685,7 @@ const activeSubVizTitle = computed(() => {
             {{ viz.title }}
           </button>
         </div>
-      </button>
+      </div>
 
       <div class="sheet-content">
         <template v-if="subVizList">
@@ -1067,8 +1087,10 @@ const activeSubVizTitle = computed(() => {
 .map-bottom-bar-mobile {
   left: 12px;
   right: 12px;
-  /* Sits above the 96px collapsed sheet peek plus a 12px gap. */
-  bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  /* Sits above the collapsed sheet peek plus a 12px gap. */
+  bottom: calc(
+    var(--sheet-peek, 96px) + 12px + env(safe-area-inset-bottom, 0px)
+  );
   flex-direction: row;
   align-items: flex-end;
   flex-wrap: wrap;
@@ -1086,11 +1108,13 @@ const activeSubVizTitle = computed(() => {
   flex-shrink: 0;
 }
 
-/* Slider takes its own row; a shared one would leave too little track. Having
-   its own row, it also opts out of the desktop max-width cap. */
+/* On a portrait phone the slider wraps to its own row; a shared one would
+   leave too little track. A landscape phone has the width for legend and
+   slider side by side, and not the height to stack them (they reached up
+   under the nav). It also opts out of the desktop max-width cap. */
 .map-bottom-bar-mobile .time-slider-wrap {
-  flex: 1 1 100%;
-  align-self: stretch;
+  flex: 1 1 280px;
+  align-self: flex-end;
   max-width: none;
 }
 
@@ -1114,26 +1138,38 @@ const activeSubVizTitle = computed(() => {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Peek = the measured header height (see sheetPeek), 96px until measured. */
 .sheet-closed {
-  height: 96px;
+  height: calc(var(--sheet-peek, 96px) + env(safe-area-inset-bottom, 0px));
 }
 
+/* dvh follows the mobile browser toolbars; vh stays as the fallback. */
 .sheet-open {
   height: 82vh;
+  height: 82dvh;
 }
 
 .sheet-header {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  text-align: left;
   padding: 10px var(--page-gutter) 12px;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.sheet-toggle {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sheet-grip {
@@ -1186,8 +1222,10 @@ const activeSubVizTitle = computed(() => {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  margin: 0 -6px;
-  padding: 0 6px;
+  /* The vertical 6px is room for the chips' 40px hit area (style.css): a
+     scroller clips whatever overflows it. */
+  margin: -6px -6px;
+  padding: 6px 6px;
 }
 
 .sheet-chips::-webkit-scrollbar {
