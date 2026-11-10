@@ -47,6 +47,9 @@ let resettingToOverview = false; // true while the scroll-back restore flyTo is 
 let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
 let markersSetupStarted = false;
 let unsubscribeBasemapSync: (() => void) | null = null;
+// Bumped on every hover change. The fly-out waits for the preview fade-out and
+// checks this, so a stale fly-out never starts after a newer hover.
+let hoverSeq = 0;
 
 // Initial zoom scales with viewport width so the globe reads correctly on
 // phones and fills large monitors: smaller screens need a tighter globe.
@@ -159,8 +162,13 @@ watch(
   (projectId) => {
     if (!map || passive()) return;
 
+    const seq = ++hoverSeq;
     map.stop();
-    preview.remove(map);
+    // The globe must not move under a visible preview: the image only matches
+    // the globe at the capture pose. On hover the old image is hidden at once
+    // (see preview.add). On unhover we wait for the fade-out before the
+    // fly-out, below.
+    const hidden = preview.remove(map);
     preview.filterCircles(map, projectId);
 
     if (projectId) {
@@ -173,12 +181,11 @@ watch(
       );
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
-      const camera = preview.getPreviewCamera(projectId);
+      const camera = preview.getPreviewCamera(map, projectId);
       if (camera) {
-        // Fly to the exact pose the billboard was captured from, so its
-        // baked-in pitch/zoom perspective lines up with the live globe. Reveal
-        // the (preloaded) image right away so its fade-in overlaps the flight
-        // and converges as the globe settles, rather than waiting for moveend.
+        // Fly to the capture pose, with the zoom fitted to this viewport, so
+        // the image's baked-in perspective matches the live globe. The image
+        // shows once the flight lands (see preview.add).
         flying = true;
         map.flyTo({
           center: camera.center,
@@ -212,26 +219,34 @@ watch(
         });
       }
     } else {
-      // On unhover, zoom back out but stay at the current longitude so the
-      // camera doesn't jump away from where the user was just looking.
-      const currentLng = map.getCenter().lng;
-      flying = true;
-      map.flyTo({
-        center: [currentLng, initialCamera.center[1]],
-        zoom: initialCamera.zoom,
-        pitch: initialCamera.pitch,
-        bearing: initialCamera.bearing,
-        duration: 1200,
-      });
-      map.once("moveend", () => {
-        flying = false;
-        // Back at the initial pose: the hero returns to plain zoom-based rules.
-        projectStore.setPreviewFlightActive(false);
-        resumeSpin();
+      // On unhover, wait for the preview to fade out, then zoom back out. Stay
+      // at the current longitude so the camera doesn't jump away from where
+      // the user was just looking.
+      void hidden.then(() => {
+        if (!map || seq !== hoverSeq) return;
+        flyOutToOverview(map);
       });
     }
   },
 );
+
+function flyOutToOverview(m: maplibregl.Map) {
+  const currentLng = m.getCenter().lng;
+  flying = true;
+  m.flyTo({
+    center: [currentLng, initialCamera.center[1]],
+    zoom: initialCamera.zoom,
+    pitch: initialCamera.pitch,
+    bearing: initialCamera.bearing,
+    duration: 1200,
+  });
+  m.once("moveend", () => {
+    flying = false;
+    // Back at the initial pose: the hero returns to plain zoom-based rules.
+    projectStore.setPreviewFlightActive(false);
+    resumeSpin();
+  });
+}
 
 // --- Map setup ---
 
@@ -419,8 +434,8 @@ onUnmounted(() => {
     unsubscribeBasemapSync();
     unsubscribeBasemapSync = null;
   }
-  if (map) preview.remove(map);
   if (map) {
+    void preview.remove(map);
     map.remove();
     map = null;
   }

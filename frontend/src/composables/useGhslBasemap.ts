@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref, watch, type Ref } from "vue";
+import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from "vue";
 import maplibregl, { type Map, type PaddingOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { registerProtocols } from "@/lib/pmtilesClient";
@@ -24,8 +24,8 @@ export interface GhslBasemapOptions {
 /**
  * Creates a non-interactive MapLibre instance in `container` containing only
  * the GHSL + OSM-buildings basemap. Meant to sit behind an interactive overlay
- * map; `syncFrom(overlay)` wires camera events from the overlay back to this
- * basemap so the two canvases stay in lockstep.
+ * map; `syncFrom(overlay)` copies the overlay camera to this basemap on each
+ * overlay frame, so the two canvases stay in lockstep.
  *
  * The composable returns `ready` once the style has loaded and `syncFrom` is
  * safe to call. Cleanup runs in `onBeforeUnmount`.
@@ -34,7 +34,9 @@ export function useGhslBasemap(
   container: Ref<HTMLDivElement | null>,
   options: GhslBasemapOptions,
 ) {
-  const map = ref<Map | null>(null);
+  // shallowRef: a deep ref would wrap the MapLibre instance (and everything
+  // it touches while it renders) in reactive proxies.
+  const map = shallowRef<Map | null>(null);
   const ready = ref(false);
 
   registerProtocols();
@@ -87,36 +89,55 @@ export function useGhslBasemap(
   );
 
   /**
-   * Mirror camera events from `other` onto this basemap. Call after both
-   * maps have been constructed. Returns an unsubscribe fn.
+   * Mirror the camera of `other` onto this basemap. Call after both maps have
+   * been constructed. Returns an unsubscribe fn.
+   *
+   * We follow `render`, not `move`. Each map draws in its own animation frame
+   * callback, so with `move` the basemap could draw one frame before or after
+   * the overlay, depending on which callback ran first (during the idle spin
+   * it was one frame late on every frame). On `render` the overlay has just
+   * drawn: we set the same camera here and `redraw()` at once, so both canvases
+   * show the same camera in the same browser frame.
    */
   function syncFrom(other: Map): () => void {
     const target = map.value;
     if (!target) return () => {};
 
-    const apply = () => {
-      target.jumpTo({
-        center: other.getCenter(),
-        zoom: other.getZoom(),
-        bearing: other.getBearing(),
-        pitch: other.getPitch(),
-        padding: other.getPadding(),
-      });
+    let lastKey = "";
+    // Copy the camera if it changed. Returns true when it did.
+    const apply = (): boolean => {
+      const center = other.getCenter();
+      const padding = other.getPadding();
+      const zoom = other.getZoom();
+      const bearing = other.getBearing();
+      const pitch = other.getPitch();
+      const key = [
+        center.lng,
+        center.lat,
+        zoom,
+        bearing,
+        pitch,
+        padding.top,
+        padding.right,
+        padding.bottom,
+        padding.left,
+      ].join(",");
+      if (key === lastKey) return false;
+      lastKey = key;
+      target.jumpTo({ center, zoom, bearing, pitch, padding });
+      return true;
     };
 
     // Seed the camera immediately so the first paint is aligned.
     apply();
 
-    other.on("move", apply);
-    other.on("zoom", apply);
-    other.on("pitch", apply);
-    other.on("rotate", apply);
+    const onRender = () => {
+      if (apply()) target.redraw();
+    };
+    other.on("render", onRender);
 
     return () => {
-      other.off("move", apply);
-      other.off("zoom", apply);
-      other.off("pitch", apply);
-      other.off("rotate", apply);
+      other.off("render", onRender);
     };
   }
 

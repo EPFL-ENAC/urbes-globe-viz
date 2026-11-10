@@ -5,12 +5,16 @@ import { projectsGeoJSON } from "@/config/projects";
 const CIRCLES_LAYER = "project-circles";
 const MANIFEST_URL = "/previews/manifest.json";
 
-// Each project's settled capture camera, emitted by scripts/generate-previews.mjs
-// alongside the .png files. The hover preview flies the globe to this pose and
-// shows the matching image as a billboard, so its baked-in perspective lines up.
-// `size` is the logical-px side of the square capture viewport — the image
-// represents that many CSS pixels at the capture zoom, which is what lets us
-// rescale it to any live zoom (see positionOverlay).
+// Each project's settled capture camera, written by scripts/generate-previews.mjs
+// next to the .png files. `size` is the logical-px side of the square capture
+// viewport.
+//
+// A perspective picture only changes by a scale when the viewport height and
+// the zoom change together: a capture `size` px high at zoom `z` is the same
+// picture as a live viewport `H` px high at zoom `z + log2(H / size)`, scaled by
+// `H / size`. So the hover flies the globe to that fitted zoom (see
+// getPreviewCamera) and the image is scaled to match (see positionOverlay). The
+// camera padding only moves the picture, it does not change it.
 type PreviewManifest = Record<string, { camera: PreviewCamera; size?: number }>;
 
 // Fallback when an older manifest entry has no `size` (capture viewport was
@@ -57,75 +61,122 @@ function createDotIcon(size: number, borderWidth: number): ImageData {
 
 // --- Composable ---
 
+// Fade-out before the globe flies back out. The globe waits for it (see
+// Globe3D.vue), so it never moves under a visible preview.
+const FADE_OUT_MS = 150;
+
+// The capture camera, with the zoom fitted to this map's viewport height (see
+// the note on PreviewManifest). MapLibre clamps a flyTo to the map's min zoom,
+// so the fitted zoom is clamped the same way.
+function fitCamera(
+  map: maplibregl.Map,
+  camera: PreviewCamera,
+  size: number,
+): PreviewCamera {
+  const height = map.getCanvas().clientHeight || size;
+  const zoom = Math.min(
+    map.getMaxZoom(),
+    Math.max(map.getMinZoom(), camera.zoom + Math.log2(height / size)),
+  );
+  return { ...camera, zoom };
+}
+
+// Smallest angle between two bearings, in degrees.
+function bearingDelta(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 export function useMapPreview() {
   // One <img> per Globe3D instance, layered over the map canvas. The capture is
   // data-only over transparency, so the live globe basemap shows through.
   let overlayEl: HTMLImageElement | null = null;
   let activePreviewId: string | null = null;
-  // The pose + size the visible billboard was captured at. Kept set through the
-  // fade-out so it keeps tracking the globe while it shrinks away, instead of
-  // freezing mid-screen. Overwritten on the next add().
+  // The capture camera + size of the current image.
   let currentCamera: PreviewCamera | null = null;
   let currentSize = CAPTURE_SIZE;
   let trackedMap: maplibregl.Map | null = null;
   let onMove: (() => void) | null = null;
+  let onResize: (() => void) | null = null;
   let onSettle: (() => void) | null = null;
-  // Set when a billboard is queued to show but its capture point hasn't entered
-  // the globe has settled at the capture pose. Stays true until the flyTo lands,
-  // so the preview is only ever shown perfectly aligned, never mid-flight.
+  // True while a preview is queued to show and the globe is not at the capture
+  // pose yet. The image only shows once the globe stops there.
   let pendingReveal = false;
+  // True from the moment the fade-in starts until the image is hidden again.
+  let visible = false;
 
-  // Has the globe settled at (essentially) the captured pose? The hover flyTo
-  // lands exactly on the capture camera, so at that point the billboard is at
-  // scale 1 over its capture center — pixel-perfect. We confirm by zoom match +
-  // a project→unproject round-trip on the center: an occluded / off-screen point
-  // comes back as a different location (unproject returns the front-facing point
-  // under that pixel), so an interrupted/mid-flight moveend won't pass.
+  // Is the globe at the fitted capture pose? The image is only correct there,
+  // so it is shown only then. The hover flyTo lands exactly on this pose.
   function isSettledAtCapture(map: maplibregl.Map): boolean {
     if (!currentCamera) return false;
-    if (Math.abs(map.getZoom() - currentCamera.zoom) > 0.5) return false;
-    const [lng, lat] = currentCamera.center;
-    const p = map.project(currentCamera.center);
-    const canvas = map.getCanvas();
-    if (
-      p.x < 0 ||
-      p.y < 0 ||
-      p.x > canvas.clientWidth ||
-      p.y > canvas.clientHeight
-    )
-      return false;
-    const back = map.unproject(p);
-    let dLng = Math.abs(back.lng - lng) % 360;
-    if (dLng > 180) dLng = 360 - dLng;
-    return dLng < 1 && Math.abs(back.lat - lat) < 1;
+    const target = fitCamera(map, currentCamera, currentSize);
+    if (Math.abs(map.getZoom() - target.zoom) > 0.01) return false;
+    if (Math.abs(map.getPitch() - target.pitch) > 0.1) return false;
+    if (bearingDelta(map.getBearing(), target.bearing) > 0.1) return false;
+    // The capture center must sit on the camera center (the padded center of
+    // the canvas), within a pixel.
+    const p = map.project(target.center);
+    const c = map.project(map.getCenter());
+    return Math.hypot(p.x - c.x, p.y - c.y) < 1;
   }
 
-  // Fade the queued billboard in, but only once the globe has stopped at the
-  // capture pose so it appears perfectly aligned (called on moveend).
+  // Hide the image at once, with no fade.
+  function hideNow() {
+    visible = false;
+    if (!overlayEl) return;
+    overlayEl.style.transition = "none";
+    overlayEl.style.opacity = "0";
+    void overlayEl.offsetWidth; // commit the reset before the next transition
+  }
+
+  // Fade the queued image in, but only once the globe has stopped at the
+  // capture pose (called on moveend).
   function maybeReveal(map: maplibregl.Map) {
     if (!overlayEl || !pendingReveal || !isSettledAtCapture(map)) return;
     pendingReveal = false;
+    visible = true;
     const el = overlayEl;
     const id = activePreviewId;
     // Next frame so the opacity:0 state is committed first and the change
-    // animates; re-check the hover hasn't moved on in the meantime.
+    // animates. Check the hover did not move on in the meantime.
     requestAnimationFrame(() => {
-      if (el === overlayEl && activePreviewId === id) el.style.opacity = "1";
+      if (el !== overlayEl || activePreviewId !== id || !visible) return;
+      el.style.transition = "opacity 250ms ease";
+      el.style.opacity = "1";
     });
   }
 
-  // Pin the billboard to the globe: place its centre at the captured center's
-  // live screen position and scale it by the zoom delta. Because the image
-  // already baked in the capture's pitch/perspective, a flat image at this
-  // position + scale reproduces what that camera saw at the settled pose. We
-  // keep it tracking every move so it's correctly placed the instant it reveals,
-  // and stays put if the user pans the globe afterwards.
+  // Pin the image to the globe: its centre on the live screen position of the
+  // capture center, scaled by the zoom delta. At the fitted zoom the scale is
+  // H / size, which is what makes it match (see the note on PreviewManifest).
   function positionOverlay(map: maplibregl.Map) {
     if (!overlayEl || !currentCamera) return;
     const p = map.project(currentCamera.center);
     const s = Math.pow(2, map.getZoom() - currentCamera.zoom);
     const half = (currentSize * s) / 2;
     overlayEl.style.transform = `translate(${p.x - half}px, ${p.y - half}px) scale(${s})`;
+  }
+
+  // Safety net: if the camera leaves the capture pose while the image shows,
+  // hide it at once, so it is never seen misaligned. If the hover is still on,
+  // it shows again when the globe is back at the pose.
+  function handleMove(map: maplibregl.Map) {
+    positionOverlay(map);
+    if (visible && !isSettledAtCapture(map)) {
+      hideNow();
+      if (activePreviewId) pendingReveal = true;
+    }
+  }
+
+  // The fitted zoom depends on the viewport height. When it changes with a
+  // preview on, jump to the new fitted pose. The move handler hides the image,
+  // and moveend shows it again.
+  function handleResize(map: maplibregl.Map) {
+    positionOverlay(map);
+    if (!activePreviewId || !currentCamera) return;
+    if (isSettledAtCapture(map)) return;
+    pendingReveal = true;
+    map.jumpTo(fitCamera(map, currentCamera, currentSize));
   }
 
   function ensureOverlay(map: maplibregl.Map): HTMLImageElement {
@@ -144,28 +195,24 @@ export function useMapPreview() {
         "transform-origin:0 0",
         "pointer-events:none",
         "opacity:0",
-        // Fades in once the globe has stopped at the capture pose (moveend), so
-        // it materializes already perfectly aligned rather than snapping in.
-        "transition:opacity 250ms ease",
         "will-change:transform,opacity",
         "z-index:2",
       ].join(";");
       container.appendChild(overlayEl);
+      visible = false;
     }
-    // Track globe motion so the billboard stays pinned to its capture point (so
-    // it's correctly placed the instant it reveals and tracks any later pan),
-    // and reveal on moveend once the flight has settled at the capture pose.
-    // One persistent listener set per map; rebinds if the map instance changes.
+    // One listener set per map; rebinds if the map instance changes.
     if (trackedMap !== map) {
-      if (trackedMap && onMove && onSettle) {
+      if (trackedMap && onMove && onResize && onSettle) {
         trackedMap.off("move", onMove);
-        trackedMap.off("resize", onMove);
+        trackedMap.off("resize", onResize);
         trackedMap.off("moveend", onSettle);
       }
-      onMove = () => positionOverlay(map);
+      onMove = () => handleMove(map);
+      onResize = () => handleResize(map);
       onSettle = () => maybeReveal(map);
       map.on("move", onMove);
-      map.on("resize", onMove);
+      map.on("resize", onResize);
       map.on("moveend", onSettle);
       trackedMap = map;
     }
@@ -205,42 +252,66 @@ export function useMapPreview() {
     }
   }
 
-  /** Fade the active billboard out. */
-  function remove(_map: maplibregl.Map) {
-    if (overlayEl) overlayEl.style.opacity = "0";
+  /**
+   * Fade the image out. The promise resolves once it is hidden, so the caller
+   * can wait before it moves the globe.
+   */
+  function remove(_map: maplibregl.Map): Promise<void> {
     activePreviewId = null;
     pendingReveal = false;
-    // Keep currentCamera so the billboard keeps tracking the globe (shrinking
-    // back toward the marker) through the zoom-out flyTo, rather than freezing.
+    if (!overlayEl || !visible) {
+      hideNow();
+      return Promise.resolve();
+    }
+    visible = false;
+    const el = overlayEl;
+    el.style.transition = `opacity ${FADE_OUT_MS}ms ease`;
+    el.style.opacity = "0";
+    // Resolve when the fade really ends. A plain timer is not enough: on slow
+    // frames the CSS fade starts late and the image is still a bit visible when
+    // the timer fires. The fallback timer snaps it hidden, unless a new preview
+    // took over in the meantime.
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        el.removeEventListener("transitionend", onEnd);
+        clearTimeout(timer);
+        if (!activePreviewId) hideNow();
+        resolve();
+      };
+      const onEnd = (e: TransitionEvent) => {
+        if (e.propertyName === "opacity") finish();
+      };
+      el.addEventListener("transitionend", onEnd);
+      const timer = setTimeout(finish, FADE_OUT_MS + 100);
+    });
   }
 
-  /** Fade the project's pre-rendered image in, pinned to the globe. */
+  /**
+   * Queue the project's image. It shows once the globe has stopped at the
+   * fitted capture pose (see getPreviewCamera).
+   */
   function add(map: maplibregl.Map, projectId: string) {
     const camera = cameraById.get(projectId);
     if (!camera) return;
     const el = ensureOverlay(map);
+    if (activePreviewId !== projectId) {
+      // Hide at once before the image swap, so the new preview never shows at
+      // the old one's screen position.
+      hideNow();
+      el.src = `/previews/${projectId}.png`;
+    }
     currentCamera = camera;
     currentSize = sizeById.get(projectId) ?? CAPTURE_SIZE;
     el.style.width = `${currentSize}px`;
     el.style.height = `${currentSize}px`;
-    if (activePreviewId !== projectId) {
-      // Snap fully hidden with no transition *before* swapping the image, so the
-      // new (possibly far-away) preview never ghosts in at the previous
-      // billboard's screen position while that one is still fading out. The
-      // gated maybeReveal is the only thing that brings it back.
-      el.style.transition = "none";
-      el.style.opacity = "0";
-      void el.offsetWidth; // force reflow so the reset lands before the fade
-      el.style.transition = "opacity 250ms ease";
-      el.src = `/previews/${projectId}.png`;
-    }
     activePreviewId = projectId;
-    // Place it (pinned, invisible) so it's ready the instant it reveals.
+    // Place it (hidden) so it is ready when it shows.
     positionOverlay(map);
-    // Queue the fade-in: it happens only once the flyTo settles at the capture
-    // pose (moveend → maybeReveal), so the preview is shown perfectly aligned
-    // and never flashes mid-flight. If we're already settled there (e.g. the
-    // project is right under the current camera), reveal immediately.
+    // Show it on moveend, once the flyTo lands. If the globe is already there,
+    // show it now.
     pendingReveal = true;
     maybeReveal(map);
   }
@@ -253,9 +324,17 @@ export function useMapPreview() {
     );
   }
 
-  /** Capture camera for a project, for the hover flyTo. */
-  function getPreviewCamera(projectId: string): PreviewCamera | undefined {
-    return cameraById.get(projectId);
+  /**
+   * Camera for the hover flyTo: the capture camera with its zoom fitted to this
+   * map's viewport height, so the image matches the globe once it lands.
+   */
+  function getPreviewCamera(
+    map: maplibregl.Map,
+    projectId: string,
+  ): PreviewCamera | undefined {
+    const camera = cameraById.get(projectId);
+    if (!camera) return undefined;
+    return fitCamera(map, camera, sizeById.get(projectId) ?? CAPTURE_SIZE);
   }
 
   return { setupIcons, add, remove, filterCircles, getPreviewCamera };
