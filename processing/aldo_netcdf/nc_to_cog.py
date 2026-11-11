@@ -1,443 +1,260 @@
 #!/usr/bin/env python3
 """
-Convert WRF/PALM NetCDF files to Cloud Optimized GeoTIFF (COG) with time-series support.
+Convert a WRF output file (NetCDF) to a Cloud Optimized GeoTIFF (COG), and
+write wind arrows as JSON.
 
-Each timestep becomes a separate band in the output COG.
-Handles both WRF curvilinear grids (GCPs from XLONG/XLAT) and
-PALM local grids (affine geotransform from origin_x/origin_y in EPSG:2056).
+Each timestep of the file becomes one band of the COG. The WRF grid is
+curvilinear: we place it with ground control points (GCPs) taken from
+XLONG/XLAT, then warp it to Web Mercator (EPSG:3857), the projection the
+viewer needs.
+
+Only rasterio is used (its wheel ships GDAL), so no system GDAL is needed.
+
+Variables:
+    raw WRF names       T2, TSK, U10, V10, Q2, SWDOWN, ... (same units as WRF)
+    T2C, TSKC           T2 and TSK in °C (K - 273.15)
+    WS10                10 m wind speed in m/s, sqrt(U10² + V10²)
 
 Usage:
-    # WRF (auto-detects curvilinear grid):
-    uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 -v T2 -o t2_cog.tif
-
-    # PALM (auto-detects local grid with origin attrs, --z-level picks height):
-    uv run nc_to_cog.py -i TEST_4_3d.001-001.nc -v ta --z-level 3 -o ta_cog.tif
+    uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 -v T2C -o wrf_d03_t2c_cog.tif
+    uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 --arrows wrf_d03_wind10.json --stride 4
 """
 
 import argparse
-import shutil
-import subprocess
+import json
+import math
 import tempfile
+import warnings
+from collections.abc import Callable
 from pathlib import Path
 
-try:
-    import netCDF4 as nc
-    import numpy as np
-except ImportError:
-    print("Missing dependencies. Run: uv add netcdf4 numpy")
-    raise
+import netCDF4 as nc
+import numpy as np
+import rasterio
+import rasterio.shutil
+from rasterio.control import GroundControlPoint
+from rasterio.crs import CRS
+from rasterio.enums import Resampling
+from rasterio.errors import NotGeoreferencedWarning
+from rasterio.vrt import WarpedVRT
+
+KELVIN = 273.15
+
+# The raw grid is placed with GCPs, set right after the file is created.
+warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
+
+# Derived variables: name -> (WRF variables it needs, function of their arrays).
+DERIVED: dict[str, tuple[tuple[str, ...], Callable[..., np.ndarray]]] = {
+    "T2C": (("T2",), lambda t2: t2 - KELVIN),
+    "TSKC": (("TSK",), lambda tsk: tsk - KELVIN),
+    "WS10": (("U10", "V10"), lambda u, v: np.hypot(u, v)),
+}
+
+WGS84 = CRS.from_epsg(4326)
+WEB_MERCATOR = CRS.from_epsg(3857)
 
 
-def get_netcdf_info(input_path: str) -> dict:
-    """Inspect a NetCDF file and return dimension/variable/coordinate info."""
-    ds = nc.Dataset(input_path)
-
-    lon_var = lat_var = time_var = None
-    for var_name in ds.variables:
-        var_lower = var_name.lower()
-        if var_lower in ("xlong", "lon", "longitudes", "longitude", "x"):
-            lon_var = var_name
-        elif var_lower in ("xlat", "lat", "latitudes", "latitude", "y"):
-            lat_var = var_name
-        elif var_lower in ("time", "times"):
-            time_var = var_name
-
-    dims = {dim_name: len(dim_obj) for dim_name, dim_obj in ds.dimensions.items()}
-    variables = list(ds.variables.keys())
-    ds.close()
-
-    return {
-        "dimensions": dims,
-        "variables": variables,
-        "lon_var": lon_var,
-        "lat_var": lat_var,
-        "time_var": time_var,
-    }
+def _read(ds: nc.Dataset, name: str) -> np.ndarray:
+    """Read a (Time, south_north, west_east) variable as float32, NaN for masked cells."""
+    var = next((v for v in ds.variables if v.lower() == name.lower()), None)
+    if var is None:
+        raise ValueError(f"Variable '{name}' not found. Available: {list(ds.variables)}")
+    data = ds.variables[var][:]
+    if data.ndim != 3:
+        raise ValueError(f"'{var}' has shape {data.shape}, expected (Time, y, x)")
+    return np.ma.filled(data.astype(np.float32), np.nan)
 
 
-def _detect_grid_type(ds: nc.Dataset) -> str:
-    """Detect whether the NetCDF uses WRF curvilinear or PALM local coordinates."""
-    # WRF: has 2D XLONG/XLAT arrays
-    for v_name in ("XLONG", "XLONG_U", "XLONG_V"):
-        if v_name in ds.variables:
-            return "wrf"
-
-    # PALM: has origin_x/origin_y global attrs + 1D x/y arrays
-    if hasattr(ds, "origin_x") and hasattr(ds, "origin_y"):
-        if "x" in ds.variables and "y" in ds.variables:
-            return "palm"
-
-    # Fallback: regular grid with lon/lat 1D arrays
-    return "regular"
+def read_variable(ds: nc.Dataset, name: str) -> np.ndarray:
+    """Raw WRF variable or derived one, shape (Time, y, x)."""
+    derived = DERIVED.get(name.upper())
+    if derived is None:
+        return _read(ds, name)
+    inputs, fn = derived
+    return fn(*(_read(ds, v) for v in inputs)).astype(np.float32)
 
 
-def _find_wrf_coordinates(ds: nc.Dataset) -> tuple[np.ndarray, np.ndarray]:
-    """Extract 2D lon/lat arrays from WRF dataset."""
-    for v_name in ("XLONG", "XLONG_U", "XLONG_V"):
-        if v_name in ds.variables:
-            data = ds.variables[v_name][:]
-            if data.ndim == 3:
-                data = data[0]
-            lon_2d = data
-            lat_name = v_name.replace("LONG", "LAT")
-            if lat_name in ds.variables:
-                lat_data = ds.variables[lat_name][:]
-                if lat_data.ndim == 3:
-                    lat_data = lat_data[0]
-                return lon_2d, lat_data
-    raise ValueError("Could not find XLONG/XLAT coordinate arrays")
+def read_lonlat(ds: nc.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    """2D lon/lat of the mass grid (first timestep, the grid does not move)."""
+    return _read(ds, "XLONG")[0], _read(ds, "XLAT")[0]
 
 
-def _get_palm_geotransform(ds: nc.Dataset) -> tuple[float, float, float, float, str]:
-    """Compute GDAL geotransform for PALM local grid.
+def earth_winds(ds: nc.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    """U10/V10 rotated from the grid axes to east/north.
 
-    Returns (origin_x_gdal, origin_y_gdal, dx, dy, srs) where
-    origin is top-left corner of the raster in EPSG:2056.
+    WRF winds follow the model grid. On a Lambert grid, grid north is not true
+    north, SINALPHA/COSALPHA give the angle. The speed does not change.
     """
-    origin_x = float(ds.origin_x)
-    origin_y = float(ds.origin_y)
-    x = ds.variables["x"][:]
-    y = ds.variables["y"][:]
-    dx = float(x[1] - x[0]) if len(x) > 1 else 1.0
-    dy = float(y[1] - y[0]) if len(y) > 1 else 1.0
-
-    # x/y are cell centers in local meters offset from origin.
-    # Top-left corner = origin + first cell center - half cell size
-    # GDAL convention: origin is top-left, y goes downward (negative dy)
-    top_left_x = origin_x + float(x[0]) - dx / 2
-    top_left_y = origin_y + float(y[-1]) + dy / 2  # top = max y + half cell
-
-    return top_left_x, top_left_y, dx, dy, "EPSG:2056"
+    u, v = _read(ds, "U10"), _read(ds, "V10")
+    if "SINALPHA" in ds.variables and "COSALPHA" in ds.variables:
+        sina, cosa = _read(ds, "SINALPHA"), _read(ds, "COSALPHA")
+        u, v = u * cosa - v * sina, v * cosa + u * sina
+    return u, v
 
 
-def _extract_timestep(var_data, t: int, z_level: int | None = None) -> np.ndarray:
-    """Extract a 2D slice from a variable at timestep t.
-
-    For 4D data (time, z, y, x), uses z_level if provided, else level 0.
-    """
-    shape = var_data.shape
-    if len(shape) == 4:
-        # (time, z, y, x)
-        z = z_level if z_level is not None else 0
-        data = var_data[t, z, :, :]
-    elif len(shape) == 3:
-        # (time, y, x)
-        data = var_data[t, :, :]
-    else:
-        data = var_data[t]
-
-    if hasattr(data, "mask"):
-        data = np.ma.filled(data, fill_value=np.nan)
-
-    return np.asarray(data, dtype=np.float32)
+def make_gcps(lon: np.ndarray, lat: np.ndarray, step: int = 10) -> list[GroundControlPoint]:
+    """GCPs every `step` cells plus the 4 corners, at cell centers."""
+    height, width = lon.shape
+    cells = {(r, c) for r in range(0, height, step) for c in range(0, width, step)}
+    cells |= {(0, 0), (0, width - 1), (height - 1, 0), (height - 1, width - 1)}
+    return [
+        GroundControlPoint(row=r + 0.5, col=c + 0.5, x=float(lon[r, c]), y=float(lat[r, c]))
+        for r, c in sorted(cells)
+    ]
 
 
-def _run_cmd(cmd: list[str], label: str):
-    """Run a subprocess command, raising on failure."""
-    print(f"  Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"{label} failed:\n{result.stderr}")
-    if result.stdout.strip():
-        for line in result.stdout.strip().split("\n")[:5]:
-            print(f"    {line}")
-
-
-def _write_wrf_geotiff(
-    data: np.ndarray,
-    lon_2d: np.ndarray,
-    lat_2d: np.ndarray,
-    output_path: Path,
-    gcp_step: int = 10,
-):
-    """Write a single-band GeoTIFF with GCPs for WRF curvilinear grids."""
-    height, width = data.shape
-
-    bil_path = output_path.with_suffix(".bil")
-    hdr_path = output_path.with_suffix(".hdr")
-    data.astype("<f4").tofile(bil_path)
-    hdr_path.write_text(
-        f"NROWS {height}\n"
-        f"NCOLS {width}\n"
-        f"NBANDS 1\n"
-        f"NBITS 32\n"
-        f"PIXELTYPE FLOAT\n"
-        f"BYTEORDER I\n"
-        f"LAYOUT BIL\n"
+def print_stats(name: str, data: np.ndarray):
+    valid = data[np.isfinite(data)]
+    p1, p99 = np.percentile(valid, [1, 99])
+    print(
+        f"  {name}: min {valid.min():.4f}  p1 {p1:.4f}  mean {valid.mean():.4f}"
+        f"  p99 {p99:.4f}  max {valid.max():.4f}"
     )
 
-    gcps = []
-    for row in range(0, height, gcp_step):
-        for col in range(0, width, gcp_step):
-            lon = float(lon_2d[row, col])
-            lat = float(lat_2d[row, col])
-            gcps.append(f"-gcp {col + 0.5} {row + 0.5} {lon} {lat}")
-    for row, col in [(0, 0), (0, width - 1), (height - 1, 0), (height - 1, width - 1)]:
-        lon = float(lon_2d[row, col])
-        lat = float(lat_2d[row, col])
-        gcps.append(f"-gcp {col + 0.5} {row + 0.5} {lon} {lat}")
 
-    cmd = [
-        "gdal_translate",
-        "-of", "GTiff",
-        "-a_srs", "EPSG:4326",
-    ]
-    for gcp in gcps:
-        cmd.extend(gcp.split())
-    cmd.extend([str(bil_path), str(output_path)])
-    _run_cmd(cmd, "gdal_translate (GCP embedding)")
-
-    bil_path.unlink(missing_ok=True)
-    hdr_path.unlink(missing_ok=True)
-
-
-def _write_palm_geotiff(
+def write_cog(
     data: np.ndarray,
-    geotransform: tuple[float, float, float, float, str],
-    output_path: Path,
-):
-    """Write a single-band GeoTIFF with affine geotransform for PALM grids."""
-    height, width = data.shape
-    top_left_x, top_left_y, dx, dy, srs = geotransform
-
-    bil_path = output_path.with_suffix(".bil")
-    hdr_path = output_path.with_suffix(".hdr")
-
-    # PALM y-axis goes from south to north, but raster convention is top-to-bottom.
-    # Flip the data so row 0 = northernmost.
-    data_flipped = np.flipud(data)
-    data_flipped.astype("<f4").tofile(bil_path)
-    hdr_path.write_text(
-        f"NROWS {height}\n"
-        f"NCOLS {width}\n"
-        f"NBANDS 1\n"
-        f"NBITS 32\n"
-        f"PIXELTYPE FLOAT\n"
-        f"BYTEORDER I\n"
-        f"LAYOUT BIL\n"
-        f"ULXMAP {top_left_x + dx / 2}\n"
-        f"ULYMAP {top_left_y - dy / 2}\n"
-        f"XDIM {dx}\n"
-        f"YDIM {dy}\n"
-    )
-
-    cmd = [
-        "gdal_translate",
-        "-of", "GTiff",
-        "-a_srs", srs,
-        str(bil_path), str(output_path),
-    ]
-    _run_cmd(cmd, "gdal_translate (PALM geotransform)")
-
-    bil_path.unlink(missing_ok=True)
-    hdr_path.unlink(missing_ok=True)
-
-
-def extract_variable_to_cog(
-    input_path: str,
-    variable: str,
-    output_path: str,
-    z_level: int | None = None,
+    lon: np.ndarray,
+    lat: np.ndarray,
+    output: Path,
     resampling: str = "bilinear",
     compress: str = "DEFLATE",
 ):
-    """Extract a variable from NetCDF and create a multi-band COG (one band per timestep)."""
-    ds = nc.Dataset(input_path)
+    """Warp (Time, y, x) data to EPSG:3857 and write it as a COG, one band per timestep."""
+    count, height, width = data.shape
 
-    # Detect grid type
-    grid_type = _detect_grid_type(ds)
-    print(f"  Grid type: {grid_type}")
+    with tempfile.TemporaryDirectory(prefix="nc_to_cog_") as tmp:
+        # 1. Raw grid as a GeoTIFF, placed with GCPs (no affine transform).
+        raw_tif = Path(tmp) / "raw.tif"
+        with rasterio.open(
+            raw_tif, "w", driver="GTiff", width=width, height=height, count=count,
+            dtype="float32", nodata=np.nan,
+        ) as raw:
+            raw.write(data)
+            raw.gcps = (make_gcps(lon, lat), WGS84)
 
-    # Find variable (case-insensitive)
-    var_name = next((v for v in ds.variables if v.lower() == variable.lower()), None)
-    if var_name is None:
-        available = [v for v in ds.variables.keys()]
-        ds.close()
-        raise ValueError(f"Variable '{variable}' not found. Available: {available}")
+        # 2. Warp to EPSG:3857, like gdalwarp: GDAL picks the output grid.
+        warped_tif = Path(tmp) / "warped.tif"
+        with rasterio.open(raw_tif) as raw, WarpedVRT(
+            raw,
+            crs=WEB_MERCATOR,
+            resampling=Resampling[resampling],
+            src_nodata=np.nan,
+            nodata=np.nan,
+        ) as vrt:
+            profile = {
+                "driver": "GTiff",
+                "width": vrt.width,
+                "height": vrt.height,
+                "count": count,
+                "dtype": "float32",
+                "crs": WEB_MERCATOR,
+                "transform": vrt.transform,
+                "nodata": np.nan,
+            }
+            with rasterio.open(warped_tif, "w", **profile) as dst:
+                dst.write(vrt.read())
 
-    var_data = ds.variables[var_name]
-
-    # Find time dimension
-    time_dim = None
-    for dim_name in var_data.dimensions:
-        if dim_name.lower().startswith("time") or dim_name == "Time":
-            time_dim = dim_name
-            break
-    if time_dim is None:
-        ds.close()
-        raise ValueError(f"No time dimension found in variable '{var_name}'")
-
-    num_timesteps = len(ds.dimensions[time_dim])
-
-    # Report z-level usage for 4D data
-    if len(var_data.shape) == 4:
-        z_idx = z_level if z_level is not None else 0
-        z_dim_name = var_data.dimensions[1]
-        if z_dim_name in ds.variables:
-            z_values = ds.variables[z_dim_name][:]
-            z_height = float(z_values[z_idx])
-            print(f"  Z-level: index {z_idx} = {z_height:.2f}m ({z_dim_name})")
-        else:
-            print(f"  Z-level: index {z_idx} ({z_dim_name})")
-
-    print(f"  Variable: {var_name}, shape: {var_data.shape}, timesteps: {num_timesteps}")
-
-    # Set up grid-specific coordinate info
-    if grid_type == "wrf":
-        lon_2d, lat_2d = _find_wrf_coordinates(ds)
-        print(f"  Grid size: {lat_2d.shape[0]} x {lon_2d.shape[1]}")
-        print(f"  Lon range: [{float(lon_2d.min()):.4f}, {float(lon_2d.max()):.4f}]")
-        print(f"  Lat range: [{float(lat_2d.min()):.4f}, {float(lat_2d.max()):.4f}]")
-        palm_gt = None
-    elif grid_type == "palm":
-        palm_gt = _get_palm_geotransform(ds)
-        x = ds.variables["x"][:]
-        y = ds.variables["y"][:]
-        print(f"  Grid size: {len(y)} x {len(x)}, resolution: {palm_gt[2]:.2f}m")
-        print(f"  Origin (LV95): E={palm_gt[0]:.2f}, N={palm_gt[1]:.2f}")
-        lon_2d = lat_2d = None
-    else:
-        raise ValueError(f"Unsupported grid type: {grid_type}")
-
-    temp_dir = Path(tempfile.mkdtemp(prefix="nc_to_cog_"))
-
-    resampling_map = {
-        "nearest": "near",
-        "average": "average",
-        "bilinear": "bilinear",
-        "cubic": "cubic",
-    }
-
-    try:
-        warped_tifs = []
-        for t in range(num_timesteps):
-            print(f"  Extracting timestep {t + 1}/{num_timesteps}")
-            data = _extract_timestep(var_data, t, z_level)
-            raw_tif = temp_dir / f"band_{t:04d}_raw.tif"
-
-            if grid_type == "wrf":
-                _write_wrf_geotiff(data, lon_2d, lat_2d, raw_tif)
-                src_srs = None  # GCPs already embed EPSG:4326
-            elif grid_type == "palm":
-                _write_palm_geotiff(data, palm_gt, raw_tif)
-                src_srs = "EPSG:2056"
-
-            # Warp to EPSG:3857
-            warped_tif = temp_dir / f"band_{t:04d}_3857.tif"
-            cmd = [
-                "gdalwarp",
-                str(raw_tif),
-                str(warped_tif),
-                "-t_srs", "EPSG:3857",
-                "-r", resampling_map.get(resampling, "bilinear"),
-                "-dstnodata", "nan",
-            ]
-            if src_srs:
-                cmd.extend(["-s_srs", src_srs])
-            _run_cmd(cmd, f"gdalwarp (timestep {t} to 3857)")
-            warped_tifs.append(warped_tif)
-            raw_tif.unlink(missing_ok=True)
-
-        ds.close()
-
-        # Stack all warped timesteps into a multi-band VRT
-        stacked_vrt = temp_dir / "stacked.vrt"
-        cmd = [
-            "gdalbuildvrt",
-            "-separate",
-            str(stacked_vrt),
-        ] + [str(p) for p in warped_tifs]
-        _run_cmd(cmd, "gdalbuildvrt -separate")
-
-        # Convert VRT to COG
-        print("  Creating COG...")
-        cmd = [
-            "gdal_translate",
-            str(stacked_vrt),
-            output_path,
-            "-of", "COG",
-            "-co", f"COMPRESS={compress}",
-            "-co", "LEVEL=6",
-            "-co", "PREDICTOR=2",
-            "-co", "BLOCKSIZE=256",
-            "-co", "TILING_SCHEME=GoogleMapsCompatible",
-            "-co", "OVERVIEW_RESAMPLING=AVERAGE",
-            "-co", "BIGTIFF=IF_SAFER",
-            "--config", "GDAL_CACHEMAX", "4096",
-            "--config", "GDAL_NUM_THREADS", "ALL_CPUS",
-        ]
-        _run_cmd(cmd, "gdal_translate (COG creation)")
-
-        print(f"\n  COG created: {output_path}")
-
-        # Verify
-        result = subprocess.run(
-            ["gdalinfo", output_path], capture_output=True, text=True
+        # 3. COG. GoogleMapsCompatible aligns the pixels on the web map tile
+        # grid. Without it the viewer draws the data at the wrong place.
+        rasterio.shutil.copy(
+            warped_tif,
+            output,
+            driver="COG",
+            COMPRESS=compress,
+            LEVEL=6,
+            PREDICTOR=2,
+            BLOCKSIZE=256,
+            TILING_SCHEME="GoogleMapsCompatible",
+            OVERVIEW_RESAMPLING="AVERAGE",
+            BIGTIFF="IF_SAFER",
         )
-        if result.returncode == 0:
-            for line in result.stdout.split("\n")[:20]:
-                print(f"    {line}")
 
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
+    with rasterio.open(output) as cog:
+        b = cog.bounds
+        print(
+            f"  COG: {output} ({output.stat().st_size} bytes), {cog.width}x{cog.height} px,"
+            f" {cog.count} band(s), bounds [{b.left:.0f}, {b.bottom:.0f}, {b.right:.0f}, {b.top:.0f}]"
+        )
+
+
+def write_arrows(ds: nc.Dataset, output: Path, stride: int):
+    """Wind arrows on the native grid, one every `stride` cells, first timestep.
+
+    Each point is [lon, lat, direction, speed]. The direction is where the wind
+    comes from, in degrees from north (WD = atan2(-U, -V) * 57.29578, as asked
+    by URBES), between 0 and 360. The speed is in m/s.
+    """
+    lon, lat = read_lonlat(ds)
+    u, v = earth_winds(ds)
+    u, v = u[0], v[0]
+    height, width = lon.shape
+    # Start half a stride in, so the arrows are centered in the domain.
+    offset = stride // 2
+    points = []
+    for r in range(offset, height, stride):
+        for c in range(offset, width, stride):
+            uu, vv = float(u[r, c]), float(v[r, c])
+            if not (math.isfinite(uu) and math.isfinite(vv)):
+                continue
+            direction = (math.atan2(-uu, -vv) * 57.29578) % 360
+            points.append(
+                [
+                    round(float(lon[r, c]), 5),
+                    round(float(lat[r, c]), 5),
+                    round(direction, 1),
+                    round(math.hypot(uu, vv), 2),
+                ]
+            )
+    spacing_m = float(ds.DX) * stride
+    output.write_text(
+        json.dumps(
+            {
+                "description": "10 m wind. Each point is [lon, lat, direction the wind comes from in degrees north, speed in m/s].",
+                "spacing_m": spacing_m,
+                "points": points,
+            },
+            separators=(",", ":"),
+        )
+    )
+    print(f"  Arrows: {output} ({output.stat().st_size} bytes), {len(points)} points, {spacing_m:.0f} m apart")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert WRF/PALM NetCDF to multi-band COG (one band per timestep)"
+        description="Convert a WRF NetCDF file to a COG (one band per timestep), or to wind arrows"
     )
-    parser.add_argument("--input", "-i", required=True, help="Input NetCDF file")
-    parser.add_argument("--variable", "-v", required=True, help="Variable to extract")
-    parser.add_argument("--output", "-o", required=True, help="Output COG file")
+    parser.add_argument("--input", "-i", required=True, help="Input WRF NetCDF file")
     parser.add_argument(
-        "--z-level",
-        type=int,
-        default=None,
-        help="Z-level index for 4D data (default: 0 for WRF, 3 (~1.25m) for PALM)",
+        "--variable", "-v", help=f"Variable: a WRF name or one of {', '.join(DERIVED)}"
     )
+    parser.add_argument("--output", "-o", help="Output COG file")
+    parser.add_argument("--arrows", help="Write wind arrows (JSON) to this file")
+    parser.add_argument("--stride", type=int, default=4, help="One arrow every N cells (default 4)")
     parser.add_argument(
         "--resampling",
         "-r",
         default="bilinear",
         choices=["nearest", "average", "bilinear", "cubic"],
     )
-    parser.add_argument(
-        "--compress",
-        "-c",
-        default="DEFLATE",
-        choices=["DEFLATE", "LZW", "JPEG", "WEBP"],
-    )
-
+    parser.add_argument("--compress", "-c", default="DEFLATE", choices=["DEFLATE", "LZW", "ZSTD"])
     args = parser.parse_args()
 
+    if not args.arrows and not (args.variable and args.output):
+        parser.error("give --variable and --output, or --arrows")
     if not Path(args.input).exists():
         raise FileNotFoundError(f"Input file not found: {args.input}")
 
-    print(f"Analyzing {args.input}...")
-    info = get_netcdf_info(args.input)
-    print(f"  Dimensions: {info['dimensions']}")
-    print(f"  Variables: {info['variables'][:20]}")
-
-    # Auto-detect z-level default for PALM if not specified
-    z_level = args.z_level
-    if z_level is None:
-        ds = nc.Dataset(args.input)
-        if _detect_grid_type(ds) == "palm":
-            z_level = 3  # ~1.25m, pedestrian height
-            print(f"  PALM detected: using default z-level {z_level} (~1.25m)")
-        ds.close()
-
-    print(f"\nExtracting variable '{args.variable}'...")
-    extract_variable_to_cog(
-        args.input,
-        args.variable,
-        args.output,
-        z_level=z_level,
-        resampling=args.resampling,
-        compress=args.compress,
-    )
-
-    print("\nDone!")
+    print(f"{args.input}")
+    with nc.Dataset(args.input) as ds:
+        if args.variable and args.output:
+            data = read_variable(ds, args.variable)
+            print(f"  {args.variable}: {data.shape[0]} timestep(s), grid {data.shape[1]}x{data.shape[2]}")
+            print_stats(args.variable, data)
+            lon, lat = read_lonlat(ds)
+            write_cog(data, lon, lat, Path(args.output), args.resampling, args.compress)
+        if args.arrows:
+            write_arrows(ds, Path(args.arrows), args.stride)
 
 
 if __name__ == "__main__":

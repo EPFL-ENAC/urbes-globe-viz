@@ -19,7 +19,7 @@ import WrfDomainsSchema from "./wrf_domains_schema.vue";
       <WrfDomainsSchema highlight="d04" />
       <figcaption>
         d04 covers the Geneva basin at the same 333 m resolution as the sibling
-        d03 grid over Lausanne.
+        d03 grid over Lausanne. Click a domain to open it.
       </figcaption>
     </figure>
     <p>

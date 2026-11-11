@@ -115,6 +115,7 @@ frontend/src/config/projects/
 ├── wrf.ts
 └── descriptions/
     ├── hourly_adult_population.vue
+    ├── wrf_overview.vue            # project text + domains map as a menu
     ├── wrf_d02.vue                 # domains schema, d02 highlighted
     ├── wrf_d03.vue                 # inline SVG schema
     ├── wrf_d04.vue                 # reuses the same schema
@@ -233,9 +234,14 @@ const chartTheme = useChartTheme();
 
 Worked example:
 [`descriptions/wrf_domains_schema.vue`](../frontend/src/config/projects/descriptions/wrf_domains_schema.vue),
-shared by `wrf_d02.vue`, `wrf_d03.vue` and `wrf_d04.vue` via a `highlight` prop. That is a
-pattern worth copying when related sub-vizzes should show the same figure
-with a small variation.
+shared by `wrf_overview.vue`, `wrf_d02.vue`, `wrf_d03.vue` and `wrf_d04.vue` via a
+`highlight` prop. That is a pattern worth copying when related sub-vizzes should show
+the same figure with a small variation.
+
+The same figure is also a menu: a click on a domain opens its section. The component
+gets an `open(subVizId)` function with `inject(subVizNavKey)` (from
+`src/utils/subVizNav.ts`), provided by `ProjectDetailView`. Outside that page nothing is
+provided, so the figure stays a plain picture.
 
 ---
 
