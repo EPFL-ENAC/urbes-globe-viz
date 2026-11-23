@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.3.0...v1.3.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **globe:** keep the hover preview aligned with the basemap ([cf05ac0](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/cf05ac065ee6001a581e34014a7aa0d70e89f01b))
+* **globe:** keep the hover preview aligned with the basemap ([#49](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/49)) ([15f2368](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/15f2368a067508bbfd35fe337d5d41cc46d5580e))
+* **globe:** passive globe follows the mobile breakpoint after load ([b70f73b](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/b70f73b0393ca51791706a44a9eb1a5b06ee82c3)), closes [#48](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/48)
+* **landing:** phones in landscape get the mobile layout ([cd353b1](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/cd353b16a9d328bfc440383a138a187a650d0c5e))
+* **mobile:** sheet, tap targets and small text on project pages ([e031c86](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/e031c8643b54012917072e8187a4615948298cda)), closes [#48](https://github.com/EPFL-ENAC/urbes-globe-viz/issues/48)
+
 ## [1.3.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.2.0...v1.3.0) (2026-10-15)
 
 
