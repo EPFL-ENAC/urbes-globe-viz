@@ -314,7 +314,7 @@ Choose the recipe that matches your input file format. Each recipe is a separate
 | GeoPackage (.gpkg)                           | [GeoPackage → PMTiles](../processing/cookbook/gpkg_to_pmtiles.md)        | Uses ogr2ogr + tippecanoe                                                           |
 | GeoJSON (.geojson)                           | [GeoJSON → PMTiles](../processing/cookbook/geojson_to_pmtiles.md)        | Simplest — only needs tippecanoe                                                    |
 | Raster GeoTIFF (.tif)                        | [Raster → COG](../processing/cookbook/raster_to_cog.md)                  | Uses GDAL only, no tippecanoe                                                       |
-| NetCDF (WRF, PALM, climate simulations)      | [NetCDF → COG](../processing/cookbook/netcdf_to_cog.md)                  | Needs Python + uv. Multi-band COG with time slider support                          |
+| NetCDF (WRF climate simulations)             | [NetCDF → COG](../processing/cookbook/netcdf_to_cog.md)                  | Needs Python + uv. Multi-band COG with time slider support                          |
 
 > **Important:** In the recipe commands, replace `my_data` with your actual dataset name (the same `my_dataset_name` you used for your folder).
 
@@ -424,7 +424,7 @@ Look at the existing project configs and pick the one most similar to your data.
 | ---------------------------- | ------------------------------------ | ---------------------------------- | ----------------------------------- |
 | `she_sim_temporal.ts`        | Simulated urban height over time     | `fill-extrusion` + time slider     | Data with a time dimension          |
 | `hourly_adult_population.ts` | Population dynamics grid + flow arcs | `fill-extrusion` + custom renderer | Area data, origin-destination flows |
-| `wrf.ts`                     | Urban climate (WRF/PALM COG rasters) | COG + subViz                       | Multi-variable COG with time slider |
+| `wrf.ts`                     | Urban climate (WRF COG rasters)      | COG + subViz                       | Multi-variable COG with time slider |
 
 All files are in `frontend/src/config/projects/`.
 

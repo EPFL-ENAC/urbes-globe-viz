@@ -19,7 +19,7 @@ import WrfDomainsSchema from "./wrf_domains_schema.vue";
       <WrfDomainsSchema highlight="d03" />
       <figcaption>
         d03 sits inside the d02 parent domain and shares a timestep with the
-        sibling d04 grid over Geneva.
+        sibling d04 grid over Geneva. Click a domain to open it.
       </figcaption>
     </figure>
     <p>

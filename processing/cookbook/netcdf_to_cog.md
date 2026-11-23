@@ -1,181 +1,116 @@
-# NetCDF (WRF / PALM) → Cloud Optimized GeoTIFF
+# NetCDF (WRF) → Cloud Optimized GeoTIFF
 
-Convert climate simulation NetCDF files into multi-band Cloud Optimized GeoTIFFs (COGs) for the Deck.gl COG renderer. Each timestep becomes a separate band, enabling time-slider animation in the browser.
+Convert WRF output files (NetCDF) into multi-band Cloud Optimized GeoTIFFs (COGs) for the Deck.gl COG renderer. Each timestep becomes one band, so a time slider can animate it in the browser. The script also computes derived variables (°C, wind speed) and writes wind arrows.
 
-Supports two model types:
-
-- **WRF** — mesoscale weather model with curvilinear lon/lat grids (XLONG/XLAT arrays)
-- **PALM** — microscale large-eddy simulation with local meter grids (origin in Swiss LV95 / EPSG:2056)
-
-The conversion script auto-detects which type your file is.
+WRF uses a curvilinear grid: the 2D arrays `XLONG`/`XLAT` give the position of each cell. The script places the grid with ground control points (GCPs) from these arrays, then warps it to Web Mercator.
 
 ## Pipeline
 
 ```
-wrfout_d03_2022-07-15_12_00_00   ─┐
-wrfout_d02_2022-07-15_12_00_00   ─┤  nc_to_cog.py     frontend/public/geodata/
-TEST_4_3d.001-001.nc             ─┘  ──────────────►   wrf_d03_t2_cog.tif
-                                     (per variable)     wrf_d02_t2_cog.tif
-                                                        palm_ta_cog.tif
-                                                        …
+wrfout_d02_2022-07-15_12_00_00   ─┐   nc_to_cog.py          out/
+wrfout_d03_2022-07-15_12_00_00   ─┤   ───────────────►      wrf_d03_t2c_cog.tif
+wrfout_d04_2022-07-15_12_00_00   ─┘   (per variable)        wrf_d03_ws10_cog.tif
+                                                            wrf_d03_wind10.json
+                                                            …
 ```
 
 ## Requirements
 
-- **Python 3.10+**
-- **GDAL** (`gdalwarp`, `gdal_translate`, `gdalbuildvrt`, `gdalinfo`)
-- **uv** — Python package manager (installs `netcdf4` and `numpy` automatically)
+- **uv**, the Python package manager. It installs `rasterio` (with GDAL inside), `netcdf4` and `numpy` from `processing/pyproject.toml`. No system GDAL is needed.
 
 ```bash
-# Install uv (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install GDAL
-sudo apt install -y gdal-bin    # Ubuntu/Debian
-brew install gdal                # macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh   # if uv is not installed
+cd processing && uv sync
 ```
 
-No need to manually install Python dependencies — `uv run` handles them via the project's `pyproject.toml`.
-
-## Step 1 — Inspect your NetCDF file
-
-Before converting, check what variables and dimensions your file contains:
+## Step 1: Inspect your NetCDF file
 
 ```bash
 cd processing/aldo_netcdf
-
-# Quick overview with GDAL
-gdalinfo NETCDF:"your_file.nc" 2>&1 | head -30
-
-# Or with ncdump (if installed)
-ncdump -h your_file.nc | head -60
-
-# Or use the script's built-in info
-uv run nc_to_cog.py -i your_file.nc -v T2 -o /dev/null 2>&1 | head -10
+uv run python -c "import netCDF4; ds = netCDF4.Dataset('wrfout_d03_2022-07-15_12_00_00'); print({k: v.dimensions for k, v in ds.variables.items()})"
 ```
 
-**What to look for:**
+What to look for:
 
-| Field              | WRF example                        | PALM example                                    |
-| ------------------ | ---------------------------------- | ----------------------------------------------- |
-| Variables          | T2, U10, V10, Q2, SWDOWN           | ta, wspeed, rh, theta                           |
-| Coordinates        | XLONG, XLAT (2D arrays)            | x, y (1D arrays) + `origin_x`, `origin_y` attrs |
-| Time dimension     | `Time` (often 1 per file)          | `time` (often many per file, e.g. 93)           |
-| Spatial dimensions | south_north, west_east             | y, x                                            |
-| 3D/4D              | 3D: (Time, south_north, west_east) | 4D: (time, z, y, x) — needs `--z-level`         |
+| Field              | WRF example                    |
+| ------------------ | ------------------------------ |
+| Variables          | T2, TSK, U10, V10, Q2, SWDOWN  |
+| Coordinates        | XLONG, XLAT (2D arrays)        |
+| Wind rotation      | SINALPHA, COSALPHA             |
+| Time dimension     | `Time` (often 1 per file)      |
+| Spatial dimensions | south_north, west_east         |
+| Shape              | (Time, south_north, west_east) |
 
-## Step 2 — Convert a WRF file
-
-WRF files typically have **one timestep per file** and variables on a 2D grid (time, y, x).
-
-```bash
-cd processing/aldo_netcdf
-
-uv run nc_to_cog.py \
-  -i wrfout_d03_2022-07-15_12_00_00 \
-  -v T2 \
-  -o ../../frontend/public/geodata/wrf_d03_t2_cog.tif
-```
-
-The script will:
-
-1. Detect the WRF curvilinear grid (XLONG/XLAT)
-2. Write each timestep as a GeoTIFF with Ground Control Points
-3. Warp to EPSG:3857 (Web Mercator)
-4. Stack all timesteps into a multi-band VRT
-5. Create a COG with `GoogleMapsCompatible` tiling scheme
-
-## Step 3 — Convert a PALM file
-
-PALM files often have **many timesteps** in one file and 4D variables (time, z, y, x). Use `--z-level` to select the height level.
+## Step 2: Convert a variable
 
 ```bash
 uv run nc_to_cog.py \
-  -i TEST_4_3d.001-001.nc \
-  -v ta \
-  --z-level 3 \
-  -o ../../frontend/public/geodata/palm_ta_cog.tif
+  -i wrfout_d03_2022-07-15_12_00_00 \
+  -v T2C \
+  -o out/wrf_d03_t2c_cog.tif
 ```
 
-**Choosing `--z-level`:** Level 3 corresponds to approximately 1.25 m height (pedestrian level) in typical PALM setups. Check the `z` coordinate values in your NetCDF to find the right level for your analysis. If omitted, defaults to level 3 for PALM files and level 0 for WRF files.
+`-v` takes a raw WRF name (`T2`, `Q2`, `SWDOWN`, ...) or a derived one:
 
-## Step 4 — Convert multiple variables at once
+| Name   | Content                 | Formula           |
+| ------ | ----------------------- | ----------------- |
+| `T2C`  | 2 m air temperature, °C | T2 - 273.15       |
+| `TSKC` | Surface temperature, °C | TSK - 273.15      |
+| `WS10` | 10 m wind speed, m/s    | sqrt(U10² + V10²) |
 
-For a project with multiple domains and variables, use a shell loop:
+The script prints min, p1, mean, p99 and max. Use them to pick `colorScaleValueRange`.
+
+## Step 3: Wind arrows
 
 ```bash
-# WRF: 3 domains × 4 variables
-for var in T2 U10 Q2 SWDOWN; do
-  var_lower=$(echo $var | tr '[:upper:]' '[:lower:]')
-  for domain in d02 d03 d04; do
-    echo "=== ${domain} ${var} ==="
-    uv run nc_to_cog.py \
-      -i wrfout_${domain}_2022-07-15_12_00_00 \
-      -v $var \
-      -o ../../frontend/public/geodata/wrf_${domain}_${var_lower}_cog.tif
-  done
-done
+uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 --arrows out/wrf_d03_wind10.json --stride 4
+```
 
-# PALM: 4 variables
-for var in ta wspeed rh theta; do
-  echo "=== PALM ${var} ==="
-  uv run nc_to_cog.py \
-    -i TEST_4_3d.001-001.nc \
-    -v $var \
-    --z-level 3 \
-    -o ../../frontend/public/geodata/palm_${var}_cog.tif
-done
+One arrow every `--stride` cells, on the native grid. Each point is `[lon, lat, direction, speed]`. The direction is where the wind comes from, in degrees from north: `atan2(-U, -V) * 57.29578`. U10/V10 are first turned from the model grid to east/north with SINALPHA/COSALPHA.
+
+## Step 4: All domains at once
+
+`processing/aldo_netcdf/Makefile` bakes every file of the WRF project:
+
+```bash
+cd processing/aldo_netcdf
+make bake INPUT_DIR=/path/to/folder/with/wrfout/files
 ```
 
 ## Flags reference
 
-| Flag                 | Description                                          | Default               |
-| -------------------- | ---------------------------------------------------- | --------------------- |
-| `-i`, `--input`      | Input NetCDF file path                               | (required)            |
-| `-v`, `--variable`   | Variable name to extract (case-insensitive)          | (required)            |
-| `-o`, `--output`     | Output COG file path                                 | (required)            |
-| `--z-level`          | Z-level index for 4D data (PALM: 3 ≈ 1.25 m)         | 3 for PALM, 0 for WRF |
-| `-r`, `--resampling` | Resampling method: nearest, average, bilinear, cubic | bilinear              |
-| `-c`, `--compress`   | Compression: DEFLATE, LZW, JPEG, WEBP                | DEFLATE               |
+| Flag                 | Description                                        | Default    |
+| -------------------- | -------------------------------------------------- | ---------- |
+| `-i`, `--input`      | Input WRF NetCDF file                              | (required) |
+| `-v`, `--variable`   | WRF or derived variable (case-insensitive)         |            |
+| `-o`, `--output`     | Output COG file                                    |            |
+| `--arrows`           | Output JSON of wind arrows                         |            |
+| `--stride`           | One arrow every N cells                            | 4          |
+| `-r`, `--resampling` | Warp resampling: nearest, average, bilinear, cubic | bilinear   |
+| `-c`, `--compress`   | Compression: DEFLATE, LZW, ZSTD                    | DEFLATE    |
 
-## How it works under the hood
+Give `-v` and `-o`, or `--arrows`, or both.
 
-The script handles the two grid types differently:
+## How it works
 
-**WRF (curvilinear grid):**
+1. Read the variable for every timestep, or compute the derived one.
+2. Write it as a GeoTIFF placed with GCPs (from XLONG/XLAT, every 10 cells plus the corners).
+3. Warp to EPSG:3857 with a `WarpedVRT` (the same as `gdalwarp`).
+4. Write the COG: DEFLATE, 256 px tiles, `TILING_SCHEME=GoogleMapsCompatible`, one band per timestep.
 
-1. Reads 2D `XLONG`/`XLAT` coordinate arrays
-2. Writes raw data as a flat binary (BIL) file
-3. Attaches Ground Control Points (GCPs) every 10 pixels mapping pixel → lon/lat
-4. `gdalwarp` reprojects from GCPs (EPSG:4326) to EPSG:3857
-
-**PALM (local meter grid):**
-
-1. Reads `origin_x`/`origin_y` global attributes (Swiss LV95 easting/northing)
-2. Computes GDAL geotransform from the x/y coordinate arrays + origin
-3. Writes raw data as BIL with ULXMAP/ULYMAP/XDIM/YDIM header
-4. `gdalwarp` reprojects from EPSG:2056 to EPSG:3857
-
-**Both types then:** 5. `gdalbuildvrt -separate` stacks all warped timesteps into a multi-band VRT 6. `gdal_translate -of COG -co TILING_SCHEME=GoogleMapsCompatible` creates the final COG
-
-The `GoogleMapsCompatible` tiling scheme is critical — it aligns the COG's pixel grid to the standard Web Mercator tile pyramid. Without it, the Deck.gl COG renderer will display the data at the wrong location.
+The `GoogleMapsCompatible` tiling scheme is critical. It aligns the pixels of the COG on the web map tile grid. Without it, the Deck.gl COG renderer draws the data at the wrong place.
 
 ## Verify your output
 
 ```bash
-gdalinfo your_output_cog.tif | grep -E "Size|Pixel|Tiling|NAME|Band|NoData"
+uv run python -c "import rasterio; s = rasterio.open('out/wrf_d03_t2c_cog.tif'); print(s.crs, s.count, s.shape, s.bounds, s.nodata)"
 ```
 
-Check for:
-
-- `NAME=GoogleMapsCompatible` in the Tiling Scheme section
-- Correct number of bands (= number of timesteps)
-- `NoData Value=nan`
-- CRS is EPSG:3857
+Check: CRS is EPSG:3857, the band count is the number of timesteps, nodata is `nan`.
 
 ## Frontend configuration
 
-COG raster projects use the `"deckgl-cog"` renderer instead of standard MapLibre sources/layers.
+COG raster projects use the `"deckgl-cog"` renderer instead of MapLibre sources and layers.
 
 ### Simple project (single variable, no time)
 
@@ -191,112 +126,93 @@ export const myClimateProject: ProjectConfig = {
   year: 2024,
   zoom: 10,
   pitch: 0,
-  unit: "K",
+  unit: "°C",
   info: "Source: My Lab",
 
   renderer: "deckgl-cog",
 
   cogRaster: {
-    url: "my_climate_t2_cog.tif", // filename in geodata/
-    colorScale: ["#000004", "#932667", "#fcffa4"], // low → high
-    colorScaleValueRange: [280, 310], // data value range
+    url: "my_climate_t2c_cog.tif", // filename in geodata/
+    colorScale: ["#30123b", "#1ae4b6", "#fabc29", "#7a0403"], // low → high
+    colorScaleValueRange: [5, 35], // data value range
   },
 
   legend: {
     title: "Temperature",
     gradient: {
+      // MapLegend draws the first stop at the top: list them high to low.
       stops: [
-        { value: "280 K", color: "#000004" },
-        { value: "295 K", color: "#932667" },
-        { value: "310 K", color: "#fcffa4" },
+        { value: "35 °C", color: "#7a0403" },
+        { value: "25 °C", color: "#fabc29" },
+        { value: "15 °C", color: "#1ae4b6" },
+        { value: "5 °C", color: "#30123b" },
       ],
-      unit: "K",
+      unit: "°C",
     },
   },
 };
 ```
 
-### Multiple variables with selector
+### Multiple variables with selector, and arrows
 
-Use `cogVariables` to let users switch between variables (e.g. temperature, wind, humidity). Each variable has its own COG file, color scale, and legend:
+Use `cogVariables` to let users switch between variables. Each variable has its own COG file, color scale and legend. Add `arrows` to draw the wind arrows on top of the raster:
 
 ```typescript
 cogVariables: [
   {
     id: "t2",
-    label: "Temperature",
+    label: "Air temp.",
     cogRaster: {
-      url: "wrf_d03_t2_cog.tif",
-      colorScale: ["#000004", "#932667", "#fcffa4"],
-      colorScaleValueRange: [278, 310],
+      url: "wrf_d03_t2c_cog.tif",
+      colorScale: TURBO,
+      colorScaleValueRange: [5, 35],
     },
-    legend: {
-      title: "2m Temperature",
-      gradient: {
-        stops: [
-          { value: "278 K", color: "#000004" },
-          { value: "310 K", color: "#fcffa4" },
-        ],
-        unit: "K",
-      },
-    },
+    legend: { title: "2m Air temperature", gradient: { ... } },
   },
   {
-    id: "u10",
-    label: "Wind (U)",
-    cogRaster: { url: "wrf_d03_u10_cog.tif", ... },
-    legend: { ... },
+    id: "wind",
+    label: "Wind",
+    cogRaster: { url: "wrf_d03_ws10_cog.tif", ... },
+    arrows: { url: "wrf_d03_wind10.json" },
+    legend: { title: "10m Wind (arrows: direction)", gradient: { ... } },
   },
 ],
 ```
 
-### Sub-visualizations (multiple domains or scales)
+### Sub-visualizations (multiple domains)
 
-Use `subViz` to let users scroll between different data sources (e.g. WRF regional → WRF city → PALM street). Each section has its own center/zoom so the map flies to the correct extent:
+Use `subViz` to let users scroll between domains. Each section has its own center and zoom, so the map flies to the right extent:
 
 ```typescript
 subViz: [
   {
     id: "wrf-d02",
-    title: "WRF d02 — Regional",
+    title: "WRF d02 - Lake Geneva Region",
     description: "1 km resolution over the full region.",
     coordinates: [6.555, 46.46],
     zoom: 9,
     renderer: "deckgl-cog",
-    cogVariables: wrfVariables("d02"),  // helper returning CogVariableConfig[]
+    cogVariables: wrfVariables("d02"), // helper returning CogVariableConfig[]
   },
-  {
-    id: "palm",
-    title: "PALM — Microscale",
-    description: "0.5 m resolution over a street block.",
-    coordinates: [6.63005, 46.51605],
-    zoom: 20,
-    renderer: "deckgl-cog",
-    cogVariables: palmVariables,
-    timeControl: {              // enables the time slider
-      min: 0,
-      max: 92,                  // 93 timesteps (bands)
-      step: 1,
-      initial: 0,
-      label: "Step",
-      displayFormat: "number",
-      autoplayIntervalMs: 200,  // autoplay speed in ms
-    },
-  },
+  // d03, d04 ...
 ],
 ```
 
 ### Time slider for animated data
 
-If your COG has multiple bands (timesteps), add a `timeControl` field (on the project or on a subViz entry). The time slider controls which band is displayed. `min` and `max` are 0-based band indices.
+If your COG has several bands (timesteps), add a `timeControl` field (on the project or on a subViz entry). The time slider picks the band to show. `min` and `max` are 0-based band indices.
+
+```typescript
+timeControl: { min: 0, max: 23, step: 1, initial: 0, label: "Hour", displayFormat: "hour" },
+```
 
 ### Real-world example
 
-See [`frontend/src/config/projects/wrf.ts`](../../frontend/src/config/projects/wrf.ts) — a complete project combining 3 WRF domains and PALM into 4 scrollable sections, each with 4 selectable climate variables and a time slider on the PALM section.
+See [`frontend/src/config/projects/wrf.ts`](../../frontend/src/config/projects/wrf.ts): 3 WRF domains as scrollable sections, 5 variables each, wind arrows, and a domains map that works as a menu.
 
-## Place output and upload
+## Test locally and upload
 
-1. **Local testing:** Files should already be in `frontend/public/geodata/` (the `-o` path in the commands above)
-2. **Production:** Copy the `.tif` files to the shared EPFL NAS `geodata/` folder — see [Step 4.6 of the guide](../../docs/guide.md#46-upload-your-data-file-for-production)
+1. **Local testing:** the dev server serves `processing/aldo_netcdf/out/<name>` for `/geodata/<name>` (see `bakedGeodata` in `frontend/vite.config.ts`). For files baked somewhere else, put them in `frontend/public/geodata/` of the main checkout.
+2. **Production:** copy the files to the shared EPFL NAS `geodata/` folder, see [Step 4.6 of the guide](../../docs/guide.md#46-upload-your-data-file-for-production).
 
-> **Note:** COG files can be large (especially PALM with 93 bands). Make sure to add `*.tif` to `.gitignore` in the geodata folder — these files should NOT be committed to Git.
+> **Note:** COG files must not go in Git. `*.tif` is in `.gitignore`.

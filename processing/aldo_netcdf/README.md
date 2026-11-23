@@ -1,191 +1,88 @@
-# WRF/PALM NetCDF → COG Pipeline
+# WRF NetCDF → COG pipeline
 
-Converts WRF (mesoscale) and PALM (microscale) NetCDF output files into Cloud Optimized GeoTIFFs (COGs) with time-series support for the Urbes Globe Viz platform.
+Converts WRF output files (NetCDF) into Cloud Optimized GeoTIFFs (COGs) and wind
+arrows for the "Lake-City Climates" project (`frontend/src/config/projects/wrf.ts`).
 
-## Data Characteristics
+| Domain | Resolution | Extent                |
+| ------ | ---------- | --------------------- |
+| d02    | 1 km       | Leman basin           |
+| d03    | 333 m      | Lausanne metropolitan |
+| d04    | 333 m      | Geneva metropolitan   |
 
-| Dataset | Resolution | Temporal | Extent            | Variables                              |
-| ------- | ---------- | -------- | ----------------- | -------------------------------------- |
-| WRF d02 | 1 km       | 4 hours  | Leman Lake region | Multivariable (T2, PRECIP, WIND, etc.) |
-| WRF d03 | 333 m      | 1 hour   | Lausanne metro    | Multivariable                          |
-| WRF d04 | 333 m      | 1 hour   | Geneva metro      | Multivariable                          |
-| PALM    | 0.5 m      | 10 min   | Urban canopy      | Multivariable                          |
+The source files (`wrfout_d0{2,3,4}_2022-07-15_12_00_00`) are not in git. Each one
+holds one timestep (noon UTC, 15 July 2022).
 
-## Pipeline Overview
+## What is baked
 
-```
-WRF/PALM NetCDF (4D: lat, lon, level, time)
-    ↓
-nc_to_cog.py (extract variable, reproject, create time-series COG)
-    ↓
-my_variable_cog.tif (multi-band COG, one band per timestep)
-    ↓
-Upload to CDN / NAS
-    ↓
-Frontend: TimeSlider + ProjectMap (existing pattern)
-```
+For each domain:
 
-## Prerequisites
+| File                     | Content                                        | From              |
+| ------------------------ | ---------------------------------------------- | ----------------- |
+| `wrf_<d>_t2c_cog.tif`    | 2 m air temperature, °C                        | T2 - 273.15       |
+| `wrf_<d>_tskc_cog.tif`   | Surface temperature, °C                        | TSK - 273.15      |
+| `wrf_<d>_ws10_cog.tif`   | 10 m wind speed, m/s                           | sqrt(U10² + V10²) |
+| `wrf_<d>_wind10.json`    | 10 m wind arrows (direction and speed)         | U10, V10          |
+| `wrf_<d>_q2_cog.tif`     | 2 m specific humidity, kg/kg (raw, baked once) | Q2                |
+| `wrf_<d>_swdown_cog.tif` | Shortwave downward radiation, W/m² (raw)       | SWDOWN            |
 
-```bash
-# System GDAL (required for netCDF support)
-sudo apt install gdal-bin libnetcdf-dev
+Wind direction is where the wind comes from, in degrees from north:
+`WD = atan2(-U, -V) * 57.29578`. Before that, U10/V10 are turned from the model grid
+to east/north with `SINALPHA`/`COSALPHA`. The speed does not change with this turn.
 
-# Python dependencies (from processing/ directory)
-cd /mnt/data/Documents/Code/urbes-globe-viz/processing
-uv sync
-```
+## Run it
 
-**Note**: The Python GDAL bindings (`osgeo.gdal`) are automatically available when the system GDAL is installed. If you get import errors, ensure `gdal-bin` is installed and restart your terminal.
-
-## Usage
-
-### 1. List available variables in NetCDF
+You need [uv](https://github.com/astral-sh/uv). No system GDAL: `rasterio` ships it.
 
 ```bash
-gdalinfo wrfout_d03_2022-07-15_12_00_00 | grep "SUBDATASETS"
+cd processing && uv sync
+cd aldo_netcdf
+make bake INPUT_DIR=/path/to/folder/with/wrfout/files
 ```
 
-### 2. Convert a variable to time-series COG
+Everything goes to `out/` (gitignored). One file by hand:
 
 ```bash
-cd /mnt/data/Documents/Code/urbes-globe-viz/processing/aldo_netcdf
-
-# Example: Convert 2m temperature (T2) from WRF d03
-uv run nc_to_cog.py \
-  --input wrfout_d03_2022-07-15_12_00_00 \
-  --variable T2 \
-  --output t2_2m_cog.tif \
-  --zoom-level 14 \
-  --resampling average
-
-# Example: Convert precipitation (PRECIP) from WRF d02
-uv run nc_to_cog.py \
-  --input wrfout_d02_2022-07-15_12_00_00 \
-  --variable PRECIP \
-  --output precip_cog.tif \
-  --zoom-level 12 \
-  --resampling near
+uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 -v T2C -o out/wrf_d03_t2c_cog.tif
+uv run nc_to_cog.py -i wrfout_d03_2022-07-15_12_00_00 --arrows out/wrf_d03_wind10.json --stride 4
 ```
 
-### 3. Verify the COG
+`-v` takes a WRF name (`T2`, `Q2`, `SWDOWN`, ...) or a derived one (`T2C`, `TSKC`,
+`WS10`). The script prints min, p1, mean, p99 and max of the values. Use them to pick
+the colour ranges in `wrf.ts`.
 
-```bash
-gdalinfo t2_2m_cog.tif
-# Should show:
-# - Size: <width> x <height>
-# - Bands: <num_timesteps>
-# - Coordinate System: EPSG:3857
-# - Metadata: MIN/MAX values for each band
-```
+## Test locally
 
-### 4. Upload to production
+The dev server serves `out/<name>` for `/geodata/<name>` when the file exists (see
+`bakedGeodata` in `frontend/vite.config.ts`). So after `make bake`, open the WRF page
+in the dev server, there is nothing to copy.
 
-```bash
-# Copy to shared NAS geodata folder
-cp t2_2m_cog.tif /path/to/nas/geodata/
+Do not write in `frontend/public/geodata`. It is a link to the main checkout, shared by
+every worktree.
 
-# Or upload to S3 CDN
-s3cmd put --acl-public t2_2m_cog.tif s3://urbes-viz/
-```
+## Upload
 
-### 5. Frontend integration
+Copy the files of `out/` to the geodata folder of the main checkout, then run
+`make upload-geodata` from the repo root. Upload before the release, else the site
+asks for files that do not exist on the server yet.
 
-See `frontend/src/config/projects/_example.ts.example` and add:
+## How it works
 
-```typescript
-{
-  id: "wrf_temperature",
-  title: "WRF 2m Temperature",
-  description: "Temperature at 2m from WRF model",
-  coordinates: [6.14, 46.20, 7.0, 46.9], // Geneva area
-  category: "Climate",
-  year: "2022",
-  source: {
-    type: "raster",
-    url: "https://urbes-viz.epfl.ch/geodata/t2_2m_cog.tif"
-  },
-  layer: {
-    type: "raster",
-    paint: {
-      "raster-opacity": 0.8
-    }
-  },
-  timeControl: {
-    min: 0,
-    max: <num_timesteps - 1>,
-    fieldTemplate: "band_{value}",
-    placeholderField: "band_0"
-  }
-}
-```
+1. Read the variable (or compute the derived one) for every timestep.
+2. Write it as a GeoTIFF placed with ground control points (GCPs) from XLONG/XLAT,
+   every 10 cells plus the corners.
+3. Warp it to EPSG:3857 (Web Mercator), bilinear.
+4. Write a COG, one band per timestep: DEFLATE, 256 px tiles,
+   `TILING_SCHEME=GoogleMapsCompatible`. Without this tiling scheme the viewer draws
+   the data at the wrong place.
 
-## Output Format
-
-- **Format**: Cloud Optimized GeoTIFF (COG)
-- **Projection**: EPSG:3857 (Web Mercator)
-- **Bands**: One band per timestep
-- **Compression**: DEFLATE with predictor
-- **Overviews**: Built automatically for fast zooming
+The arrows are not warped. They are points on the native grid, one every `--stride`
+cells, with `spacing_m` (stride × DX) so the viewer can size them.
 
 ## Notes
 
-### Nested Domains
-
-WRF d02, d03, and d04 are spatially nested. To visualize them together:
-
-1. Create separate COGs for each domain
-2. Add as separate projects in the frontend
-3. Use the same `timeControl` configuration to sync time slider
-
-### Variable Selection
-
-Common WRF variables:
-
-- `T2` - Temperature at 2m (K)
-- `TMIN`, `TMAX` - Min/Max temperature
-- `PRECIP` - Accumulated precipitation
-- `RAINNC` - Grid-scale + convective rain
-- `U10`, `V10` - 10m wind components
-- `PSFC` - Surface pressure
-- `RELHUM` - Relative humidity
-
-### PALM Microscale
-
-For PALM output (TEST_4_3d.001.nc):
-
-- Higher resolution (0.5m) → use `--zoom-level 16` or higher
-- Smaller extent → adjust bounding box
-- More frequent timesteps (10min) → more bands in COG
-
-## Troubleshooting
-
-### "No module named 'netCDF4'"
-
-```bash
-uv add netcdf4
-```
-
-### GDAL can't read NetCDF
-
-```bash
-sudo apt install libnetcdf-dev hdf5-lib
-```
-
-### COG is too large
-
-- Reduce zoom levels: `--zoom-level 12` (instead of 14)
-- Clip to smaller extent: `--bounds 6.0,46.1,7.0,46.9`
-- Use JPEG compression: `--compress JPEG` (lossy but smaller)
-
-### Visualization looks wrong
-
-- Check variable units (K vs °C, m/s vs km/h)
-- Create color ramp file: see `ghsl_to_pmtiles/ghsl_colors.txt` example
-- Adjust raster opacity in layer config
-
-## See Also
-
-- [GHSL to PMTiles](../ghsl_to_pmtiles/README.md) - Global raster pipeline
-- [Raster to COG cookbook](../cookbook/raster_to_cog.md) - General COG conversion
-- [TimeSlider pattern](../../frontend/src/components/common/TimeSlider.vue) - Frontend integration
+- The COG driver picks the web zoom level closest to the data. d02 lands on zoom 7
+  (1.2 km pixels), d03 and d04 on zoom 8 (611 m pixels), so d03 and d04 are a bit
+  coarser than their 333 m grid. `ZOOM_LEVEL_STRATEGY=UPPER` in `write_cog` would
+  keep all the detail, with bigger files (not tested yet).
+- More timesteps: one wrfout file per timestep today. To bake a time series, stack
+  the files along `Time` first (one band per timestep in the COG).

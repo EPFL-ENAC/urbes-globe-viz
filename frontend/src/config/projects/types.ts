@@ -48,6 +48,10 @@ export interface CogVariableConfig {
   id: string;
   label: string;
   cogRaster: CogRasterConfig;
+  // Optional arrows drawn on top of the raster, e.g. wind direction. JSON file
+  // in geodata/ written by processing/aldo_netcdf/nc_to_cog.py --arrows:
+  // { spacing_m, points: [[lon, lat, directionFromDeg, speed], ...] }.
+  arrows?: { url: string };
   legend?: ProjectLegend;
 }
 
@@ -102,7 +106,7 @@ export interface ProjectConfig {
   descriptionComponent?: DescriptionComponentLoader;
   category: string;
   // Usually a single year. Can be a string when a project spans multiple years
-  // (e.g. WRF runs for 2022 + PALM for 2025 -> "2022 & 2025").
+  // (e.g. two runs from 2022 and 2025 -> "2022 & 2025").
   year: number | string;
   // Curated thumbnail shown on the project card, e.g. "wrf.webp".
   // Hand-picked (not auto-generated); file lives in public/previews/cards/.

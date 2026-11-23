@@ -1,59 +1,71 @@
 import type { CogVariableConfig, ProjectConfig } from "./types";
 
-// Shared variable definitions — same color scales across all WRF domains
+// Turbo, cold blue to hot red. Shared by both temperatures.
+const TURBO = [
+  "#30123b",
+  "#4687fa",
+  "#1ae4b6",
+  "#a4fc3b",
+  "#fabc29",
+  "#e4460a",
+  "#7a0403",
+];
+
+// Legend stops for a colour scale spread evenly over [min, max]. MapLegend
+// draws the first stop at the top, so the list goes from high to low.
+function stops(colors: string[], [min, max]: [number, number], unit = "") {
+  const step = (max - min) / (colors.length - 1);
+  return colors
+    .map((color, i) => ({ value: `${min + i * step}${unit}`, color }))
+    .reverse();
+}
+
+const T2_RANGE: [number, number] = [5, 35];
+const TSK_RANGE: [number, number] = [15, 45];
+const WIND_RANGE: [number, number] = [0, 8];
+const WIND_COLORS = ["#ffffcc", "#a1dab4", "#41b6c4", "#2c7fb8", "#253494"];
+
+// Shared variable definitions, same color scales across all WRF domains.
+// Files are baked by processing/aldo_netcdf (make bake).
 const wrfVariables = (domain: string): CogVariableConfig[] => [
   {
     id: "t2",
-    label: "Temperature",
+    label: "Air temp.",
     cogRaster: {
-      url: `wrf_${domain}_t2_cog.tif`,
-      colorScale: [
-        "#30123b",
-        "#4687fa",
-        "#1ae4b6",
-        "#a4fc3b",
-        "#fabc29",
-        "#e4460a",
-        "#7a0403",
-      ],
-      colorScaleValueRange: [278, 310],
+      url: `wrf_${domain}_t2c_cog.tif`,
+      colorScale: TURBO,
+      colorScaleValueRange: T2_RANGE,
     },
     legend: {
-      title: "2m Temperature",
-      gradient: {
-        stops: [
-          { value: "37 °C", color: "#7a0403" },
-          { value: "31 °C", color: "#e4460a" },
-          { value: "26 °C", color: "#fabc29" },
-          { value: "21 °C", color: "#a4fc3b" },
-          { value: "16 °C", color: "#1ae4b6" },
-          { value: "10 °C", color: "#4687fa" },
-          { value: "5 °C", color: "#30123b" },
-        ],
-        unit: "°C",
-      },
+      title: "2m Air temperature",
+      gradient: { stops: stops(TURBO, T2_RANGE, " °C"), unit: "°C" },
     },
   },
   {
-    id: "u10",
-    label: "Wind (U)",
+    id: "tsk",
+    label: "Surface temp.",
     cogRaster: {
-      url: `wrf_${domain}_u10_cog.tif`,
-      colorScale: ["#313695", "#74add1", "#ffffbf", "#f46d43", "#a50026"],
-      colorScaleValueRange: [-6, 6],
+      url: `wrf_${domain}_tskc_cog.tif`,
+      colorScale: TURBO,
+      colorScaleValueRange: TSK_RANGE,
     },
     legend: {
-      title: "10m Wind (U)",
-      gradient: {
-        stops: [
-          { value: "6", color: "#a50026" },
-          { value: "3", color: "#f46d43" },
-          { value: "0", color: "#ffffbf" },
-          { value: "-3", color: "#74add1" },
-          { value: "-6", color: "#313695" },
-        ],
-        unit: "m/s",
-      },
+      title: "Surface temperature",
+      gradient: { stops: stops(TURBO, TSK_RANGE, " °C"), unit: "°C" },
+    },
+  },
+  {
+    id: "wind",
+    label: "Wind",
+    cogRaster: {
+      url: `wrf_${domain}_ws10_cog.tif`,
+      colorScale: WIND_COLORS,
+      colorScaleValueRange: WIND_RANGE,
+    },
+    arrows: { url: `wrf_${domain}_wind10.json` },
+    legend: {
+      title: "10m Wind (arrows: direction)",
+      gradient: { stops: stops(WIND_COLORS, WIND_RANGE), unit: "m/s" },
     },
   },
   {
@@ -108,10 +120,12 @@ export const wrfProject: ProjectConfig = {
 
   title: "Lake-City Climates",
   description: `
-One-way nested numerical weather simulations over Swiss urban areas, cascading from mesoscale [WRF](https://www.mmm.ucar.edu/models/wrf) at 1 km down to microscale [PALM](https://palm.muk.uni-hannover.de/) at 0.5 m. The chain is a central tool in _URBES'_ work on urban climate in complex terrain, ranging from [regional circulation patterns](https://royalsocietypublishing.org/rsta/article-abstract/383/2308/20240576/234202/Urbanization-effects-on-lake-land-circulations-in?redirectedFrom=fulltext) to [wind energy](https://onlinelibrary.wiley.com/doi/10.1002/we.70043) harvesting potential, to microscale heat adaptation strategies.
+One-way nested numerical weather simulations over Swiss urban areas with [WRF](https://www.mmm.ucar.edu/models/wrf), from 1 km over the Leman basin down to 333 m over Lausanne and Geneva. The model is a central tool in _URBES'_ work on urban climate in complex terrain, ranging from [regional circulation patterns](https://royalsocietypublishing.org/rsta/article-abstract/383/2308/20240576/234202/Urbanization-effects-on-lake-land-circulations-in?redirectedFrom=fulltext) to [wind energy](https://onlinelibrary.wiley.com/doi/10.1002/we.70043) harvesting potential.
 `,
+  // Section 01: the text above plus the domains map, which works as a menu.
+  descriptionComponent: () => import("./descriptions/wrf_overview.vue"),
   category: "Climate",
-  year: "2022 & 2025",
+  year: 2022,
   zoom: 9,
   // Landing-page capture sits further out than the interactive view so the
   // preview reads as a vignette next to the hero text.
@@ -119,24 +133,16 @@ One-way nested numerical weather simulations over Swiss urban areas, cascading f
   pitch: 0,
   cardImage: "wrf.webp",
 
-  unit: "K",
+  unit: "°C",
   info: "Source: Aldo Brandi, URBES",
 
   renderer: "deckgl-cog",
 
   // Default for globe preview card
   cogRaster: {
-    url: "wrf_d03_t2_cog.tif",
-    colorScale: [
-      "#30123b",
-      "#4687fa",
-      "#1ae4b6",
-      "#a4fc3b",
-      "#fabc29",
-      "#e4460a",
-      "#7a0403",
-    ],
-    colorScaleValueRange: [278, 310],
+    url: "wrf_d03_t2c_cog.tif",
+    colorScale: TURBO,
+    colorScaleValueRange: T2_RANGE,
   },
 
   subViz: [

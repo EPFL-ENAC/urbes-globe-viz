@@ -18,7 +18,7 @@ import WrfDomainsSchema from "./wrf_domains_schema.vue";
       <WrfDomainsSchema highlight="d02" />
       <figcaption>
         d02 is the parent domain of the two 333 m grids over Lausanne (d03) and
-        Geneva (d04).
+        Geneva (d04). Click a domain to open it.
       </figcaption>
     </figure>
     <p>

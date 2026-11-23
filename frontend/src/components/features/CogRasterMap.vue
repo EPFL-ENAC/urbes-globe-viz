@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { registerProtocols } from "@/lib/pmtilesClient";
 import { MapboxOverlay } from "@deck.gl/mapbox";
+import { IconLayer } from "@deck.gl/layers";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
@@ -17,6 +18,8 @@ const props = defineProps<{
   center?: [number, number];
   zoom?: number;
   pitch?: number;
+  // Optional JSON of arrows drawn on top of the raster (e.g. wind direction).
+  arrowsUrl?: string;
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
@@ -30,10 +33,77 @@ const initialCenter: [number, number] = props.center ?? [6.5, 46.5];
 const initialZoom = props.zoom ?? 8;
 const initialPitch = props.pitch ?? 0;
 
-const cogUrl = computed(() => {
-  const url = props.cogRaster.url;
+const cogUrl = computed(() => resolveUrl(props.cogRaster.url));
+
+// Wind arrows: [lon, lat, direction the wind comes from (deg north), speed].
+type ArrowPoint = [number, number, number, number];
+interface ArrowsFile {
+  spacing_m: number;
+  points: ArrowPoint[];
+}
+
+// One arrow pointing up (north), dark with a white edge so it reads on any
+// colour of the raster.
+const ARROW_ICON = {
+  id: "arrow",
+  url:
+    "data:image/svg+xml;charset=utf-8," +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">' +
+        '<path d="M32 6 L45 28 L35.5 28 L35.5 58 L28.5 58 L28.5 28 L19 28 Z" fill="#1a1a1a" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>' +
+        "</svg>",
+    ),
+  width: 64,
+  height: 64,
+  anchorY: 32,
+};
+
+const arrows = shallowRef<ArrowsFile | null>(null);
+
+function resolveUrl(url: string) {
   return url.startsWith("http") ? url : `${baseUrl}/${url}`;
-});
+}
+
+watch(
+  () => props.arrowsUrl,
+  async (url) => {
+    arrows.value = null;
+    updateLayers();
+    if (!url) return;
+    try {
+      const res = await fetch(resolveUrl(url));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as ArrowsFile;
+      // The user may have switched variable while we were loading.
+      if (props.arrowsUrl !== url) return;
+      arrows.value = data;
+      updateLayers();
+    } catch (err) {
+      console.error(`Could not load arrows ${url}`, err);
+    }
+  },
+  { immediate: true },
+);
+
+function makeArrowLayer(file: ArrowsFile) {
+  return new IconLayer<ArrowPoint>({
+    id: `${props.projectId}-arrows-${props.arrowsUrl}`,
+    data: file.points,
+    getPosition: (d) => [d[0], d[1]],
+    getIcon: () => ARROW_ICON,
+    // deck.gl angles turn counter-clockwise. The arrow points where the wind
+    // goes, so direction + 180, clockwise.
+    getAngle: (d) => 180 - d[2],
+    // Sized in meters from the grid spacing, so arrows never overlap and
+    // follow the zoom. Lie flat on the map so they turn with its bearing.
+    getSize: file.spacing_m * 0.6,
+    sizeUnits: "meters",
+    sizeMinPixels: 8,
+    sizeMaxPixels: 32,
+    billboard: false,
+    opacity: 0.9,
+  });
+}
 
 function makeLayers() {
   return [
@@ -52,6 +122,7 @@ function makeLayers() {
       },
       opacity: props.cogRaster.opacity ?? 0.8,
     }),
+    ...(arrows.value ? [makeArrowLayer(arrows.value)] : []),
   ];
 }
 

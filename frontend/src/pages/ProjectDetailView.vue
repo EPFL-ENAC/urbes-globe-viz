@@ -12,11 +12,13 @@ import { renderDescription } from "@/utils/markdown";
 import { DEFAULT_TITLE } from "@/router";
 import { useIsCompactProject } from "@/composables/useIsMobile";
 import { isPreviewMode, previewVizId } from "@/utils/previewMode";
+import { subVizNavKey } from "@/utils/subVizNav";
 import {
   computed,
   defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
+  provide,
   ref,
   watch,
 } from "vue";
@@ -411,6 +413,17 @@ const pickSubViz = (i: number) => {
   activeSubVizIndex.value = i;
 };
 
+// Lets description components open a sub-viz by id (e.g. the WRF domains
+// map). Same action as the chips: scroll the hub on desktop, pick on mobile.
+provide(subVizNavKey, {
+  open(id: string) {
+    const i = subVizList.value?.findIndex((viz) => viz.id === id) ?? -1;
+    if (i < 0) return;
+    if (isMobile.value) pickSubViz(i);
+    else scrollToSubViz(i);
+  },
+});
+
 const activeSubVizDescriptionComponent = computed(() => {
   const list = subVizList.value;
   if (!list) return undefined;
@@ -564,6 +577,7 @@ const activeSubVizTitle = computed(() => {
         :center="activeCenter"
         :zoom="activeZoom"
         :pitch="activePitch"
+        :arrows-url="activeCogVariable?.arrows?.url"
       />
       <ProjectMap
         v-else-if="project"
