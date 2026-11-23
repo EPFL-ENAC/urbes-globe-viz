@@ -17,8 +17,8 @@ export const previewVizId =
     : null;
 
 // The camera the settled capture was taken from. The hover preview flies the
-// globe to this exact pose and shows the captured image as a screen-aligned
-// billboard, so the baked-in pitch/zoom perspective matches the live globe.
+// globe to this pose, with the zoom fitted to the live viewport height, and
+// shows the captured image scaled to match (see composables/useMapPreview.ts).
 export interface PreviewCamera {
   center: [number, number];
   zoom: number;

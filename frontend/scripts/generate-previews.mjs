@@ -8,8 +8,9 @@
 // basemap are hidden, the page background is dropped, and once the map settles
 // at the project's real pitch/zoom it sets `window.__previewReady = true` and
 // `window.__previewCamera` to the camera pose. The hover preview flies the live
-// globe to that same camera and shows this image as a screen-aligned billboard,
-// so the baked-in perspective matches. Because the data colours are
+// globe to that camera, with the zoom fitted to its own viewport height, and
+// shows this image scaled to match (see src/composables/useMapPreview.ts), so
+// the baked-in perspective matches. Because the data colours are
 // theme-independent and the basemap is gone, a single image serves both themes —
 // the live globe basemap shows through the transparent areas at runtime.
 //
@@ -117,9 +118,10 @@ try {
   for (const { id, query } of TARGETS) {
     try {
       const camera = await capture(browser, id, query ?? "");
-      // `size` = the logical-px side of the square capture viewport. The runtime
-      // billboard treats the image as that many CSS px at `camera.zoom` and
-      // rescales by the live zoom delta to pin it on the globe.
+      // `size` = the logical-px side of the square capture viewport. At runtime
+      // the globe flies to zoom `camera.zoom + log2(viewportHeight / size)` and
+      // the image is scaled by `viewportHeight / size`: same picture, so it
+      // matches the globe (see src/composables/useMapPreview.ts).
       manifest[id] = { camera, size: CAPTURE };
     } catch (err) {
       failures++;

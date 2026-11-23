@@ -144,7 +144,7 @@ const handleClick = () => {
   padding-top: 4px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) {
   .project-card {
     flex-direction: row;
     align-items: flex-start;

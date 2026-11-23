@@ -47,6 +47,9 @@ let resettingToOverview = false; // true while the scroll-back restore flyTo is 
 let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
 let markersSetupStarted = false;
 let unsubscribeBasemapSync: (() => void) | null = null;
+// Bumped on every hover change. The fly-out waits for the preview fade-out and
+// checks this, so a stale fly-out never starts after a newer hover.
+let hoverSeq = 0;
 
 // Initial zoom scales with viewport width so the globe reads correctly on
 // phones and fills large monitors: smaller screens need a tighter globe.
@@ -130,6 +133,34 @@ function armKillSpinListeners() {
   canvas.addEventListener("wheel", killSpin, { once: true });
 }
 
+// Passive (mobile, background) globe: no user gestures, the page scrolls over
+// it. Applied at mount and again when passive() flips, so a phone turned to
+// landscape (or a resized window) gets the right handlers.
+const GESTURE_HANDLERS = [
+  "dragPan",
+  "dragRotate",
+  "scrollZoom",
+  "doubleClickZoom",
+  "touchZoomRotate",
+  "keyboard",
+  "boxZoom",
+] as const;
+
+function applyInteractivity() {
+  if (!map) return;
+  const interactive = !passive();
+  for (const name of GESTURE_HANDLERS) {
+    if (interactive) map[name].enable();
+    else map[name].disable();
+  }
+  // Any explicit user gesture (drag or wheel) permanently kills the idle spin
+  // until the user scrolls back out to the initial zoom (see zoomend handler).
+  // Re-arming is safe: addEventListener drops the duplicate listener.
+  if (interactive) armKillSpinListeners();
+}
+
+watch(passive, applyInteractivity);
+
 // When the user scrolls back out to the initial zoom after panning/zooming,
 // fly to the original overview and re-arm the idle spin.
 function restoreOverview() {
@@ -159,8 +190,13 @@ watch(
   (projectId) => {
     if (!map || passive()) return;
 
+    const seq = ++hoverSeq;
     map.stop();
-    preview.remove(map);
+    // The globe must not move under a visible preview: the image only matches
+    // the globe at the capture pose. On hover the old image is hidden at once
+    // (see preview.add). On unhover we wait for the fade-out before the
+    // fly-out, below.
+    const hidden = preview.remove(map);
     preview.filterCircles(map, projectId);
 
     if (projectId) {
@@ -173,12 +209,11 @@ watch(
       );
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
-      const camera = preview.getPreviewCamera(projectId);
+      const camera = preview.getPreviewCamera(map, projectId);
       if (camera) {
-        // Fly to the exact pose the billboard was captured from, so its
-        // baked-in pitch/zoom perspective lines up with the live globe. Reveal
-        // the (preloaded) image right away so its fade-in overlaps the flight
-        // and converges as the globe settles, rather than waiting for moveend.
+        // Fly to the capture pose, with the zoom fitted to this viewport, so
+        // the image's baked-in perspective matches the live globe. The image
+        // shows once the flight lands (see preview.add).
         flying = true;
         map.flyTo({
           center: camera.center,
@@ -212,26 +247,34 @@ watch(
         });
       }
     } else {
-      // On unhover, zoom back out but stay at the current longitude so the
-      // camera doesn't jump away from where the user was just looking.
-      const currentLng = map.getCenter().lng;
-      flying = true;
-      map.flyTo({
-        center: [currentLng, initialCamera.center[1]],
-        zoom: initialCamera.zoom,
-        pitch: initialCamera.pitch,
-        bearing: initialCamera.bearing,
-        duration: 1200,
-      });
-      map.once("moveend", () => {
-        flying = false;
-        // Back at the initial pose: the hero returns to plain zoom-based rules.
-        projectStore.setPreviewFlightActive(false);
-        resumeSpin();
+      // On unhover, wait for the preview to fade out, then zoom back out. Stay
+      // at the current longitude so the camera doesn't jump away from where
+      // the user was just looking.
+      void hidden.then(() => {
+        if (!map || seq !== hoverSeq) return;
+        flyOutToOverview(map);
       });
     }
   },
 );
+
+function flyOutToOverview(m: maplibregl.Map) {
+  const currentLng = m.getCenter().lng;
+  flying = true;
+  m.flyTo({
+    center: [currentLng, initialCamera.center[1]],
+    zoom: initialCamera.zoom,
+    pitch: initialCamera.pitch,
+    bearing: initialCamera.bearing,
+    duration: 1200,
+  });
+  m.once("moveend", () => {
+    flying = false;
+    // Back at the initial pose: the hero returns to plain zoom-based rules.
+    projectStore.setPreviewFlightActive(false);
+    resumeSpin();
+  });
+}
 
 // --- Map setup ---
 
@@ -268,35 +311,23 @@ onMounted(() => {
   map.setPadding(initialPadding);
   projectStore.setZoomLevel(2);
 
-  if (passive()) {
-    map.dragPan.disable();
-    map.dragRotate.disable();
-    map.scrollZoom.disable();
-    map.doubleClickZoom.disable();
-    map.touchZoomRotate.disable();
-    map.keyboard.disable();
-    map.boxZoom.disable();
-  } else {
-    // Any explicit user gesture (drag or wheel) permanently kills the idle spin
-    // until the user scrolls back out to the initial zoom (see zoomend handler).
-    armKillSpinListeners();
+  applyInteractivity();
 
-    // Block scroll-out wheel events when already at the zoom floor. Otherwise
-    // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
-    // which shifts the center even when the zoom itself is clamped — giving
-    // the impression of panning the globe by scrolling at min zoom.
-    map.getCanvas().addEventListener(
-      "wheel",
-      (e) => {
-        if (!map) return;
-        if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-        }
-      },
-      { capture: true, passive: false },
-    );
-  }
+  // Block scroll-out wheel events when already at the zoom floor. Otherwise
+  // MapLibre's scroll-zoom handler still runs its "zoom around cursor" math,
+  // which shifts the center even when the zoom itself is clamped — giving
+  // the impression of panning the globe by scrolling at min zoom.
+  map.getCanvas().addEventListener(
+    "wheel",
+    (e) => {
+      if (!map || passive()) return;
+      if (e.deltaY > 0 && map.getZoom() <= initialCamera.zoom) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    { capture: true, passive: false },
+  );
 
   // Sync camera from overlay → basemap. Attach once the basemap is created
   // (its `ready` ref flips after the instance mounts; `syncFrom` is safe
@@ -343,18 +374,21 @@ onMounted(() => {
       },
     });
 
-    if (!passive()) {
-      map.on("mouseenter", "project-circles", () => {
-        map!.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "project-circles", () => {
-        map!.getCanvas().style.cursor = "grab";
-      });
-      map.on("click", "project-circles", (e) => {
-        const id = e.features?.[0]?.properties?.id;
-        if (id) router.push(`/project/${id}`);
-      });
-    }
+    // Always registered, checked at event time: passive() can change after
+    // mount (a phone turned to landscape crosses the mobile breakpoint).
+    map.on("mouseenter", "project-circles", () => {
+      if (passive()) return;
+      map!.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "project-circles", () => {
+      if (passive()) return;
+      map!.getCanvas().style.cursor = "grab";
+    });
+    map.on("click", "project-circles", (e) => {
+      if (passive()) return;
+      const id = e.features?.[0]?.properties?.id;
+      if (id) router.push(`/project/${id}`);
+    });
   };
 
   let initialPoseCaptured = false;
@@ -419,8 +453,8 @@ onUnmounted(() => {
     unsubscribeBasemapSync();
     unsubscribeBasemapSync = null;
   }
-  if (map) preview.remove(map);
   if (map) {
+    void preview.remove(map);
     map.remove();
     map = null;
   }

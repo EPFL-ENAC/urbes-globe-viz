@@ -58,6 +58,12 @@ const heroVisible = computed(() => {
   color: var(--color-text);
 }
 
+/* Keeps the lines readable on a phone in landscape (mobile layout, ~850px
+   wide). The desktop blocks below set their own, narrower width. */
+.hero-content {
+  max-width: 640px;
+}
+
 .hero-title {
   font-family: var(--font-sans);
   font-weight: 300;
@@ -100,7 +106,7 @@ const heroVisible = computed(() => {
   margin-top: 1rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px) {
   .hero-part {
     grid-row: 1;
     grid-column: 1;
@@ -132,8 +138,8 @@ const heroVisible = computed(() => {
    gaps bring it down to ~330px. The 552px right edge of the text (520px
    measure + gutter) is what Globe3D reserves as left padding; keep in sync.
    Query mirrors COMPACT_LANDING_QUERY in composables/useIsMobile.ts. */
-@media (min-width: 768px) and (max-width: 1280px),
-  (min-width: 768px) and (max-height: 800px) {
+@media (min-width: 768px) and (min-height: 501px) and (max-width: 1280px),
+  (min-width: 768px) and (min-height: 501px) and (max-height: 800px) {
   .hero-part {
     padding: 0.5rem var(--page-gutter) 0.75rem;
   }
