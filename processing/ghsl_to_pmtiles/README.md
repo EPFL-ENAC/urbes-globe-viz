@@ -117,7 +117,22 @@ serves this folder at `https://urbes-viz.epfl.ch/geodata/`. This is the same sha
 `scripts/upload-geodata.sh` at the repo root. Do not use `make upload-geodata` for this file.
 It syncs the shared `frontend/public/geodata` folder, and the archive must not go there.
 
-On your laptop (EPFL network or VPN, it needs `cifs-utils`), with your EPFL user name:
+On Jed, when job 04 is done:
+
+```bash
+cd /work/enac-it4r/ghsl
+ls -l ~/.smbpassword                          # your EPFL password, must be -rw------- (chmod 600)
+python3 -c "import smbclient" && echo ok      # if it fails: pip install --user smbprotocol
+sbatch scitas/05_upload_nas.sbatch
+tail -f logs/512_upload_nas.log               # Ctrl+C when it prints "Done"
+```
+
+The job refuses to run if `ghsl-512.pmtiles` exists on the NAS. It writes
+`ghsl-512.pmtiles.part`, checks the size, then renames it. This is how `ghsl.pmtiles` was
+uploaded in March 2026.
+
+If the job can't reach the NAS, do it from your laptop (EPFL network or VPN, it needs
+`cifs-utils`):
 
 ```bash
 rsync -avP ripoll@jed.hpc.epfl.ch:/work/enac-it4r/ghsl/ghsl-512.pmtiles ~/ghsl-512.pmtiles
@@ -125,6 +140,7 @@ rsync -avP ripoll@jed.hpc.epfl.ch:/work/enac-it4r/ghsl/ghsl-512.pmtiles ~/ghsl-5
 sudo mkdir -p /mnt/urbes-nas
 sudo mount.cifs //enac-nas1.rcp.epfl.ch/fts-enac-it /mnt/urbes-nas \
   -o "username=<epfl-user>,domain=INTRANET,uid=$(id -u),gid=$(id -g),file_mode=0664,dir_mode=0775"
+ls /mnt/urbes-nas/urbes-viz.epfl.ch/ghsl*.pmtiles   # ghsl-512.pmtiles must not exist yet
 rsync -v --progress ~/ghsl-512.pmtiles /mnt/urbes-nas/urbes-viz.epfl.ch/
 sudo umount /mnt/urbes-nas
 ```
@@ -155,7 +171,7 @@ git commit -m "chore(ghsl): bundled low zooms from ghsl-512.pmtiles"
 ```
 
 The script refuses an archive with tiles that are not 512 px. It also takes another URL or a
-local file: `npm run extract:ghsl-low -- ~/ghsl-512.pmtiles`.
+local file: `npm run extract:ghsl-low -- /path/to/ghsl-512.pmtiles`.
 
 Open the app on the branch. The globe must look the same as on prod. At map zoom 5 and
 more, the network tab shows range requests on `ghsl-512.pmtiles`. Then land the branch.
@@ -171,7 +187,7 @@ When prod runs the new version with no problem for some days:
 ```bash
 # on Jed
 rm -rf /scratch/ripoll/ghsl/tiles_512 /scratch/ripoll/ghsl/ghsl-512.pmtiles
-# on your laptop
+# on your laptop, only if you used the laptop upload
 rm ~/ghsl-512.pmtiles
 ```
 

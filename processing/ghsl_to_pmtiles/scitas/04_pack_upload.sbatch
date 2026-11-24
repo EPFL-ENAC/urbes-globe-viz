@@ -16,7 +16,7 @@
 #   3. Convert MBTiles → PMTiles      (~2 min)
 #   4. Copy to $WORK (persistent) and $SCRATCH (quick access)
 #
-# The NAS upload is a manual step after this job, see ../README.md.
+# The NAS upload is the next job, 05_upload_nas.sbatch.
 #
 # All intermediate files written to $TMPDIR (local NVMe) for SQLite performance.
 # Final .pmtiles is also copied to /work/enac-it4r/ghsl/ to survive the 30-day
@@ -61,4 +61,4 @@ echo "  /scratch: $(du -sh $SCRATCH/ghsl-512.pmtiles | cut -f1)"
 
 echo ""
 echo "=== All done ==="
-echo "Next: copy $WORK/ghsl-512.pmtiles to the NAS, see processing/ghsl_to_pmtiles/README.md"
+echo "Next: sbatch scitas/05_upload_nas.sbatch"

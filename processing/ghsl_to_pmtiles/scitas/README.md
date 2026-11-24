@@ -70,7 +70,8 @@ Submit jobs in order. Jobs 02 and 03 can run in parallel.
 01_z0-7.sbatch        1 job      zoom 0-7  — global
 02_z8-11.sbatch       16 jobs    zoom 8-11 — 16 lon strips
 03_z12.sbatch         16 jobs    zoom 12   — 16 lon strips
-04_pack_upload.sbatch 1 job      filter + pack + convert + upload
+04_pack_upload.sbatch 1 job      filter + pack + convert
+05_upload_nas.sbatch  1 job      copy ghsl-512.pmtiles to the NAS
 ```
 
 ```bash
@@ -84,6 +85,9 @@ sbatch scitas/03_z12.sbatch
 
 # After both 02 and 03 finish:
 sbatch scitas/04_pack_upload.sbatch
+
+# After 04 finishes:
+sbatch scitas/05_upload_nas.sbatch
 ```
 
 Monitor:
