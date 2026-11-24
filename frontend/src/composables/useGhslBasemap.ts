@@ -1,7 +1,17 @@
 import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from "vue";
-import maplibregl, { type Map, type PaddingOptions } from "maplibre-gl";
+import maplibregl, {
+  type FlyToOptions,
+  type LngLatLike,
+  type Map,
+  type PaddingOptions,
+  type RasterTileSource,
+} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { registerProtocols } from "@/lib/pmtilesClient";
+import {
+  prefetchGhslTiles,
+  registerProtocols,
+  type TileCoord,
+} from "@/lib/pmtilesClient";
 import { basemapSources, basemapLayers, basemapSky } from "@/config/basemap";
 
 export interface GhslBasemapOptions {
@@ -21,6 +31,34 @@ export interface GhslBasemapOptions {
   padding?: Partial<PaddingOptions>;
 }
 
+/** Where a flight lands. Fields left out keep the current camera value. */
+export interface PrefetchCamera {
+  center?: LngLatLike;
+  zoom?: number;
+  bearing?: number;
+  pitch?: number;
+  padding?: number | Partial<PaddingOptions>;
+}
+
+// The part of MapLibre's internal transform we use for the prefetch. Typed
+// here because `Map.transform` is typed read-only and has no `clone()` in the
+// public types.
+interface CameraTransform {
+  clone(): CameraTransform;
+  center: maplibregl.LngLat;
+  zoom: number;
+  bearing: number;
+  pitch: number;
+  padding: PaddingOptions;
+  setCenter(center: maplibregl.LngLat): void;
+  setZoom(zoom: number): void;
+  setBearing(bearing: number): void;
+  setPitch(pitch: number): void;
+  setPadding(padding: PaddingOptions): void;
+}
+
+const GHSL_SOURCE_ID = "ghsl-urban";
+
 /**
  * Creates a non-interactive MapLibre instance in `container` containing only
  * the GHSL + OSM-buildings basemap. Meant to sit behind an interactive overlay
@@ -28,7 +66,8 @@ export interface GhslBasemapOptions {
  * overlay frame, so the two canvases stay in lockstep.
  *
  * The composable returns `ready` once the style has loaded and `syncFrom` is
- * safe to call. Cleanup runs in `onBeforeUnmount`.
+ * safe to call, and `painted` once a frame shows every GHSL tile of the view.
+ * Cleanup runs in `onBeforeUnmount`.
  */
 export function useGhslBasemap(
   container: Ref<HTMLDivElement | null>,
@@ -38,6 +77,7 @@ export function useGhslBasemap(
   // it touches while it renders) in reactive proxies.
   const map = shallowRef<Map | null>(null);
   const ready = ref(false);
+  const painted = ref(false);
 
   registerProtocols();
 
@@ -82,6 +122,17 @@ export function useGhslBasemap(
       instance.on("load", () => {
         ready.value = true;
       });
+
+      // First frame with every GHSL tile of the view. Not the first `idle`:
+      // `idle` also waits for the symbol placement fade (`fadeDuration`, 500 ms
+      // after the last tile), which changes nothing on this raster.
+      const onRender = () => {
+        if (!instance.getSource(GHSL_SOURCE_ID)) return;
+        if (!instance.isSourceLoaded(GHSL_SOURCE_ID)) return;
+        instance.off("render", onRender);
+        painted.value = true;
+      };
+      instance.on("render", onRender);
 
       map.value = instance;
     },
@@ -141,6 +192,69 @@ export function useGhslBasemap(
     };
   }
 
+  /**
+   * Starts loading the GHSL tiles this basemap will show at `camera`, so they
+   * are ready when a flight lands there. Returns a function that cancels the
+   * loads still running.
+   *
+   * The tile list comes from MapLibre itself: we clone the basemap transform
+   * (same size, padding and projection, globe or mercator), move the clone to
+   * `camera` and run `Map.prototype.coveringTiles` on it with the options the
+   * source's TileManager uses. This touches internals (`transform.clone()` and
+   * the setters, and `coveringTiles` only reading `this.transform`), checked
+   * on MapLibre 5.16. If they change, the catch below skips the prefetch and
+   * the map loads its tiles as before.
+   */
+  function prefetchView(camera: PrefetchCamera): () => void {
+    const target = map.value;
+    const noop = () => {};
+    if (!target) return noop;
+    try {
+      const source = target.getSource(GHSL_SOURCE_ID) as
+        | RasterTileSource
+        | undefined;
+      if (!source) return noop;
+      const transform = (
+        target.transform as unknown as CameraTransform
+      ).clone();
+      if (typeof camera.padding === "number") {
+        const p = camera.padding;
+        transform.setPadding({ top: p, right: p, bottom: p, left: p });
+      } else if (camera.padding) {
+        transform.setPadding({ ...transform.padding, ...camera.padding });
+      }
+      if (camera.bearing !== undefined) transform.setBearing(camera.bearing);
+      if (camera.pitch !== undefined) transform.setPitch(camera.pitch);
+      if (camera.zoom !== undefined) transform.setZoom(camera.zoom);
+      if (camera.center !== undefined) {
+        transform.setCenter(maplibregl.LngLat.convert(camera.center));
+      }
+      const ids = maplibregl.Map.prototype.coveringTiles.call(
+        { transform } as unknown as Map,
+        {
+          tileSize: source.tileSize,
+          minzoom: source.minzoom,
+          maxzoom: source.maxzoom,
+          roundZoom: source.roundZoom,
+        },
+      );
+      // Already sorted from the camera outwards. Drop the world copies.
+      const seen = new Set<string>();
+      const tiles: TileCoord[] = [];
+      for (const id of ids) {
+        const { z, x, y } = id.canonical;
+        const key = `${z}/${x}/${y}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        tiles.push({ z, x, y });
+      }
+      return prefetchGhslTiles(tiles);
+    } catch (error) {
+      console.warn("GHSL prefetch skipped:", error);
+      return noop;
+    }
+  }
+
   onBeforeUnmount(() => {
     if (map.value) {
       map.value.remove();
@@ -148,5 +262,64 @@ export function useGhslBasemap(
     }
   });
 
-  return { map, ready, syncFrom };
+  return { map, ready, painted, syncFrom, prefetchView };
+}
+
+/**
+ * `flyTo` on an overlay map that also prefetches the basemap tiles of the
+ * destination. One per overlay map: a new flight replaces the prefetch of the
+ * previous one (tiles both need keep loading). A flight that ends away from its
+ * destination (stopped by a new flight or by the user) cancels its own
+ * prefetch. A flight that lands keeps it, since MapLibre is now waiting on
+ * those same loads.
+ */
+export function useFlightPrefetch(
+  getBasemap: () =>
+    | { prefetchView(camera: PrefetchCamera): () => void }
+    | null
+    | undefined,
+) {
+  let cancelCurrent: (() => void) | null = null;
+
+  function cancel() {
+    cancelCurrent?.();
+    cancelCurrent = null;
+  }
+
+  function flyTo(map: Map, options: FlyToOptions) {
+    // Claim the new tiles first, then release the old ones, so the tiles both
+    // views share are not cancelled.
+    const cancelOwn = getBasemap()?.prefetchView(options) ?? null;
+    cancel();
+    cancelCurrent = cancelOwn;
+    map.flyTo(options);
+    map.once("moveend", () => {
+      // Checked a bit later: when a flight is stopped to start a new one
+      // (map.stop() fires moveend at once), the new flyTo comes right after in
+      // the same task and takes over this prefetch with the shared tiles.
+      queueMicrotask(() => {
+        if (!cancelOwn || cancelCurrent !== cancelOwn) return;
+        if (!isAt(map, options)) cancel();
+      });
+    });
+  }
+
+  onBeforeUnmount(cancel);
+
+  return { flyTo, cancel };
+}
+
+// Is the map camera at the destination of `options` (zoom, and center within
+// one pixel)?
+function isAt(map: Map, options: FlyToOptions): boolean {
+  if (
+    options.zoom !== undefined &&
+    Math.abs(map.getZoom() - options.zoom) > 0.01
+  ) {
+    return false;
+  }
+  if (options.center === undefined) return true;
+  const p = map.project(options.center);
+  const c = map.project(map.getCenter());
+  return Math.hypot(p.x - c.x, p.y - c.y) < 1;
 }

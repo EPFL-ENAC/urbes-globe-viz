@@ -31,12 +31,17 @@ const options: GhslBasemapOptions = {
   padding: props.padding,
 };
 
-const { map, ready, syncFrom } = useGhslBasemap(container, options);
+const { map, ready, painted, syncFrom, prefetchView } = useGhslBasemap(
+  container,
+  options,
+);
 
 defineExpose({
   map,
   ready,
+  painted,
   syncFrom: (other: Map) => syncFrom(other),
+  prefetchView,
 });
 </script>
 
