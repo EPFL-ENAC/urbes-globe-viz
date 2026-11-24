@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.3.1...v1.4.0) (2026-11-24)
+
+
+### Features
+
+* **basemap:** prefetch GHSL tiles of each flight, show the globe in one go ([b5eb856](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/b5eb856124ae0a1211eb471b142aab0c1257841f))
+* **basemap:** prefetch GHSL tiles of each flight, show the globe in one go ([8106e57](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/8106e571fae2963b9f98620e7d45a6515b96535f))
+* **ghsl:** 512 px basemap tiles from ghsl-512.pmtiles ([6f3f33b](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/6f3f33baaed9c9e1497fdced61008009aa07dee8))
+* **ghsl:** upload job from Jed to the NAS ([bbcb121](https://github.com/EPFL-ENAC/urbes-globe-viz/commit/bbcb12157ff4e84a1d2d5ea2ee25dcee72120368))
+
 ## [1.3.1](https://github.com/EPFL-ENAC/urbes-globe-viz/compare/v1.3.0...v1.3.1) (2026-11-23)
 
 
