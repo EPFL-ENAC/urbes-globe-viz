@@ -9,6 +9,7 @@ import { useRouter } from "vue-router";
 import { useMapPreview } from "@/composables/useMapPreview";
 import { useIsMobile, useIsCompactLanding } from "@/composables/useIsMobile";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+import { useFlightPrefetch } from "@/composables/useGhslBasemap";
 
 const props = defineProps<{
   // Renders as ambient background: no hover preview, no drag/wheel, no
@@ -23,6 +24,9 @@ const router = useRouter();
 const preview = useMapPreview();
 const isMobile = useIsMobile();
 const isCompactLanding = useIsCompactLanding();
+// Every flyTo below goes through flight.flyTo, which prefetches the basemap
+// tiles of the destination while the globe flies.
+const flight = useFlightPrefetch(() => basemapRef.value);
 const passive = () => props.backgroundMode || isMobile.value;
 
 // Camera padding frames the sphere inside the part of the viewport the page
@@ -47,6 +51,13 @@ let resettingToOverview = false; // true while the scroll-back restore flyTo is 
 let flying = false; // true during any programmatic flyTo — disables the min-zoom clamp so the flight arc isn't interrupted
 let markersSetupStarted = false;
 let unsubscribeBasemapSync: (() => void) | null = null;
+// The globe stays hidden until the basemap has drawn every tile of the first
+// view (see reveal() in onMounted).
+const revealed = ref(false);
+let revealTimer: number | undefined;
+// Safety net: show it anyway after this, so a slow server never leaves an
+// empty page.
+const REVEAL_TIMEOUT_MS = 2000;
 // Bumped on every hover change. The fly-out waits for the preview fade-out and
 // checks this, so a stale fly-out never starts after a newer hover.
 let hoverSeq = 0;
@@ -167,7 +178,7 @@ function restoreOverview() {
   if (!map || resettingToOverview) return;
   resettingToOverview = true;
   flying = true;
-  map.flyTo({
+  flight.flyTo(map, {
     center: initialCamera.center,
     zoom: initialCamera.zoom,
     pitch: initialCamera.pitch,
@@ -215,7 +226,7 @@ watch(
         // the image's baked-in perspective matches the live globe. The image
         // shows once the flight lands (see preview.add).
         flying = true;
-        map.flyTo({
+        flight.flyTo(map, {
           center: camera.center,
           zoom: camera.zoom,
           pitch: camera.pitch,
@@ -236,7 +247,7 @@ watch(
           feature.properties.previewZoom ?? featureZoom - PREVIEW_ZOOM_OFFSET,
         );
         flying = true;
-        map.flyTo({
+        flight.flyTo(map, {
           center: [lng, lat],
           zoom: previewZoom,
           pitch: feature.properties.pitch || 0,
@@ -261,7 +272,7 @@ watch(
 function flyOutToOverview(m: maplibregl.Map) {
   const currentLng = m.getCenter().lng;
   flying = true;
-  m.flyTo({
+  flight.flyTo(m, {
     center: [currentLng, initialCamera.center[1]],
     zoom: initialCamera.zoom,
     pitch: initialCamera.pitch,
@@ -408,7 +419,23 @@ onMounted(() => {
     setupMarkers();
   });
 
-  resumeSpin();
+  // Show the globe, and start the idle spin, only once the basemap has drawn
+  // every GHSL tile of the first view. So the landing appears in one go,
+  // instead of tiles popping in one by one while the globe turns.
+  const reveal = () => {
+    if (revealed.value) return;
+    revealed.value = true;
+    window.clearTimeout(revealTimer);
+    resumeSpin();
+  };
+  revealTimer = window.setTimeout(reveal, REVEAL_TIMEOUT_MS);
+  watch(
+    () => basemapRef.value?.painted,
+    (painted) => {
+      if (painted) reveal();
+    },
+    { immediate: true },
+  );
 
   // Re-frame when the window crosses the compact breakpoint (resize, browser
   // zoom). setPadding fires move events, so the basemap picks the new padding
@@ -447,6 +474,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.clearTimeout(revealTimer);
   pauseSpin();
   projectStore.setPreviewFlightActive(false);
   if (unsubscribeBasemapSync) {
@@ -465,7 +493,10 @@ onUnmounted(() => {
 <template>
   <div
     class="globe-wrapper"
-    :class="{ 'globe-passive': props.backgroundMode || isMobile }"
+    :class="{
+      'globe-passive': props.backgroundMode || isMobile,
+      'globe-hidden': !revealed,
+    }"
   >
     <GhslBasemap
       ref="basemapRef"
@@ -492,6 +523,12 @@ onUnmounted(() => {
 
 .globe-passive {
   pointer-events: none;
+}
+
+/* Both canvases stay hidden until the first view is fully drawn. The wrapper
+   keeps its background, so the page shows the plain ground meanwhile. */
+.globe-hidden > * {
+  opacity: 0;
 }
 
 .globe-container {

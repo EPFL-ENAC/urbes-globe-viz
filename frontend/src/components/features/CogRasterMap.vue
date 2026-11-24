@@ -8,6 +8,7 @@ import { IconLayer } from "@deck.gl/layers";
 import { CogBitmapLayer } from "@gisatcz/deckgl-geolib";
 import { geodataBaseUrl as baseUrl } from "@/config/geodata";
 import GhslBasemap from "@/components/features/GhslBasemap.vue";
+import { useFlightPrefetch } from "@/composables/useGhslBasemap";
 import { isPreviewMode } from "@/utils/previewMode";
 import type { CogRasterConfig } from "@/config/projects/types";
 
@@ -24,6 +25,8 @@ const props = defineProps<{
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 const basemapRef = ref<InstanceType<typeof GhslBasemap> | null>(null);
+// Prefetches the basemap tiles of the destination while the map flies.
+const flight = useFlightPrefetch(() => basemapRef.value);
 const isLoading = ref(true);
 let map: maplibregl.Map | null = null;
 let deckOverlay: MapboxOverlay | null = null;
@@ -141,7 +144,11 @@ watch(() => props.cogRaster, updateLayers, { deep: true });
 // When center/zoom changes (subViz switch), fly to new location
 watch([() => props.center, () => props.zoom], ([newCenter, newZoom]) => {
   if (map && newCenter) {
-    map.flyTo({ center: newCenter, zoom: newZoom ?? 8, duration: 1200 });
+    flight.flyTo(map, {
+      center: newCenter,
+      zoom: newZoom ?? 8,
+      duration: 1200,
+    });
   }
 });
 
