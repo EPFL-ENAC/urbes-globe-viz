@@ -1,7 +1,13 @@
 # GHSL Processing on SCITAS Jed
 
-Generates ~5.4M WebP tiles from the GHSL Built Surface dataset and packages them
-into a single `ghsl.pmtiles` file served via HTTP range requests from CDN.
+Generates WebP tiles from the GHSL Built Surface dataset and packages them into a
+single PMTiles file served via HTTP range requests from CDN.
+
+> **512 px tiles (November 2026).** The scripts now make 512 px tiles, zoom 0-12,
+> into `$SCRATCH/tiles_512/` and `ghsl-512.pmtiles`. This is the main way to build the
+> archive. The full steps, from copying the scripts to the frontend switch, are in
+> [`../README.md`](../README.md). The scripts did not run at 512 px yet. The run stats
+> below are from the 256 px build (`ghsl.pmtiles`, zoom 0-13).
 
 ## Cluster overview
 
@@ -61,20 +67,20 @@ rsync -avP /work/enac-it4r/ghsl/ghsl_built_3857_cog.tif /scratch/ripoll/ghsl/
 Submit jobs in order. Jobs 02 and 03 can run in parallel.
 
 ```
-01_z0-8.sbatch        ~5 min    1 job         zoom 0-8  — global, ~87K tiles
-02_z9-12.sbatch       ~1-2h     16 jobs       zoom 9-12 — 16 lon strips, ~1.5M tiles
-03_z13.sbatch         ~2-4h     16 jobs       zoom 13   — 16 lon strips, ~3.8M tiles
-04_pack_upload.sbatch ~30 min   1 job         filter + pack + convert + upload
+01_z0-7.sbatch        1 job      zoom 0-7  — global
+02_z8-11.sbatch       16 jobs    zoom 8-11 — 16 lon strips
+03_z12.sbatch         16 jobs    zoom 12   — 16 lon strips
+04_pack_upload.sbatch 1 job      filter + pack + convert + upload
 ```
 
 ```bash
 cd /work/enac-it4r/ghsl
 
-sbatch scitas/01_z0-8.sbatch
+sbatch scitas/01_z0-7.sbatch
 
 # After 01 finishes — submit 02 and 03 in parallel:
-sbatch scitas/02_z9-12.sbatch
-sbatch scitas/03_z13.sbatch
+sbatch scitas/02_z8-11.sbatch
+sbatch scitas/03_z12.sbatch
 
 # After both 02 and 03 finish:
 sbatch scitas/04_pack_upload.sbatch
@@ -95,7 +101,7 @@ sausage                                       # billing usage
 At global scale, a single gdal2tiles job OOMs or times out. The globe is split into
 16 longitude strips (22.5° each), one SLURM array task per strip. Each job processes
 its strip independently; tile X-coordinates are globally unique per strip so there
-are no write conflicts when all jobs rsync to the same `$SCRATCH/tiles/` directory.
+are no write conflicts when all jobs rsync to the same `$SCRATCH/tiles_512/` directory.
 
 Strip alignment: with 16 strips (2^4), tile boundaries align perfectly at zoom ≥ 4. ✓
 
@@ -133,6 +139,9 @@ nv 255 255 255 0
 WebP minimum file size is 224 bytes even for a near-transparent tile. Use
 `-size -225c`. Using `-size -500c` deletes valid sparse tiles.
 
+At 512 px the smallest WebP is about 580 bytes, so `-size -225c` deletes nothing.
+`gdal2tiles -x` already skips the fully transparent tiles.
+
 ### `$SCRATCH` has a 30-day purge
 
 Always copy the final `.pmtiles` to `/work/enac-it4r/ghsl/` for persistence.
@@ -150,12 +159,12 @@ the crash.
 
 ### Strip 9 (lon 22.5–45°, Europe/Middle East) is the densest region
 
-If strip 9 times out during `02_z9-12.sbatch`, split it into 8 sub-jobs using
-the pattern in `02_z9-12.sbatch` with a tighter lon range and `--time=01:00:00`.
+If strip 9 times out during `02_z8-11.sbatch`, split it into 8 sub-jobs using
+the pattern in `02_z8-11.sbatch` with a tighter lon range and `--time=01:00:00`.
 
 ---
 
-## Actual run stats (March 2026)
+## Actual run stats (March 2026, 256 px build)
 
 | Step                    | Wall time               | Result              |
 | ----------------------- | ----------------------- | ------------------- |
@@ -172,14 +181,13 @@ the pattern in `02_z9-12.sbatch` with a tighter lon range and `--time=01:00:00`.
 
 ```bash
 # Check tile counts per zoom level
-for z in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
-  count=$(find /scratch/ripoll/ghsl/tiles/$z -name "*.webp" 2>/dev/null | wc -l)
+for z in 0 1 2 3 4 5 6 7 8 9 10 11 12; do
+  count=$(find /scratch/ripoll/ghsl/tiles_512/$z -name "*.webp" 2>/dev/null | wc -l)
   echo "zoom $z: $count tiles"
 done
 
-# Expected roughly:
-# zoom 0-3:  <100 tiles each
-# zoom 4-8:  hundreds to tens of thousands
-# zoom 9:    ~25K, zoom 10: ~80K, zoom 11: ~250K, zoom 12: ~700K
-# zoom 13:   ~3.8M
+# Expected roughly (512 px tile at zoom z = 4 tiles of the 256 px build at z+1,
+# so about the 256 px counts of z+1 divided by 2 to 4):
+# zoom 8:  ~10K, zoom 9: ~30K, zoom 10: ~100K, zoom 11: ~300K
+# zoom 12: ~1-2M
 ```
