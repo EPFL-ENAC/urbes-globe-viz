@@ -8,7 +8,7 @@ GEODATA_DIR := frontend/public/geodata
 PREVIEW_BASE_URL ?= http://localhost:$(or $(FRONTEND_PORT),5173)
 
 # Files too large for local download — always streamed from NAS
-GEODATA_EXCLUDE := ghsl.pmtiles,index.html,robots.txt
+GEODATA_EXCLUDE := ghsl*.pmtiles,index.html,robots.txt
 
 # Default target
 help:

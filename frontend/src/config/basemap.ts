@@ -13,17 +13,19 @@ import type { LayerSpecification, SourceSpecification } from "maplibre-gl";
 
 export const basemapSources: Record<string, SourceSpecification> = {
   // Hybrid source behind the "ghsl://" protocol (see lib/pmtilesClient.ts):
-  // z0–5 come from the bundled local pyramid in public/ghsl-low/ (instant
+  // z0–4 come from the bundled local pyramid in public/ghsl-low-512/ (instant
   // first paint, near-instant coarse fallbacks while deeper tiles load),
-  // z6–13 from the remote ghsl.pmtiles archive (~14 GB, deployed URL only —
-  // too large for local dev). One source, so MapLibre swaps coarse tiles for
+  // z5–12 from the remote ghsl-512.pmtiles archive (deployed URL only — too
+  // large for local dev). One source, so MapLibre swaps coarse tiles for
   // sharp ones per tile instead of blending stacked raster layers.
+  // 512 px tiles: a 512 px tile at z12 has the pixels of four 256 px tiles at
+  // z13, so the sharpness is the same with 4 times fewer requests per view.
   "ghsl-urban": {
     type: "raster",
     tiles: ["ghsl://{z}/{x}/{y}"],
-    tileSize: 256,
+    tileSize: 512,
     minzoom: 0,
-    maxzoom: 13,
+    maxzoom: 12,
   },
   "osm-buildings": {
     type: "vector",

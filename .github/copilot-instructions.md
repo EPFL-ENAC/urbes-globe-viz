@@ -200,37 +200,28 @@ EOF
 # 2. RGBA VRT (instant, no disk cost)
 gdaldem color-relief ghsl_built_3857_cog.tif ghsl_colors.txt ghsl_rgba.vrt -of VRT -alpha
 
-# 3. Generate WebP tiles (run on haas044: 32 threads, 251 GB RAM)
-gdal2tiles.py --zoom=0-12 --processes=30 --resampling=near --xyz \
-  -x --tiledriver=WEBP --webp-quality=85 ghsl_rgba.vrt ./ghsl_tiles/
+# 3. Generate 512 px WebP tiles, zoom 0-12 (Makefile targets tiles-low, tiles-high)
+gdal2tiles.py --zoom=0-7 --tilesize=512 --resampling=average --xyz \
+  -x --tiledriver=WEBP --webp-quality=85 ghsl_rgba.vrt ./ghsl_tiles_512/
+gdal2tiles.py --zoom=8-12 --tilesize=512 --resampling=near --xyz \
+  -x --tiledriver=WEBP --webp-quality=85 ghsl_rgba.vrt ./ghsl_tiles_512/
 # Post-process: remove near-empty tiles
-find ./ghsl_tiles/ -name "*.webp" -size -500c -delete
+find ./ghsl_tiles_512/ -name "*.webp" -size -500c -delete
 
-# 4. Package into PMTiles
-pip install mbutil
-mb-util --image_format=webp --scheme=xyz ./ghsl_tiles/ ghsl.mbtiles
-pmtiles convert ghsl.mbtiles ghsl.pmtiles
-s3cmd put ghsl.pmtiles s3://urbes-viz/
+# 4. Package into PMTiles (pmtiles convert only reads .mbtiles, not a folder)
+python3 pack_mbtiles.py ./ghsl_tiles_512/ ghsl-512.mbtiles
+pmtiles convert ghsl-512.mbtiles ghsl-512.pmtiles
+# Upload to the NAS geodata folder under the NEW name. Never replace an archive in place.
 ```
 
-### Frontend integration (Globe3D.vue)
+The full steps (build, upload, switch) are in `processing/ghsl_to_pmtiles/README.md`.
 
-```typescript
-import { Protocol } from "pmtiles";
-const protocol = new Protocol();
-maplibregl.addProtocol("pmtiles", protocol.tile);
-map.addSource("ghsl", {
-  type: "raster",
-  url: "pmtiles://https://urbes-viz.epfl.ch/geodata/ghsl.pmtiles",
-  tileSize: 256,
-});
-map.addLayer({
-  id: "ghsl-layer",
-  type: "raster",
-  source: "ghsl",
-  paint: { "raster-opacity": 0.8 },
-});
-```
+### Frontend integration
+
+- One raster source, `ghsl-urban` in `frontend/src/config/basemap.ts`: `tiles: ["ghsl://{z}/{x}/{y}"]`, `tileSize: 512`, `maxzoom: 12`.
+- `frontend/src/lib/pmtilesClient.ts` answers the `ghsl://` protocol: z0-4 from the bundled tiles in `frontend/public/ghsl-low-512/` (made by `npm run extract:ghsl-low`), z5-12 from `https://urbes-viz.epfl.ch/geodata/ghsl-512.pmtiles`.
+- Keep the null-data fix in `pmtilesRequest`: the archive has no ocean tiles, and MapLibre waits forever on a `null` tile.
+- The bundled tile folder name carries the tile size, because nginx serves it as immutable. New tiles need a new folder name.
 
 ### GDAL segfaults on GDAL 3.8.4 (ubuntugis PPA)
 
